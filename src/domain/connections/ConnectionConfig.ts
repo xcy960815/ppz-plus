@@ -1,5 +1,5 @@
 /**
- * Defines how a connection is described by the user.
+ * 定义用户描述连接的方式。
  */
 export type ConnectionInputMode = 'parameters' | 'url';
 
@@ -25,13 +25,13 @@ export interface MysqlUrlConnectionConfig extends BaseConnectionConfig {
 }
 
 /**
- * Represents the MySQL connection variants supported in the MVP.
+ * 表示 MVP 阶段支持的 MySQL 连接配置变体。
  */
 export type MysqlConnectionConfig =
 	| MysqlParameterConnectionConfig
 	| MysqlUrlConnectionConfig;
 
 /**
- * Represents the connection configuration union supported by the application.
+ * 表示应用当前支持的连接配置联合类型。
  */
 export type ConnectionConfig = MysqlConnectionConfig;

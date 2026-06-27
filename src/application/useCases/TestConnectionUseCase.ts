@@ -2,20 +2,20 @@ import type { ConnectionConfig } from '../../domain/connections/ConnectionConfig
 import type { ConnectionTester } from '../connections/ConnectionTester';
 
 /**
- * Tests a connection configuration through the configured connection tester.
+ * 通过配置的连接测试器测试连接配置。
  */
 export class TestConnectionUseCase {
 	/**
-	 * Creates the test connection use case.
+	 * 创建连接测试用例。
 	 *
-	 * @param connectionTester Tester used to verify connectivity.
+	 * @param connectionTester 用于验证连通性的测试器。
 	 */
 	public constructor(private readonly connectionTester: ConnectionTester) {}
 
 	/**
-	 * Tests a connection configuration.
+	 * 测试连接配置。
 	 *
-	 * @param config Connection configuration to verify.
+	 * @param config 待验证的连接配置。
 	 */
 	public async execute(config: ConnectionConfig): Promise<void> {
 		await this.connectionTester.test(config);

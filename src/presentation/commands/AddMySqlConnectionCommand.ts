@@ -12,23 +12,23 @@ import type { ExtensionCommand } from './ExtensionCommand';
 import { MySqlConnectionsTreeDataProvider } from '../explorer/MySqlConnectionsTreeDataProvider';
 
 /**
- * Creates new MySQL connection configurations through VS Code quick input prompts.
+ * 通过 VS Code 快速输入流程创建新的 MySQL 连接配置。
  */
 export class AddMySqlConnectionCommand implements ExtensionCommand {
 	/**
-	 * Stores the VS Code command identifier.
+	 * 保存 VS Code 命令标识。
 	 */
 	public static readonly id = 'ppz-plus.addMySqlConnection';
 
 	/**
-	 * Exposes the command identifier through the command contract.
+	 * 通过命令契约暴露命令标识。
 	 */
 	public readonly id = AddMySqlConnectionCommand.id;
 
 	/**
-	 * Creates the add MySQL connection command.
+	 * 创建新增 MySQL 连接命令。
 	 *
-	 * @param saveConnectionConfigUseCase Use case used to persist new connections.
+	 * @param saveConnectionConfigUseCase 用于持久化新连接的用例。
 	 */
 	public constructor(
 		private readonly saveConnectionConfigUseCase: SaveConnectionConfigUseCase,
@@ -36,9 +36,9 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	) {}
 
 	/**
-	 * Registers the command with VS Code.
+	 * 向 VS Code 注册命令。
 	 *
-	 * @returns A disposable command registration.
+	 * @returns 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(this.id, async () => {
@@ -56,9 +56,9 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Prompts the user for a new connection configuration.
+	 * 提示用户填写新的连接配置。
 	 *
-	 * @returns The new connection configuration when the prompt flow completes.
+	 * @returns 输入流程完成后得到的新连接配置。
 	 */
 	private async promptForConnectionConfig(): Promise<ConnectionConfig | undefined> {
 		const mode = await this.promptForConnectionMode();
@@ -70,9 +70,9 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Prompts the user for the connection input mode.
+	 * 提示用户选择连接输入模式。
 	 *
-	 * @returns The selected input mode.
+	 * @returns 用户选择的输入模式。
 	 */
 	private async promptForConnectionMode(): Promise<
 		ConnectionInputMode | undefined
@@ -100,11 +100,11 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Prompts the user for MySQL connection details.
+	 * 提示用户填写 MySQL 连接详情。
 	 *
-	 * @param mode Selected connection input mode.
-	 * @param existingConfig Existing configuration when editing.
-	 * @returns The resulting MySQL connection configuration.
+	 * @param mode 用户选择的连接输入模式。
+	 * @param existingConfig 编辑时已有的连接配置。
+	 * @returns 最终得到的 MySQL 连接配置。
 	 */
 	public static async collectMySqlConfig(
 		mode: ConnectionInputMode,
@@ -122,7 +122,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		}
 
 		/**
-		 * Preserves the existing identifier during edits and generates one for new connections.
+		 * 编辑时保留原有标识，新建时生成新的标识。
 		 */
 		const connectionId = existingConfig?.id ?? randomUUID();
 
@@ -232,11 +232,11 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Delegates to the static MySQL prompt flow for new connections.
+	 * 委托静态 MySQL 输入流程收集新连接配置。
 	 *
-	 * @param mode Selected connection mode.
-	 * @param existingConfig Existing configuration when editing.
-	 * @returns The collected MySQL connection configuration.
+	 * @param mode 用户选择的连接模式。
+	 * @param existingConfig 编辑时已有的连接配置。
+	 * @returns 收集完成的 MySQL 连接配置。
 	 */
 	private async promptForMySqlConfig(
 		mode: ConnectionInputMode,
@@ -246,10 +246,10 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Validates a MySQL connection URL.
+	 * 校验 MySQL 连接 URL。
 	 *
-	 * @param value Raw URL string.
-	 * @returns A validation message when invalid.
+	 * @param value 原始 URL 字符串。
+	 * @returns 无效时返回的校验提示。
 	 */
 	private static validateMysqlUrl(value: string): string | undefined {
 		try {
@@ -263,10 +263,10 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Parses a port input string.
+	 * 解析端口输入字符串。
 	 *
-	 * @param value Raw port value.
-	 * @returns The parsed port when valid.
+	 * @param value 原始端口值。
+	 * @returns 有效时解析出的端口号。
 	 */
 	private static parsePort(value: string): number | undefined {
 		const parsedPort = Number(value);

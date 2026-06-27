@@ -2,22 +2,22 @@ import type { ConnectionRepository } from '../connections/ConnectionRepository';
 import type { ConnectionConfig } from '../../domain/connections/ConnectionConfig';
 
 /**
- * Lists stored connection configurations.
+ * 列出已保存的连接配置。
  */
 export class ListStoredConnectionsUseCase {
 	/**
-	 * Creates the list connections use case.
+	 * 创建连接列表用例。
 	 *
-	 * @param connectionRepository Repository used to read stored connections.
+	 * @param connectionRepository 用于读取已保存连接的仓储。
 	 */
 	public constructor(
 		private readonly connectionRepository: ConnectionRepository
 	) {}
 
 	/**
-	 * Returns all stored connection configurations.
+	 * 返回全部已保存连接配置。
 	 *
-	 * @returns Stored connection records.
+	 * @returns 已保存的连接记录。
 	 */
 	public async execute(): Promise<readonly ConnectionConfig[]> {
 		return this.connectionRepository.list();

@@ -14,26 +14,26 @@ import type { MySqlConnectionTreeNode } from '../explorer/MySqlConnectionsTreeNo
 import { MySqlConnectionsTreeDataProvider } from '../explorer/MySqlConnectionsTreeDataProvider';
 
 /**
- * Manages stored MySQL connections through a simple action picker.
+ * 通过操作选择器管理已保存的 MySQL 连接。
  */
 export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	/**
-	 * Stores the VS Code command identifier.
+	 * 保存 VS Code 命令标识。
 	 */
 	public static readonly id = 'ppz-plus.manageMySqlConnections';
 
 	/**
-	 * Exposes the command identifier through the command contract.
+	 * 通过命令契约暴露命令标识。
 	 */
 	public readonly id = ManageMySqlConnectionsCommand.id;
 
 	/**
-	 * Creates the connection management command.
+	 * 创建连接管理命令。
 	 *
-	 * @param listStoredConnectionsUseCase Use case used to list stored connections.
-	 * @param saveConnectionConfigUseCase Use case used to persist connection edits.
-	 * @param deleteStoredConnectionUseCase Use case used to remove connections.
-	 * @param testConnectionUseCase Use case used to test selected connections.
+	 * @param listStoredConnectionsUseCase 用于读取已保存连接的用例。
+	 * @param saveConnectionConfigUseCase 用于持久化连接编辑结果的用例。
+	 * @param deleteStoredConnectionUseCase 用于删除连接的用例。
+	 * @param testConnectionUseCase 用于测试所选连接的用例。
 	 */
 	public constructor(
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
@@ -44,9 +44,9 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	) {}
 
 	/**
-	 * Registers the command with VS Code.
+	 * 向 VS Code 注册命令。
 	 *
-	 * @returns A disposable command registration.
+	 * @returns 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
@@ -95,9 +95,9 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Prompts the user to select a stored connection for management.
+	 * 提示用户选择一个已保存连接进行管理。
 	 *
-	 * @returns The chosen connection when available.
+	 * @returns 用户选择的连接；未选择时为空。
 	 */
 	private async pickConnection(): Promise<MysqlConnectionConfig | undefined> {
 		const connections = await this.listStoredConnectionsUseCase.execute();
@@ -127,15 +127,15 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Displays a connection summary to the user.
+	 * 向用户展示连接摘要。
 	 *
-	 * @param connection Selected connection.
+	 * @param connection 当前选中的连接。
 	 */
 	private async showConnectionDetails(
 		connection: MysqlConnectionConfig
 	): Promise<void> {
 		/**
-		 * Builds a human-readable summary of the selected connection.
+		 * 构建当前选中连接的可读摘要。
 		 */
 		const message =
 			connection.mode === 'parameters'
@@ -157,9 +157,9 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Tests a stored connection and displays the result.
+	 * 测试已保存连接并展示结果。
 	 *
-	 * @param connection Selected connection.
+	 * @param connection 当前选中的连接。
 	 */
 	private async testConnection(connection: MysqlConnectionConfig): Promise<void> {
 		try {
@@ -175,9 +175,9 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Prompts the user to edit a stored connection.
+	 * 提示用户编辑已保存连接。
 	 *
-	 * @param connection Selected connection.
+	 * @param connection 当前选中的连接。
 	 */
 	private async editConnection(connection: MysqlConnectionConfig): Promise<void> {
 		const mode = await this.promptForMode(connection.mode);
@@ -201,9 +201,9 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Deletes a stored connection after confirmation.
+	 * 确认后删除已保存连接。
 	 *
-	 * @param connection Selected connection.
+	 * @param connection 当前选中的连接。
 	 */
 	private async deleteConnection(
 		connection: MysqlConnectionConfig
@@ -225,10 +225,10 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Prompts the user for the editing mode of a MySQL connection.
+	 * 提示用户选择 MySQL 连接的编辑模式。
 	 *
-	 * @param currentMode Existing connection mode.
-	 * @returns The chosen connection mode.
+	 * @param currentMode 当前已有的连接模式。
+	 * @returns 用户选择的连接模式。
 	 */
 	private async promptForMode(
 		currentMode: ConnectionInputMode

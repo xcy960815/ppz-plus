@@ -2,7 +2,7 @@ import type { DatabaseCapabilityCatalog } from '../capabilities/DatabaseCapabili
 import { DATABASE_CAPABILITY_KEYS } from '../../domain/capabilities/DatabaseCapabilityDeclaration';
 
 /**
- * Describes the bootstrap information shown by the temporary status command.
+ * 描述临时状态命令展示的启动信息。
  */
 export interface BootstrapStatus {
 	readonly focusEngine: string;
@@ -11,31 +11,31 @@ export interface BootstrapStatus {
 }
 
 /**
- * Builds a lightweight bootstrap summary for the current extension state.
+ * 为当前扩展状态构建轻量启动摘要。
  */
 export class GetBootstrapStatusUseCase {
 	/**
-	 * Creates a bootstrap status use case.
+	 * 创建启动状态用例。
 	 *
-	 * @param capabilityCatalog Capability source used to summarize engine support.
+	 * @param capabilityCatalog 用于汇总引擎支持情况的能力来源。
 	 */
 	public constructor(
 		private readonly capabilityCatalog: DatabaseCapabilityCatalog
 	) {}
 
 	/**
-	 * Produces the bootstrap status payload consumed by presentation commands.
+	 * 生成表现层命令消费的启动状态数据。
 	 *
-	 * @returns The current bootstrap status snapshot.
+	 * @returns 当前启动状态快照。
 	 */
 	public execute(): BootstrapStatus {
 		/**
-		 * Captures the MySQL capability declaration used as the MVP baseline.
+		 * 获取作为 MVP 基线的 MySQL 能力声明。
 		 */
 		const mysqlCapabilities = this.capabilityCatalog.find('mysql');
 
 		/**
-		 * Lists the capabilities already marked as supported for the MVP engine.
+		 * 列出 MVP 引擎已标记为支持的能力。
 		 */
 		const supportedCapabilities = mysqlCapabilities
 			? DATABASE_CAPABILITY_KEYS.filter(
@@ -44,7 +44,7 @@ export class GetBootstrapStatusUseCase {
 			: [];
 
 		/**
-		 * Lists the engines reserved for later phases beyond the MySQL MVP.
+		 * 列出 MySQL MVP 之后预留给后续阶段的数据库引擎。
 		 */
 		const plannedEngines = this.capabilityCatalog
 			.list()

@@ -4,37 +4,37 @@ import type { ConnectionRepository } from '../../application/connections/Connect
 import type { ConnectionConfig } from '../../domain/connections/ConnectionConfig';
 
 /**
- * Stores connection configurations in VS Code global state.
+ * 将连接配置保存到 VS Code 全局状态中。
  */
 export class GlobalStateConnectionRepository
 	implements ConnectionRepository
 {
 	/**
-	 * Defines the global state key used to store connection records.
+	 * 定义保存连接记录使用的全局状态键。
 	 */
 	private static readonly storageKey = 'ppz-plus.connections';
 
 	/**
-	 * Creates the global-state-backed connection repository.
+	 * 创建基于全局状态的连接仓储。
 	 *
-	 * @param globalState VS Code global state storage.
+	 * @param globalState VS Code 全局状态存储。
 	 */
 	public constructor(private readonly globalState: vscode.Memento) {}
 
 	/**
-	 * Lists all stored connection configurations.
+	 * 列出所有已保存的连接配置。
 	 *
-	 * @returns Stored connection configurations.
+	 * @returns 已保存的连接配置。
 	 */
 	public async list(): Promise<readonly ConnectionConfig[]> {
 		return this.readConnections();
 	}
 
 	/**
-	 * Finds a stored connection by identifier.
+	 * 根据标识查找已保存连接。
 	 *
-	 * @param id Connection identifier.
-	 * @returns The matching stored connection when present.
+	 * @param id 连接标识。
+	 * @returns 存在时返回匹配的已保存连接。
 	 */
 	public async find(id: string): Promise<ConnectionConfig | undefined> {
 		const connections = this.readConnections();
@@ -42,9 +42,9 @@ export class GlobalStateConnectionRepository
 	}
 
 	/**
-	 * Saves a connection configuration, replacing any existing connection with the same identifier.
+	 * 保存连接配置，并替换具有相同标识的已有连接。
 	 *
-	 * @param config Connection configuration to persist.
+	 * @param config 需要持久化的连接配置。
 	 */
 	public async save(config: ConnectionConfig): Promise<void> {
 		const connections = this.readConnections();
@@ -53,7 +53,7 @@ export class GlobalStateConnectionRepository
 		);
 
 		/**
-		 * Builds the next stored connection list after the upsert operation.
+		 * 构建 upsert 操作后的下一份连接列表。
 		 */
 		const nextConnections =
 			existingIndex === -1
@@ -69,9 +69,9 @@ export class GlobalStateConnectionRepository
 	}
 
 	/**
-	 * Deletes a stored connection configuration.
+	 * 删除已保存连接配置。
 	 *
-	 * @param id Connection identifier to remove.
+	 * @param id 需要删除的连接标识。
 	 */
 	public async delete(id: string): Promise<void> {
 		const connections = this.readConnections().filter(
@@ -84,9 +84,9 @@ export class GlobalStateConnectionRepository
 	}
 
 	/**
-	 * Reads the stored connection list from VS Code global state.
+	 * 从 VS Code 全局状态读取已保存连接列表。
 	 *
-	 * @returns The stored connection list.
+	 * @returns 已保存连接列表。
 	 */
 	private readConnections(): ConnectionConfig[] {
 		return this.globalState.get<ConnectionConfig[]>(

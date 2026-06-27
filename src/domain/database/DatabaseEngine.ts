@@ -1,5 +1,5 @@
 /**
- * Lists the database engines reserved by the domain model.
+ * 列出领域模型中预留的数据库引擎。
  */
 export const DATABASE_ENGINES = [
 	'mysql',
@@ -11,6 +11,6 @@ export const DATABASE_ENGINES = [
 ] as const;
 
 /**
- * Represents a supported database engine identifier.
+ * 表示支持的数据库引擎标识。
  */
 export type DatabaseEngine = (typeof DATABASE_ENGINES)[number];

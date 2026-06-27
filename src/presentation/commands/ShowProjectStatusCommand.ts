@@ -4,47 +4,47 @@ import type { GetBootstrapStatusUseCase } from '../../application/useCases/GetBo
 import type { ExtensionCommand } from './ExtensionCommand';
 
 /**
- * Shows the current bootstrap status for the extension skeleton.
+ * 展示当前扩展骨架的启动状态。
  */
 export class ShowProjectStatusCommand implements ExtensionCommand {
 	/**
-	 * Stores the VS Code command identifier.
+	 * 保存 VS Code 命令标识。
 	 */
 	public static readonly id = 'ppz-plus.showProjectStatus';
 
 	/**
-	 * Exposes the command identifier through the command contract.
+	 * 通过命令契约暴露命令标识。
 	 */
 	public readonly id = ShowProjectStatusCommand.id;
 
 	/**
-	 * Creates the status command.
+	 * 创建状态展示命令。
 	 *
-	 * @param getBootstrapStatusUseCase Use case used to assemble status content.
+	 * @param getBootstrapStatusUseCase 用于组装状态内容的用例。
 	 */
 	public constructor(
 		private readonly getBootstrapStatusUseCase: GetBootstrapStatusUseCase
 	) {}
 
 	/**
-	 * Registers the command and binds it to the VS Code command service.
+	 * 注册命令并绑定到 VS Code 命令服务。
 	 *
-	 * @returns A disposable registration handle.
+	 * @returns 注册产生的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(this.id, async () => {
 			/**
-			 * Captures the latest bootstrap status before rendering a message.
+			 * 在渲染提示前获取最新启动状态。
 			 */
 			const status = this.getBootstrapStatusUseCase.execute();
 
 			/**
-			 * Builds a human-readable summary of supported MVP capabilities.
+			 * 构建已支持 MVP 能力的可读摘要。
 			 */
 			const capabilitySummary = status.supportedCapabilities.join(', ');
 
 			/**
-			 * Builds a human-readable summary of engines planned for later phases.
+			 * 构建后续阶段计划支持数据库引擎的可读摘要。
 			 */
 			const plannedEngines = status.plannedEngines.join(', ') || 'none';
 

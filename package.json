@@ -9,10 +9,14 @@
   "categories": [
     "Other"
   ],
+  "dependencies": {
+    "mysql2": "^3.11.3"
+  },
   "activationEvents": [
     "onCommand:ppz-plus.showProjectStatus",
     "onCommand:ppz-plus.addMySqlConnection",
     "onCommand:ppz-plus.manageMySqlConnections",
+    "onCommand:ppz-plus.openMySqlTableData",
     "onCommand:ppz-plus.refreshMySqlConnectionsTree",
     "onCommand:ppz-plus.testStoredMySqlConnection",
     "onView:ppzPlus.mysqlConnections"
@@ -54,6 +58,10 @@
         "title": "PPZ Plus: Test Stored MySQL Connection"
       },
       {
+        "command": "ppz-plus.openMySqlTableData",
+        "title": "PPZ Plus: Open MySQL Table Data"
+      },
+      {
         "command": "ppz-plus.showProjectStatus",
         "title": "PPZ Plus: Show Project Status"
       }
@@ -86,6 +94,21 @@
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
           "group": "inline@3"
+        },
+        {
+          "command": "ppz-plus.refreshMySqlConnectionsTree",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlSchema",
+          "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.openMySqlTableData",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
+          "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.refreshMySqlConnectionsTree",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
+          "group": "inline@2"
         }
       ]
     }

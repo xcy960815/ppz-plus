@@ -4,22 +4,22 @@ import type { ExtensionActivationParticipant } from '../bootstrap/ExtensionActiv
 import { MySqlConnectionsTreeDataProvider } from './MySqlConnectionsTreeDataProvider';
 
 /**
- * Activates the MySQL connection explorer view.
+ * 激活 MySQL 连接资源视图。
  */
 export class MySqlConnectionsView implements ExtensionActivationParticipant {
 	/**
-	 * Creates the explorer view activation participant.
+	 * 创建资源视图激活参与者。
 	 *
-	 * @param treeDataProvider Tree data provider used by the MySQL connection view.
+	 * @param treeDataProvider MySQL 连接视图使用的 Tree 数据提供者。
 	 */
 	public constructor(
 		private readonly treeDataProvider: MySqlConnectionsTreeDataProvider
 	) {}
 
 	/**
-	 * Activates the MySQL explorer tree for the current extension session.
+	 * 为当前扩展会话激活 MySQL 资源树。
 	 *
-	 * @param context VS Code extension lifecycle context.
+	 * @param context VS Code 扩展生命周期上下文。
 	 */
 	public activate(context: vscode.ExtensionContext): void {
 		const treeView = vscode.window.createTreeView(

@@ -3,19 +3,19 @@ import * as vscode from 'vscode';
 import { createExtensionBootstrap } from './presentation/bootstrap/createExtensionBootstrap';
 
 /**
- * Activates the extension bootstrap and registers all presentation entry points.
+ * 激活扩展启动流程并注册所有表现层入口。
  *
- * @param context VS Code extension lifecycle context.
+ * @param context VS Code 扩展生命周期上下文。
  */
 export function activate(context: vscode.ExtensionContext): void {
 	/**
-	 * Coordinates extension startup for the current activation cycle.
+	 * 协调当前激活周期的扩展启动。
 	 */
 	const bootstrap = createExtensionBootstrap(context);
 	bootstrap.activate(context);
 }
 
 /**
- * Deactivates the extension.
+ * 停用扩展。
  */
 export function deactivate(): void {}

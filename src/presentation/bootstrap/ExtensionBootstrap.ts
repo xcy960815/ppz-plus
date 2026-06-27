@@ -5,19 +5,19 @@ import { CommandRegistry } from '../commands/CommandRegistry';
 import type { ExtensionActivationParticipant } from './ExtensionActivationParticipant';
 
 /**
- * Coordinates extension startup from the presentation layer.
+ * 从表现层协调扩展启动。
  */
 export class ExtensionBootstrap {
 	/**
-	 * Registers commands against the VS Code extension context.
+	 * 将命令注册到 VS Code 扩展上下文。
 	 */
 	private readonly commandRegistry: CommandRegistry;
 
 	/**
-	 * Creates an extension bootstrap instance.
+	 * 创建扩展启动实例。
 	 *
-	 * @param commands Commands registered during activation.
-	 * @param activationParticipants Presentation participants activated with the extension.
+	 * @param commands 激活期间注册的命令。
+	 * @param activationParticipants 随扩展一起激活的表现层参与者。
 	 */
 	public constructor(
 		private readonly commands: readonly ExtensionCommand[],
@@ -27,9 +27,9 @@ export class ExtensionBootstrap {
 	}
 
 	/**
-	 * Activates the presentation bootstrap for the current extension session.
+	 * 为当前扩展会话激活表现层启动流程。
 	 *
-	 * @param context VS Code extension lifecycle context.
+	 * @param context VS Code 扩展生命周期上下文。
 	 */
 	public activate(context: vscode.ExtensionContext): void {
 		this.commandRegistry.register(this.commands, context);

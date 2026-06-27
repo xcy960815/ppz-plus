@@ -1,67 +1,80 @@
 import * as vscode from 'vscode';
 
+import type { ListMySqlSchemasUseCase } from '../../application/useCases/ListMySqlSchemasUseCase';
+import { OpenMySqlTableDataCommand } from '../commands/OpenMySqlTableDataCommand';
+import type { ListMySqlTablesUseCase } from '../../application/useCases/ListMySqlTablesUseCase';
 import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type {
 	MySqlConnectionTreeNode,
 	MySqlConnectionsTreeNode,
-	MySqlSchemaPlaceholderTreeNode,
+	MySqlSchemaTreeNode,
+	MySqlTableTreeNode,
 } from './MySqlConnectionsTreeNode';
 
 /**
- * Provides the MySQL connection explorer tree for the current extension session.
+ * 为当前扩展会话提供 MySQL 连接资源树。
  */
 export class MySqlConnectionsTreeDataProvider
 	implements vscode.TreeDataProvider<MySqlConnectionsTreeNode>
 {
 	/**
-	 * Stores the VS Code view identifier used by the MySQL explorer tree.
+	 * 保存 MySQL 资源树使用的 VS Code 视图标识。
 	 */
 	public static readonly viewId = 'ppzPlus.mysqlConnections';
 
 	/**
-	 * Stores the connection node context value used by tree menus.
+	 * 保存 Tree 菜单使用的连接节点上下文值。
 	 */
 	public static readonly connectionContextValue = 'ppzPlus.mysqlConnection';
 
 	/**
-	 * Stores the placeholder node context value used by tree menus.
+	 * 保存 Tree 菜单使用的 schema 节点上下文值。
 	 */
-	public static readonly placeholderContextValue = 'ppzPlus.mysqlSchemaPlaceholder';
+	public static readonly schemaContextValue = 'ppzPlus.mysqlSchema';
 
 	/**
-	 * Emits tree refresh events for the explorer view.
+	 * 保存 Tree 菜单使用的表节点上下文值。
+	 */
+	public static readonly tableContextValue = 'ppzPlus.mysqlTable';
+
+	/**
+	 * 为资源视图发出 Tree 刷新事件。
 	 */
 	private readonly onDidChangeTreeDataEmitter =
 		new vscode.EventEmitter<MySqlConnectionsTreeNode | undefined>();
 
 	/**
-	 * Exposes the tree refresh event to VS Code.
+	 * 向 VS Code 暴露 Tree 刷新事件。
 	 */
 	public readonly onDidChangeTreeData =
 		this.onDidChangeTreeDataEmitter.event;
 
 	/**
-	 * Creates the MySQL connection tree data provider.
+	 * 创建 MySQL 连接 Tree 数据提供者。
 	 *
-	 * @param listStoredConnectionsUseCase Use case used to load stored connections.
+	 * @param listStoredConnectionsUseCase 用于加载已保存连接的用例。
+	 * @param listMySqlSchemasUseCase 用于加载 MySQL schema 的用例。
+	 * @param listMySqlTablesUseCase 用于加载 MySQL 表的用例。
 	 */
 	public constructor(
-		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase
+		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
+		private readonly listMySqlSchemasUseCase: ListMySqlSchemasUseCase,
+		private readonly listMySqlTablesUseCase: ListMySqlTablesUseCase
 	) {}
 
 	/**
-	 * Refreshes the tree contents.
+	 * 刷新 Tree 内容。
 	 */
 	public refresh(): void {
 		this.onDidChangeTreeDataEmitter.fire(undefined);
 	}
 
 	/**
-	 * Returns the tree item representation for a given node.
+	 * 返回指定节点对应的 TreeItem 表现。
 	 *
-	 * @param element Tree node being rendered.
-	 * @returns The VS Code tree item for the node.
+	 * @param element 正在渲染的 Tree 节点。
+	 * @returns 该节点对应的 VS Code TreeItem。
 	 */
 	public getTreeItem(
 		element: MySqlConnectionsTreeNode
@@ -70,49 +83,75 @@ export class MySqlConnectionsTreeDataProvider
 			return this.createConnectionTreeItem(element);
 		}
 
-		return this.createPlaceholderTreeItem(element);
+		if (element.kind === 'schema') {
+			return this.createSchemaTreeItem(element);
+		}
+
+		return this.createTableTreeItem(element);
 	}
 
 	/**
-	 * Loads the child nodes for a given tree node.
+	 * 加载指定 Tree 节点的子节点。
 	 *
-	 * @param element Parent tree node, or undefined for the root level.
-	 * @returns The child nodes to render.
+	 * @param element 父级 Tree 节点；根层级时为空。
+	 * @returns 需要渲染的子节点。
 	 */
 	public async getChildren(
 		element?: MySqlConnectionsTreeNode
 	): Promise<readonly MySqlConnectionsTreeNode[]> {
-		if (!element) {
-			const connections = await this.listStoredConnectionsUseCase.execute();
-			return connections.map((connection) => ({
-				kind: 'connection',
-				connection,
-			}));
-		}
+		try {
+			if (!element) {
+				const connections = await this.listStoredConnectionsUseCase.execute();
+				return connections.map((connection) => ({
+					kind: 'connection',
+					connection,
+				}));
+			}
 
-		if (element.kind === 'connection') {
-			return [
-				{
-					kind: 'schema-placeholder',
-					connectionId: element.connection.id,
-				},
-			];
-		}
+			if (element.kind === 'connection') {
+				const schemas = await this.listMySqlSchemasUseCase.execute(
+					element.connection
+				);
+				return schemas.map((schema) => ({
+					kind: 'schema',
+					connection: element.connection,
+					schemaName: schema.name,
+				}));
+			}
 
-		return [];
+			if (element.kind === 'schema') {
+				const tables = await this.listMySqlTablesUseCase.execute(
+					element.connection,
+					element.schemaName
+				);
+				return tables.map((table) => ({
+					kind: 'table',
+					connection: element.connection,
+					schemaName: element.schemaName,
+					tableName: table.name,
+				}));
+			}
+
+			return [];
+		} catch (error) {
+			await vscode.window.showErrorMessage(
+				error instanceof Error ? error.message : String(error)
+			);
+			return [];
+		}
 	}
 
 	/**
-	 * Creates the visual representation for a connection node.
+	 * 创建连接节点的可视化表示。
 	 *
-	 * @param element Connection tree node.
-	 * @returns The connection tree item.
+	 * @param element 连接 Tree 节点。
+	 * @returns 连接节点对应的 TreeItem。
 	 */
 	private createConnectionTreeItem(
 		element: MySqlConnectionTreeNode
 	): vscode.TreeItem {
 		/**
-		 * Resolves a short endpoint description for the tree item.
+		 * 解析 TreeItem 使用的简短端点描述。
 		 */
 		const description = this.describeConnection(element.connection);
 		const treeItem = new vscode.TreeItem(
@@ -127,30 +166,54 @@ export class MySqlConnectionsTreeDataProvider
 	}
 
 	/**
-	 * Creates the visual representation for a placeholder node.
+	 * 创建 schema 节点的可视化表示。
 	 *
-	 * @param element Placeholder tree node.
-	 * @returns The placeholder tree item.
+	 * @param element schema Tree 节点。
+	 * @returns schema 节点对应的 TreeItem。
 	 */
-	private createPlaceholderTreeItem(
-		element: MySqlSchemaPlaceholderTreeNode
+	private createSchemaTreeItem(
+		element: MySqlSchemaTreeNode
 	): vscode.TreeItem {
 		const treeItem = new vscode.TreeItem(
-			'Schemas and tables will be loaded in the next step',
-			vscode.TreeItemCollapsibleState.None
+			element.schemaName,
+			vscode.TreeItemCollapsibleState.Collapsed
 		);
-		treeItem.contextValue =
-			MySqlConnectionsTreeDataProvider.placeholderContextValue;
-		treeItem.id = `${element.connectionId}.schema-placeholder`;
-		treeItem.iconPath = new vscode.ThemeIcon('info');
+		treeItem.contextValue = MySqlConnectionsTreeDataProvider.schemaContextValue;
+		treeItem.id = `${element.connection.id}.${element.schemaName}`;
+		treeItem.iconPath = new vscode.ThemeIcon('folder-library');
 		return treeItem;
 	}
 
 	/**
-	 * Creates a short connection description for the explorer tree.
+	 * 创建表节点的可视化表示。
 	 *
-	 * @param connection Connection configuration to describe.
-	 * @returns A human-readable connection description.
+	 * @param element 表 Tree 节点。
+	 * @returns 表节点对应的 TreeItem。
+	 */
+	private createTableTreeItem(
+		element: MySqlTableTreeNode
+	): vscode.TreeItem {
+		const treeItem = new vscode.TreeItem(
+			element.tableName,
+			vscode.TreeItemCollapsibleState.None
+		);
+		treeItem.contextValue = MySqlConnectionsTreeDataProvider.tableContextValue;
+		treeItem.id = `${element.connection.id}.${element.schemaName}.${element.tableName}`;
+		treeItem.description = element.schemaName;
+		treeItem.iconPath = new vscode.ThemeIcon('table');
+		treeItem.command = {
+			command: OpenMySqlTableDataCommand.id,
+			title: 'Open Table Data',
+			arguments: [element],
+		};
+		return treeItem;
+	}
+
+	/**
+	 * 为资源树创建简短连接描述。
+	 *
+	 * @param connection 待描述的连接配置。
+	 * @returns 用户可读的连接描述。
 	 */
 	private describeConnection(connection: MysqlConnectionConfig): string {
 		if (connection.mode === 'parameters') {

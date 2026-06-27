@@ -1,7 +1,7 @@
 import type { DatabaseEngine } from '../database/DatabaseEngine';
 
 /**
- * Enumerates the capability keys used by the capability matrix.
+ * 枚举能力矩阵使用的能力键。
  */
 export const DATABASE_CAPABILITY_KEYS = [
 	'connectionManagement',
@@ -33,7 +33,7 @@ export interface DatabaseCapabilityDeclaration {
 }
 
 /**
- * Declares the MVP capability baseline for the MySQL implementation.
+ * 声明 MySQL 实现的 MVP 能力基线。
  */
 export const MYSQL_MVP_CAPABILITY_DECLARATION = {
 	engine: 'mysql',

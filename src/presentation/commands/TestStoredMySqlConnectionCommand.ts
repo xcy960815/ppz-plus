@@ -7,24 +7,24 @@ import type { ExtensionCommand } from './ExtensionCommand';
 import type { MySqlConnectionTreeNode } from '../explorer/MySqlConnectionsTreeNode';
 
 /**
- * Tests a stored MySQL connection selected from the explorer tree or a picker.
+ * 测试从资源树或选择器中选中的 MySQL 连接。
  */
 export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 	/**
-	 * Stores the VS Code command identifier.
+	 * 保存 VS Code 命令标识。
 	 */
 	public static readonly id = 'ppz-plus.testStoredMySqlConnection';
 
 	/**
-	 * Exposes the command identifier through the command contract.
+	 * 通过命令契约暴露命令标识。
 	 */
 	public readonly id = TestStoredMySqlConnectionCommand.id;
 
 	/**
-	 * Creates the stored connection test command.
+	 * 创建已保存连接测试命令。
 	 *
-	 * @param listStoredConnectionsUseCase Use case used to list stored connections.
-	 * @param testConnectionUseCase Use case used to test selected connections.
+	 * @param listStoredConnectionsUseCase 用于读取已保存连接的用例。
+	 * @param testConnectionUseCase 用于测试所选连接的用例。
 	 */
 	public constructor(
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
@@ -32,9 +32,9 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 	) {}
 
 	/**
-	 * Registers the command with VS Code.
+	 * 向 VS Code 注册命令。
 	 *
-	 * @returns A disposable command registration.
+	 * @returns 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
@@ -64,9 +64,9 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * Prompts the user to select a stored connection.
+	 * 提示用户选择一个已保存连接。
 	 *
-	 * @returns The chosen connection when available.
+	 * @returns 用户选择的连接；未选择时为空。
 	 */
 	private async pickConnection(): Promise<MysqlConnectionConfig | undefined> {
 		const connections = await this.listStoredConnectionsUseCase.execute();

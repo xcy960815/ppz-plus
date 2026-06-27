@@ -3,25 +3,25 @@ import type { DatabaseCapabilityDeclaration } from '../../domain/capabilities/Da
 import type { DatabaseEngine } from '../../domain/database/DatabaseEngine';
 
 /**
- * Stores capability declarations in memory for bootstrap-time composition.
+ * 在内存中保存能力声明，用于启动阶段组装。
  */
 export class InMemoryDatabaseCapabilityCatalog
 	implements DatabaseCapabilityCatalog
 {
 	/**
-	 * Creates an in-memory capability catalog.
+	 * 创建内存能力目录。
 	 *
-	 * @param declarations Capability declarations available to the application.
+	 * @param declarations 应用可用的能力声明。
 	 */
 	public constructor(
 		private readonly declarations: readonly DatabaseCapabilityDeclaration[]
 	) {}
 
 	/**
-	 * Finds a declaration by database engine.
+	 * 根据数据库引擎查找能力声明。
 	 *
-	 * @param engine Database engine identifier.
-	 * @returns The matching declaration when present.
+	 * @param engine 数据库引擎标识。
+	 * @returns 存在时返回匹配的能力声明。
 	 */
 	public find(
 		engine: DatabaseEngine
@@ -30,9 +30,9 @@ export class InMemoryDatabaseCapabilityCatalog
 	}
 
 	/**
-	 * Returns all declarations stored in memory.
+	 * 返回内存中保存的全部能力声明。
 	 *
-	 * @returns An immutable declaration list.
+	 * @returns 不可变的能力声明列表。
 	 */
 	public list(): readonly DatabaseCapabilityDeclaration[] {
 		return this.declarations;

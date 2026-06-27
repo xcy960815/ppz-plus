@@ -1,22 +1,22 @@
 import type { ConnectionRepository } from '../connections/ConnectionRepository';
 
 /**
- * Deletes a stored connection configuration.
+ * 删除已保存连接配置。
  */
 export class DeleteStoredConnectionUseCase {
 	/**
-	 * Creates the delete connection use case.
+	 * 创建删除连接用例。
 	 *
-	 * @param connectionRepository Repository used to remove stored connections.
+	 * @param connectionRepository 用于删除已保存连接的仓储。
 	 */
 	public constructor(
 		private readonly connectionRepository: ConnectionRepository
 	) {}
 
 	/**
-	 * Deletes a connection by identifier.
+	 * 根据标识删除连接。
 	 *
-	 * @param id Connection identifier to remove.
+	 * @param id 需要删除的连接标识。
 	 */
 	public async execute(id: string): Promise<void> {
 		await this.connectionRepository.delete(id);

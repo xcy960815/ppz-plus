@@ -2,22 +2,22 @@ import type { ConnectionRepository } from '../connections/ConnectionRepository';
 import type { ConnectionConfig } from '../../domain/connections/ConnectionConfig';
 
 /**
- * Saves a connection configuration.
+ * 保存连接配置。
  */
 export class SaveConnectionConfigUseCase {
 	/**
-	 * Creates the save connection use case.
+	 * 创建保存连接用例。
 	 *
-	 * @param connectionRepository Repository used to persist stored connections.
+	 * @param connectionRepository 用于持久化已保存连接的仓储。
 	 */
 	public constructor(
 		private readonly connectionRepository: ConnectionRepository
 	) {}
 
 	/**
-	 * Persists a connection configuration.
+	 * 持久化连接配置。
 	 *
-	 * @param config Connection configuration to store.
+	 * @param config 需要保存的连接配置。
 	 */
 	public async execute(config: ConnectionConfig): Promise<void> {
 		await this.connectionRepository.save(config);

@@ -2,21 +2,21 @@ import type { DatabaseCapabilityDeclaration } from '../../domain/capabilities/Da
 import type { DatabaseEngine } from '../../domain/database/DatabaseEngine';
 
 /**
- * Provides read access to database capability declarations.
+ * 提供数据库能力声明的只读访问。
  */
 export interface DatabaseCapabilityCatalog {
 	/**
-	 * Finds a capability declaration by engine identifier.
+	 * 根据引擎标识查找能力声明。
 	 *
-	 * @param engine Database engine identifier.
-	 * @returns The matching capability declaration when present.
+	 * @param engine 数据库引擎标识。
+	 * @returns 存在时返回匹配的能力声明。
 	 */
 	find(engine: DatabaseEngine): DatabaseCapabilityDeclaration | undefined;
 
 	/**
-	 * Lists all capability declarations available in the catalog.
+	 * 列出能力目录中可用的全部能力声明。
 	 *
-	 * @returns An immutable list of capability declarations.
+	 * @returns 不可变的能力声明列表。
 	 */
 	list(): readonly DatabaseCapabilityDeclaration[];
 }

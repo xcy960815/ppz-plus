@@ -5,27 +5,27 @@ import type { ConnectionConfig } from '../../domain/connections/ConnectionConfig
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 
 /**
- * Tests MySQL connection reachability by opening a TCP socket to the configured endpoint.
+ * 通过打开 TCP socket 测试配置端点的 MySQL 连接可达性。
  */
 export class TcpMySqlConnectionTester implements ConnectionTester {
 	/**
-	 * Defines the socket timeout used during connection testing.
+	 * 定义连接测试使用的 socket 超时时间。
 	 */
 	private static readonly timeoutInMilliseconds = 5000;
 
 	/**
-	 * Creates the MySQL TCP connection tester.
+	 * 创建 MySQL TCP 连接测试器。
 	 *
-	 * @param mySqlConnectionAdapter Adapter used to resolve MySQL endpoints.
+	 * @param mySqlConnectionAdapter 用于解析 MySQL 端点的适配器。
 	 */
 	public constructor(
 		private readonly mySqlConnectionAdapter: MySqlConnectionAdapter
 	) {}
 
 	/**
-	 * Tests whether the configured MySQL endpoint is reachable over TCP.
+	 * 测试配置的 MySQL 端点是否可通过 TCP 访问。
 	 *
-	 * @param config Connection configuration to verify.
+	 * @param config 待验证的连接配置。
 	 */
 	public async test(config: ConnectionConfig): Promise<void> {
 		if (!this.mySqlConnectionAdapter.supports(config)) {
@@ -33,18 +33,18 @@ export class TcpMySqlConnectionTester implements ConnectionTester {
 		}
 
 		/**
-		 * Resolves the endpoint used by the TCP socket probe.
+		 * 解析 TCP socket 探测使用的端点。
 		 */
 		const endpoint = this.mySqlConnectionAdapter.resolveEndpoint(config);
 
 		await new Promise<void>((resolve, reject) => {
 			/**
-			 * Creates the socket used for the reachability probe.
+			 * 创建可达性探测使用的 socket。
 			 */
 			const socket = new net.Socket();
 
 			/**
-			 * Closes the socket before resolving or rejecting the probe.
+			 * 在完成或拒绝探测前关闭 socket。
 			 */
 			const finalize = (callback: () => void): void => {
 				socket.removeAllListeners();

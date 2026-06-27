@@ -1,15 +1,15 @@
 import type * as vscode from 'vscode';
 
 /**
- * Defines a VS Code command that can be registered during bootstrap.
+ * 定义可在启动阶段注册的 VS Code 命令。
  */
 export interface ExtensionCommand {
 	readonly id: string;
 
 	/**
-	 * Registers the command with the VS Code command service.
+	 * 将命令注册到 VS Code 命令服务。
 	 *
-	 * @returns A disposable registration handle.
+	 * @returns 注册产生的可释放句柄。
 	 */
 	register(): vscode.Disposable;
 }
