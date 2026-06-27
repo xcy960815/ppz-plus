@@ -12,10 +12,30 @@
   "activationEvents": [
     "onCommand:ppz-plus.showProjectStatus",
     "onCommand:ppz-plus.addMySqlConnection",
-    "onCommand:ppz-plus.manageMySqlConnections"
+    "onCommand:ppz-plus.manageMySqlConnections",
+    "onCommand:ppz-plus.refreshMySqlConnectionsTree",
+    "onCommand:ppz-plus.testStoredMySqlConnection",
+    "onView:ppzPlus.mysqlConnections"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ppzPlus",
+          "title": "PPZ Plus",
+          "icon": "resources/ppz-plus.svg"
+        }
+      ]
+    },
+    "views": {
+      "ppzPlus": [
+        {
+          "id": "ppzPlus.mysqlConnections",
+          "name": "MySQL Connections"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "ppz-plus.addMySqlConnection",
@@ -26,10 +46,49 @@
         "title": "PPZ Plus: Manage MySQL Connections"
       },
       {
+        "command": "ppz-plus.refreshMySqlConnectionsTree",
+        "title": "PPZ Plus: Refresh MySQL Connections"
+      },
+      {
+        "command": "ppz-plus.testStoredMySqlConnection",
+        "title": "PPZ Plus: Test Stored MySQL Connection"
+      },
+      {
         "command": "ppz-plus.showProjectStatus",
         "title": "PPZ Plus: Show Project Status"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "ppz-plus.addMySqlConnection",
+          "when": "view == ppzPlus.mysqlConnections",
+          "group": "navigation@1"
+        },
+        {
+          "command": "ppz-plus.refreshMySqlConnectionsTree",
+          "when": "view == ppzPlus.mysqlConnections",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "ppz-plus.manageMySqlConnections",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
+          "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.testStoredMySqlConnection",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
+          "group": "inline@2"
+        },
+        {
+          "command": "ppz-plus.refreshMySqlConnectionsTree",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
+          "group": "inline@3"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

@@ -14,8 +14,12 @@ import { TcpMySqlConnectionTester } from '../../infrastructure/mysql/TcpMySqlCon
 import { GlobalStateConnectionRepository } from '../../infrastructure/storage/GlobalStateConnectionRepository';
 import { AddMySqlConnectionCommand } from '../commands/AddMySqlConnectionCommand';
 import { ManageMySqlConnectionsCommand } from '../commands/ManageMySqlConnectionsCommand';
+import { RefreshMySqlConnectionsTreeCommand } from '../commands/RefreshMySqlConnectionsTreeCommand';
 import { ShowProjectStatusCommand } from '../commands/ShowProjectStatusCommand';
+import { TestStoredMySqlConnectionCommand } from '../commands/TestStoredMySqlConnectionCommand';
 import { ExtensionBootstrap } from './ExtensionBootstrap';
+import { MySqlConnectionsTreeDataProvider } from '../explorer/MySqlConnectionsTreeDataProvider';
+import { MySqlConnectionsView } from '../explorer/MySqlConnectionsView';
 
 /**
  * Composes the initial extension bootstrap graph.
@@ -66,15 +70,28 @@ export function createExtensionBootstrap(
 		connectionRepository
 	);
 	const testConnectionUseCase = new TestConnectionUseCase(connectionTester);
+	const mySqlConnectionsTreeDataProvider =
+		new MySqlConnectionsTreeDataProvider(listStoredConnectionsUseCase);
 
 	return new ExtensionBootstrap([
-		new AddMySqlConnectionCommand(saveConnectionConfigUseCase),
+		new AddMySqlConnectionCommand(
+			saveConnectionConfigUseCase,
+			mySqlConnectionsTreeDataProvider
+		),
 		new ManageMySqlConnectionsCommand(
 			listStoredConnectionsUseCase,
 			saveConnectionConfigUseCase,
 			deleteStoredConnectionUseCase,
+			testConnectionUseCase,
+			mySqlConnectionsTreeDataProvider
+		),
+		new RefreshMySqlConnectionsTreeCommand(mySqlConnectionsTreeDataProvider),
+		new TestStoredMySqlConnectionCommand(
+			listStoredConnectionsUseCase,
 			testConnectionUseCase
 		),
 		new ShowProjectStatusCommand(getBootstrapStatusUseCase),
+	], [
+		new MySqlConnectionsView(mySqlConnectionsTreeDataProvider),
 	]);
 }

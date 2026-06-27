@@ -10,6 +10,8 @@ import type {
 } from '../../domain/connections/ConnectionConfig';
 import type { ExtensionCommand } from './ExtensionCommand';
 import { AddMySqlConnectionCommand } from './AddMySqlConnectionCommand';
+import type { MySqlConnectionTreeNode } from '../explorer/MySqlConnectionsTreeNode';
+import { MySqlConnectionsTreeDataProvider } from '../explorer/MySqlConnectionsTreeDataProvider';
 
 /**
  * Manages stored MySQL connections through a simple action picker.
@@ -37,7 +39,8 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
 		private readonly saveConnectionConfigUseCase: SaveConnectionConfigUseCase,
 		private readonly deleteStoredConnectionUseCase: DeleteStoredConnectionUseCase,
-		private readonly testConnectionUseCase: TestConnectionUseCase
+		private readonly testConnectionUseCase: TestConnectionUseCase,
+		private readonly treeDataProvider: MySqlConnectionsTreeDataProvider
 	) {}
 
 	/**
@@ -46,64 +49,81 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	 * @returns A disposable command registration.
 	 */
 	public register(): vscode.Disposable {
-		return vscode.commands.registerCommand(this.id, async () => {
-			const connections = await this.listStoredConnectionsUseCase.execute();
-			if (connections.length === 0) {
-				await vscode.window.showInformationMessage(
-					'No MySQL connections are stored yet. Use "PPZ Plus: Add MySQL Connection" first.'
+		return vscode.commands.registerCommand(
+			this.id,
+			async (treeNode?: MySqlConnectionTreeNode) => {
+				const selectedConnection =
+					treeNode?.kind === 'connection'
+						? treeNode.connection
+						: await this.pickConnection();
+				if (!selectedConnection) {
+					return;
+				}
+
+				const action = await vscode.window.showQuickPick(
+					[
+						{ label: 'View Details', value: 'details' as const },
+						{ label: 'Test Connection', value: 'test' as const },
+						{ label: 'Edit Connection', value: 'edit' as const },
+						{ label: 'Delete Connection', value: 'delete' as const },
+					],
+					{
+						title: `PPZ Plus: ${selectedConnection.name}`,
+						placeHolder: 'Choose an action',
+					}
 				);
-				return;
-			}
-
-			const selectedConnection = await vscode.window.showQuickPick(
-				connections.map((connection) => ({
-					label: connection.name,
-					description:
-						connection.mode === 'parameters'
-							? `${connection.host}:${connection.port}`
-							: connection.url,
-					connection,
-				})),
-				{
-					title: 'PPZ Plus: Manage MySQL Connections',
-					placeHolder: 'Choose a stored MySQL connection',
+				if (!action) {
+					return;
 				}
-			);
-			if (!selectedConnection) {
-				return;
-			}
 
-			const action = await vscode.window.showQuickPick(
-				[
-					{ label: 'View Details', value: 'details' as const },
-					{ label: 'Test Connection', value: 'test' as const },
-					{ label: 'Edit Connection', value: 'edit' as const },
-					{ label: 'Delete Connection', value: 'delete' as const },
-				],
-				{
-					title: `PPZ Plus: ${selectedConnection.connection.name}`,
-					placeHolder: 'Choose an action',
+				switch (action.value) {
+					case 'details':
+						await this.showConnectionDetails(selectedConnection);
+						return;
+					case 'test':
+						await this.testConnection(selectedConnection);
+						return;
+					case 'edit':
+						await this.editConnection(selectedConnection);
+						return;
+					case 'delete':
+						await this.deleteConnection(selectedConnection);
+						return;
 				}
-			);
-			if (!action) {
-				return;
 			}
+		);
+	}
 
-			switch (action.value) {
-				case 'details':
-					await this.showConnectionDetails(selectedConnection.connection);
-					return;
-				case 'test':
-					await this.testConnection(selectedConnection.connection);
-					return;
-				case 'edit':
-					await this.editConnection(selectedConnection.connection);
-					return;
-				case 'delete':
-					await this.deleteConnection(selectedConnection.connection);
-					return;
+	/**
+	 * Prompts the user to select a stored connection for management.
+	 *
+	 * @returns The chosen connection when available.
+	 */
+	private async pickConnection(): Promise<MysqlConnectionConfig | undefined> {
+		const connections = await this.listStoredConnectionsUseCase.execute();
+		if (connections.length === 0) {
+			await vscode.window.showInformationMessage(
+				'No MySQL connections are stored yet. Use "PPZ Plus: Add MySQL Connection" first.'
+			);
+			return undefined;
+		}
+
+		const selectedConnection = await vscode.window.showQuickPick(
+			connections.map((connection) => ({
+				label: connection.name,
+				description:
+					connection.mode === 'parameters'
+						? `${connection.host}:${connection.port}`
+						: connection.url,
+				connection,
+			})),
+			{
+				title: 'PPZ Plus: Manage MySQL Connections',
+				placeHolder: 'Choose a stored MySQL connection',
 			}
-		});
+		);
+
+		return selectedConnection?.connection;
 	}
 
 	/**
@@ -174,6 +194,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		}
 
 		await this.saveConnectionConfigUseCase.execute(updatedConnection);
+		this.treeDataProvider.refresh();
 		await vscode.window.showInformationMessage(
 			`Updated MySQL connection "${updatedConnection.name}".`
 		);
@@ -197,6 +218,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		}
 
 		await this.deleteStoredConnectionUseCase.execute(connection.id);
+		this.treeDataProvider.refresh();
 		await vscode.window.showInformationMessage(
 			`Deleted MySQL connection "${connection.name}".`
 		);

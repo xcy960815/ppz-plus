@@ -9,6 +9,7 @@ import type {
 	MysqlConnectionConfig,
 } from '../../domain/connections/ConnectionConfig';
 import type { ExtensionCommand } from './ExtensionCommand';
+import { MySqlConnectionsTreeDataProvider } from '../explorer/MySqlConnectionsTreeDataProvider';
 
 /**
  * Creates new MySQL connection configurations through VS Code quick input prompts.
@@ -30,7 +31,8 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	 * @param saveConnectionConfigUseCase Use case used to persist new connections.
 	 */
 	public constructor(
-		private readonly saveConnectionConfigUseCase: SaveConnectionConfigUseCase
+		private readonly saveConnectionConfigUseCase: SaveConnectionConfigUseCase,
+		private readonly treeDataProvider: MySqlConnectionsTreeDataProvider
 	) {}
 
 	/**
@@ -46,6 +48,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			}
 
 			await this.saveConnectionConfigUseCase.execute(config);
+			this.treeDataProvider.refresh();
 			await vscode.window.showInformationMessage(
 				`Saved MySQL connection "${config.name}".`
 			);
