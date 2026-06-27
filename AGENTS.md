@@ -69,6 +69,14 @@
 - `Infrastructure` 封装驱动、存储、文件、任务执行。
 - 导入导出必须是独立子系统，不挂在 UI 或单一连接对象上。
 
+## 工作约束
+
+- 修改功能或修复 bug 之后，默认不要主动跑构建。
+- 是否执行构建、打包、完整验证，由后续明确需要时再单独决定。
+- 新增或修改代码时，变量和方法默认补充标准 JSDoc 注释。
+- 功能迁移和能力支持的进度统一维护在 `.agents/todolist.md`。
+- 任意一项完成后，要在对应条目后追加 `✅`，方便后续 AI 和协作者判断当前进度。
+
 ## 高风险提醒
 
 - 不要为了兼容旧仓库而提前引入多数据库复杂度。
@@ -78,7 +86,8 @@
 
 ## 当前参考文档
 
-- [legacy-ppz-analysis.md](/Users/opera/Documents/my-repositories/ppz-plus/ppz-plus/docs/legacy-ppz-analysis.md)
+- [legacy-ppz-analysis.md](/Users/opera/Documents/my-repositories/ppz-plus/ppz-plus/.agents/legacy-ppz-analysis.md)
+- [todolist.md](/Users/opera/Documents/my-repositories/ppz-plus/ppz-plus/.agents/todolist.md)
 
 ## 后续文档建议
 

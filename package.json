@@ -9,13 +9,25 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:ppz-plus.showProjectStatus",
+    "onCommand:ppz-plus.addMySqlConnection",
+    "onCommand:ppz-plus.manageMySqlConnections"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "ppz-plus.helloWorld",
-        "title": "Hello World"
+        "command": "ppz-plus.addMySqlConnection",
+        "title": "PPZ Plus: Add MySQL Connection"
+      },
+      {
+        "command": "ppz-plus.manageMySqlConnections",
+        "title": "PPZ Plus: Manage MySQL Connections"
+      },
+      {
+        "command": "ppz-plus.showProjectStatus",
+        "title": "PPZ Plus: Show Project Status"
       }
     ]
   },
