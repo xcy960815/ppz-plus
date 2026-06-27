@@ -20,9 +20,45 @@ export interface MySqlTableDataRefreshMessage {
 }
 
 /**
+ * 请求按新的过滤和排序条件加载当前表面板。
+ */
+export interface MySqlTableDataApplyQueryOptionsMessage {
+	readonly type: 'applyQueryOptions';
+	readonly filterKeyword: string;
+	readonly sortColumnName: string;
+	readonly sortDirection: 'asc' | 'desc';
+}
+
+/**
+ * 请求清空过滤和排序条件。
+ */
+export interface MySqlTableDataClearQueryOptionsMessage {
+	readonly type: 'clearQueryOptions';
+}
+
+/**
+ * 请求更新当前表面板的可见字段。
+ */
+export interface MySqlTableDataSetVisibleColumnsMessage {
+	readonly type: 'setVisibleColumns';
+	readonly hiddenColumnNames: readonly string[];
+}
+
+/**
+ * 请求使用当前 SQL 打开 SQL Terminal。
+ */
+export interface MySqlTableDataOpenSqlTerminalMessage {
+	readonly type: 'openSqlTerminal';
+}
+
+/**
  * 描述 MySQL 表数据 Webview 可接收的消息。
  */
 export type MySqlTableDataWebviewMessage =
 	| MySqlTableDataPreviousPageMessage
 	| MySqlTableDataNextPageMessage
-	| MySqlTableDataRefreshMessage;
+	| MySqlTableDataRefreshMessage
+	| MySqlTableDataApplyQueryOptionsMessage
+	| MySqlTableDataClearQueryOptionsMessage
+	| MySqlTableDataSetVisibleColumnsMessage
+	| MySqlTableDataOpenSqlTerminalMessage;

@@ -17,12 +17,41 @@ export interface MySqlTableColumnMetadata {
 }
 
 /**
+ * 描述 MySQL 表数据排序方向。
+ */
+export type MySqlTableSortDirection = 'asc' | 'desc';
+
+/**
+ * 描述 MySQL 表数据排序条件。
+ */
+export interface MySqlTableSortOptions {
+	readonly columnName: string;
+	readonly direction: MySqlTableSortDirection;
+}
+
+/**
+ * 描述 MySQL 表数据过滤条件。
+ */
+export interface MySqlTableFilterOptions {
+	readonly keyword: string;
+}
+
+/**
+ * 描述 MySQL 表数据页查询选项。
+ */
+export interface MySqlTableQueryOptions {
+	readonly sort?: MySqlTableSortOptions;
+	readonly filter?: MySqlTableFilterOptions;
+}
+
+/**
  * 描述 MySQL 数据流程返回的一页表行。
  */
 export interface MySqlTableRowPage {
 	readonly pageIndex: number;
 	readonly pageSize: number;
 	readonly hasNextPage: boolean;
+	readonly sql: string;
 	readonly rows: readonly Record<string, MySqlTableCellValue>[];
 }
 
@@ -52,6 +81,7 @@ export interface MySqlTableDataProvider {
 	 * @param tableName 需要加载行数据的表。
 	 * @param pageIndex 从 0 开始的页码。
 	 * @param pageSize 每页请求的行数。
+	 * @param options 排序和过滤等查询选项。
 	 * @returns 分页行数据。
 	 */
 	listRowPage(
@@ -59,6 +89,7 @@ export interface MySqlTableDataProvider {
 		schemaName: string,
 		tableName: string,
 		pageIndex: number,
-		pageSize: number
+		pageSize: number,
+		options?: MySqlTableQueryOptions
 	): Promise<MySqlTableRowPage>;
 }

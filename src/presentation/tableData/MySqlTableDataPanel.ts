@@ -2,10 +2,13 @@ import * as vscode from 'vscode';
 
 import type {
 	MySqlTableColumnMetadata,
+	MySqlTableQueryOptions,
+	MySqlTableSortDirection,
 	MySqlTableRowPage,
 } from '../../application/mysql/MySqlTableDataProvider';
 import type { ListMySqlTableColumnsUseCase } from '../../application/useCases/ListMySqlTableColumnsUseCase';
 import type { ListMySqlTableRowPageUseCase } from '../../application/useCases/ListMySqlTableRowPageUseCase';
+import { OpenMySqlSqlTerminalCommand } from '../commands/OpenMySqlSqlTerminalCommand';
 import type { MySqlTableTreeNode } from '../explorer/MySqlConnectionsTreeNode';
 import type { MySqlTableDataWebviewMessage } from './MySqlTableDataWebviewMessage';
 
@@ -16,6 +19,11 @@ interface MySqlTablePanelState {
 	readonly panel: vscode.WebviewPanel;
 	readonly tableNode: MySqlTableTreeNode;
 	pageIndex: number;
+	filterKeyword: string;
+	sortColumnName?: string;
+	sortDirection: MySqlTableSortDirection;
+	hiddenColumnNames: Set<string>;
+	currentSql?: string;
 }
 
 /**
@@ -72,6 +80,9 @@ export class MySqlTableDataPanel {
 			panel,
 			tableNode,
 			pageIndex: 0,
+			filterKeyword: '',
+			sortDirection: 'asc',
+			hiddenColumnNames: new Set<string>(),
 		};
 
 		this.panelStatesByKey.set(panelKey, state);
@@ -110,6 +121,35 @@ export class MySqlTableDataPanel {
 			case 'refresh':
 				await this.renderTableData(state);
 				return;
+			case 'applyQueryOptions':
+				state.filterKeyword = message.filterKeyword;
+				state.sortColumnName =
+					message.sortColumnName.length > 0
+						? message.sortColumnName
+						: undefined;
+				state.sortDirection =
+					message.sortDirection === 'desc' ? 'desc' : 'asc';
+				state.pageIndex = 0;
+				await this.renderTableData(state);
+				return;
+			case 'clearQueryOptions':
+				state.filterKeyword = '';
+				state.sortColumnName = undefined;
+				state.sortDirection = 'asc';
+				state.pageIndex = 0;
+				await this.renderTableData(state);
+				return;
+			case 'setVisibleColumns':
+				state.hiddenColumnNames = new Set(message.hiddenColumnNames);
+				await this.renderTableData(state);
+				return;
+			case 'openSqlTerminal':
+				await vscode.commands.executeCommand(
+					OpenMySqlSqlTerminalCommand.id,
+					state.tableNode,
+					state.currentSql
+				);
+				return;
 		}
 	}
 
@@ -134,12 +174,14 @@ export class MySqlTableDataPanel {
 					state.tableNode.schemaName,
 					state.tableNode.tableName,
 					state.pageIndex,
-					MySqlTableDataPanel.pageSize
+					MySqlTableDataPanel.pageSize,
+					this.createQueryOptions(state)
 				),
 			]);
+			state.currentSql = rowPage.sql;
 
 			state.panel.webview.html = this.renderTableHtml(
-				state.tableNode,
+				state,
 				columns,
 				rowPage
 			);
@@ -148,6 +190,32 @@ export class MySqlTableDataPanel {
 			state.panel.webview.html = this.renderErrorHtml(state.tableNode, message);
 			await vscode.window.showErrorMessage(message);
 		}
+	}
+
+	/**
+	 * 将当前面板状态转换为表数据查询选项。
+	 *
+	 * @param state 当前面板状态。
+	 * @returns 排序和过滤查询选项。
+	 */
+	private createQueryOptions(
+		state: MySqlTablePanelState
+	): MySqlTableQueryOptions {
+		const filterKeyword = state.filterKeyword.trim();
+		return {
+			filter:
+				filterKeyword.length > 0
+					? {
+							keyword: filterKeyword,
+						}
+					: undefined,
+			sort: state.sortColumnName
+				? {
+						columnName: state.sortColumnName,
+						direction: state.sortDirection,
+					}
+				: undefined,
+		};
 	}
 
 	/**
@@ -232,19 +300,23 @@ export class MySqlTableDataPanel {
 	/**
 	 * 渲染完整的只读表数据 HTML 文档。
 	 *
-	 * @param tableNode 当前选中的表 Tree 节点。
+	 * @param state 当前面板状态。
 	 * @param columns 当前选中表的字段元数据。
 	 * @param rowPage 当前选中表的分页行数据。
 	 * @returns 渲染到 Webview 内的 HTML 文档。
 	 */
 	private renderTableHtml(
-		tableNode: MySqlTableTreeNode,
+		state: MySqlTablePanelState,
 		columns: readonly MySqlTableColumnMetadata[],
 		rowPage: MySqlTableRowPage
 	): string {
+		const tableNode = state.tableNode;
+		const dataColumns = columns.filter(
+			(column) => !state.hiddenColumnNames.has(column.name)
+		);
 		const visibleColumns =
-			columns.length > 0
-				? columns
+			dataColumns.length > 0
+				? dataColumns
 				: [
 						{
 							name: '__empty__',
@@ -293,6 +365,27 @@ export class MySqlTableDataPanel {
 						)
 						.join('');
 		const pageNumber = rowPage.pageIndex + 1;
+		const sortOptions = [
+			`<option value=""${state.sortColumnName ? '' : ' selected'}>Default</option>`,
+			...columns.map((column) => {
+				const selected =
+					state.sortColumnName === column.name ? ' selected' : '';
+				return `<option value="${this.escapeHtml(column.name)}"${selected}>${this.escapeHtml(column.name)}</option>`;
+			}),
+		].join('');
+		const columnVisibilityControls = columns
+			.map((column) => {
+				const checked = state.hiddenColumnNames.has(column.name)
+					? ''
+					: ' checked';
+				return `<label class="column-toggle">
+					<input type="checkbox" data-column-name="${this.escapeHtml(column.name)}"${checked} />
+					<span>${this.escapeHtml(column.name)}</span>
+				</label>`;
+			})
+			.join('');
+		const ascSelected = state.sortDirection === 'asc' ? ' selected' : '';
+		const descSelected = state.sortDirection === 'desc' ? ' selected' : '';
 
 		return `<!DOCTYPE html>
 <html lang="en">
@@ -358,6 +451,64 @@ export class MySqlTableDataPanel {
 		.summary strong {
 			color: var(--vscode-editor-foreground);
 		}
+		.query-controls {
+			display: grid;
+			grid-template-columns: minmax(180px, 1fr) minmax(160px, 220px) 120px auto auto;
+			gap: 10px;
+			align-items: end;
+			margin-bottom: 16px;
+		}
+		label {
+			display: grid;
+			gap: 4px;
+			font-weight: 600;
+		}
+		input,
+		select {
+			box-sizing: border-box;
+			width: 100%;
+			min-height: 30px;
+			border: 1px solid var(--vscode-input-border, transparent);
+			background: var(--vscode-input-background);
+			color: var(--vscode-input-foreground);
+			padding: 4px 8px;
+		}
+		.column-controls {
+			margin-bottom: 16px;
+			border: 1px solid var(--vscode-panel-border);
+			padding: 10px 12px;
+		}
+		.column-controls summary {
+			cursor: pointer;
+			font-weight: 600;
+		}
+		.column-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+			gap: 8px 12px;
+			margin: 12px 0;
+		}
+		.column-toggle {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-weight: 400;
+			min-width: 0;
+		}
+		.column-toggle input {
+			width: auto;
+			min-height: auto;
+		}
+		.column-toggle span {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+		.column-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+		}
 		.table-wrapper {
 			border: 1px solid var(--vscode-panel-border);
 			overflow: auto;
@@ -403,6 +554,25 @@ export class MySqlTableDataPanel {
 			color: var(--vscode-descriptionForeground);
 			padding: 24px;
 		}
+		details.current-sql {
+			margin-top: 16px;
+			border: 1px solid var(--vscode-panel-border);
+			padding: 10px 12px;
+		}
+		details.current-sql summary {
+			cursor: pointer;
+			font-weight: 600;
+		}
+		pre {
+			overflow: auto;
+			margin: 10px 0 0;
+			white-space: pre-wrap;
+		}
+		@media (max-width: 900px) {
+			.query-controls {
+				grid-template-columns: 1fr;
+			}
+		}
 	</style>
 </head>
 <body>
@@ -414,6 +584,7 @@ export class MySqlTableDataPanel {
 			</div>
 			<div class="actions">
 				<button class="secondary" onclick="postAction('refresh')">Refresh</button>
+				<button class="secondary" onclick="postAction('openSqlTerminal')">SQL Terminal</button>
 				<button class="secondary" onclick="postAction('previousPage')" ${rowPage.pageIndex === 0 ? 'disabled' : ''}>Previous</button>
 				<button onclick="postAction('nextPage')" ${rowPage.hasNextPage ? '' : 'disabled'}>Next</button>
 			</div>
@@ -424,6 +595,36 @@ export class MySqlTableDataPanel {
 			<span><strong>Page ${pageNumber}</strong></span>
 			<span><strong>${rowPage.pageSize}</strong> rows per page</span>
 		</div>
+		<div class="query-controls">
+			<label>
+				Search
+				<input id="filterKeyword" value="${this.escapeHtml(state.filterKeyword)}" />
+			</label>
+			<label>
+				Sort
+				<select id="sortColumnName">${sortOptions}</select>
+			</label>
+			<label>
+				Direction
+				<select id="sortDirection">
+					<option value="asc"${ascSelected}>Asc</option>
+					<option value="desc"${descSelected}>Desc</option>
+				</select>
+			</label>
+			<button onclick="applyQueryOptions()">Apply</button>
+			<button class="secondary" onclick="postAction('clearQueryOptions')">Clear</button>
+		</div>
+		<details class="column-controls">
+			<summary>Columns (${dataColumns.length}/${columns.length})</summary>
+			<div class="column-grid">
+				${columnVisibilityControls}
+			</div>
+			<div class="column-actions">
+				<button class="secondary" onclick="setAllColumns(true)">All</button>
+				<button class="secondary" onclick="setAllColumns(false)">None</button>
+				<button onclick="applyColumnVisibility()">Apply</button>
+			</div>
+		</details>
 		<div class="table-wrapper">
 			<table>
 				<thead>
@@ -434,12 +635,41 @@ export class MySqlTableDataPanel {
 				</tbody>
 			</table>
 		</div>
-		<div class="page-note">Read-only preview. Editing, filtering, sorting, and SQL view are not connected yet.</div>
+		<details class="current-sql">
+			<summary>Current SQL</summary>
+			<pre><code>${this.escapeHtml(rowPage.sql)}</code></pre>
+		</details>
+		<div class="page-note">Read-only preview. Editing and field visibility are not connected yet.</div>
 	</div>
 	<script>
 		const vscode = acquireVsCodeApi();
 		function postAction(type) {
 			vscode.postMessage({ type });
+		}
+		function applyQueryOptions() {
+			vscode.postMessage({
+				type: 'applyQueryOptions',
+				filterKeyword: document.getElementById('filterKeyword').value,
+				sortColumnName: document.getElementById('sortColumnName').value,
+				sortDirection: document.getElementById('sortDirection').value
+			});
+		}
+		function setAllColumns(checked) {
+			for (const checkbox of document.querySelectorAll('[data-column-name]')) {
+				checkbox.checked = checked;
+			}
+		}
+		function applyColumnVisibility() {
+			const hiddenColumnNames = [];
+			for (const checkbox of document.querySelectorAll('[data-column-name]')) {
+				if (!checkbox.checked) {
+					hiddenColumnNames.push(checkbox.dataset.columnName);
+				}
+			}
+			vscode.postMessage({
+				type: 'setVisibleColumns',
+				hiddenColumnNames
+			});
 		}
 	</script>
 </body>

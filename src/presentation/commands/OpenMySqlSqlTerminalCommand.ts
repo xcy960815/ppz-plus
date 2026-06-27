@@ -36,9 +36,10 @@ export class OpenMySqlSqlTerminalCommand implements ExtensionCommand {
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
 			this.id,
-			async (node?: MySqlConnectionsTreeNode) => {
+			async (node?: MySqlConnectionsTreeNode, initialSql?: string) => {
 				await this.mySqlSqlTerminalPanel.open(
-					this.resolveInitialConnection(node)
+					this.resolveInitialConnection(node),
+					initialSql
 				);
 			}
 		);

@@ -3,6 +3,7 @@ import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionC
 import type {
 	SqlExportDocument,
 	SqlExportKind,
+	SqlExportSchemaTarget,
 	SqlExportTableTarget,
 } from '../../domain/export/SqlExportDocument';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
@@ -51,7 +52,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 
 		try {
 			const blocks: string[] = [
-				this.renderHeader(connection.name, target, kind),
+				this.renderTableHeader(connection.name, target, kind),
 			];
 
 			if (kind === 'ddl' || kind === 'both') {
@@ -80,14 +81,72 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	}
 
 	/**
-	 * 生成导出文档头部注释。
+	 * 导出指定 MySQL schema 的 SQL 文档。
+	 *
+	 * @param connection MySQL 连接配置。
+	 * @param target schema 级导出目标。
+	 * @param kind 导出的 SQL 内容类型。
+	 * @returns 生成后的 SQL 导出文档。
+	 */
+	public async exportSchema(
+		connection: MysqlConnectionConfig,
+		target: SqlExportSchemaTarget,
+		kind: SqlExportKind
+	): Promise<SqlExportDocument> {
+		const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
+		const runtimeConnection = await mysql.createConnection(
+			this.mySqlConnectionAdapter.resolveDriverOptions(connection)
+		);
+
+		try {
+			const tables = await this.listSchemaTables(runtimeConnection, target);
+			const blocks: string[] = [
+				this.renderSchemaHeader(connection.name, target, kind),
+			];
+
+			if (tables.length === 0) {
+				blocks.push(`-- No base tables found in ${target.schemaName}.`);
+			}
+
+			for (const tableName of tables) {
+				blocks.push(
+					await this.exportTableBlock(
+						runtimeConnection,
+						{
+							schemaName: target.schemaName,
+							tableName,
+						},
+						kind
+					)
+				);
+			}
+
+			return {
+				title: `${target.schemaName}.${kind}.sql`,
+				kind,
+				target,
+				content: `${blocks.join('\n\n')}\n`,
+			};
+		} finally {
+			try {
+				await runtimeConnection.end();
+			} catch {
+				/**
+				 * 导出内容生成结果优先，关闭连接失败不覆盖主要结果。
+				 */
+			}
+		}
+	}
+
+	/**
+	 * 生成表级导出文档头部注释。
 	 *
 	 * @param connectionName 当前连接显示名。
 	 * @param target 表级导出目标。
 	 * @param kind 导出的 SQL 内容类型。
 	 * @returns SQL 注释头。
 	 */
-	private renderHeader(
+	private renderTableHeader(
 		connectionName: string,
 		target: SqlExportTableTarget,
 		kind: SqlExportKind
@@ -97,6 +156,90 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 			`-- Connection: ${connectionName}`,
 			`-- Table: ${target.schemaName}.${target.tableName}`,
 		].join('\n');
+	}
+
+	/**
+	 * 生成 schema 级导出文档头部注释。
+	 *
+	 * @param connectionName 当前连接显示名。
+	 * @param target schema 级导出目标。
+	 * @param kind 导出的 SQL 内容类型。
+	 * @returns SQL 注释头。
+	 */
+	private renderSchemaHeader(
+		connectionName: string,
+		target: SqlExportSchemaTarget,
+		kind: SqlExportKind
+	): string {
+		return [
+			`-- PPZ Plus MySQL ${kind.toUpperCase()} export`,
+			`-- Connection: ${connectionName}`,
+			`-- Schema: ${target.schemaName}`,
+		].join('\n');
+	}
+
+	/**
+	 * 导出单个表在 schema 导出文档中的 SQL 块。
+	 *
+	 * @param runtimeConnection 当前可用的 mysql2 连接。
+	 * @param target 表级导出目标。
+	 * @param kind 导出的 SQL 内容类型。
+	 * @returns 单表 SQL 文本块。
+	 */
+	private async exportTableBlock(
+		runtimeConnection: Mysql2ExportRuntimeConnection,
+		target: SqlExportTableTarget,
+		kind: SqlExportKind
+	): Promise<string> {
+		const blocks = [`-- Table: ${target.schemaName}.${target.tableName}`];
+
+		if (kind === 'ddl' || kind === 'both') {
+			blocks.push(await this.exportDdl(runtimeConnection, target));
+		}
+
+		if (kind === 'dml' || kind === 'both') {
+			blocks.push(await this.exportDml(runtimeConnection, target));
+		}
+
+		return blocks.join('\n\n');
+	}
+
+	/**
+	 * 列出 schema 下可导出的基础表。
+	 *
+	 * @param runtimeConnection 当前可用的 mysql2 连接。
+	 * @param target schema 级导出目标。
+	 * @returns 表名列表。
+	 */
+	private async listSchemaTables(
+		runtimeConnection: Mysql2ExportRuntimeConnection,
+		target: SqlExportSchemaTarget
+	): Promise<readonly string[]> {
+		const [rows] = await runtimeConnection.query(
+			[
+				'SELECT table_name',
+				'FROM information_schema.tables',
+				'WHERE table_schema = ?',
+				"AND table_type = 'BASE TABLE'",
+				'ORDER BY table_name',
+			].join(' '),
+			[target.schemaName]
+		);
+
+		if (!Array.isArray(rows)) {
+			return [];
+		}
+
+		return rows
+			.map((row) => {
+				if (!row || typeof row !== 'object') {
+					return undefined;
+				}
+
+				const tableName = Reflect.get(row, 'table_name');
+				return typeof tableName === 'string' ? tableName : undefined;
+			})
+			.filter((tableName): tableName is string => tableName !== undefined);
 	}
 
 	/**

@@ -2,6 +2,7 @@ import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionC
 import type {
 	SqlExportDocument,
 	SqlExportKind,
+	SqlExportSchemaTarget,
 	SqlExportTableTarget,
 } from '../../domain/export/SqlExportDocument';
 
@@ -20,6 +21,20 @@ export interface MySqlExportProvider {
 	exportTable(
 		connection: MysqlConnectionConfig,
 		target: SqlExportTableTarget,
+		kind: SqlExportKind
+	): Promise<SqlExportDocument>;
+
+	/**
+	 * 导出指定 MySQL schema 的 SQL 文档。
+	 *
+	 * @param connection MySQL 连接配置。
+	 * @param target schema 级导出目标。
+	 * @param kind 导出的 SQL 内容类型。
+	 * @returns 生成后的 SQL 导出文档。
+	 */
+	exportSchema(
+		connection: MysqlConnectionConfig,
+		target: SqlExportSchemaTarget,
 		kind: SqlExportKind
 	): Promise<SqlExportDocument>;
 }

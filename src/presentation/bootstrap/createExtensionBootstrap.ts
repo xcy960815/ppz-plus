@@ -8,6 +8,7 @@ import { ListMySqlTableColumnsUseCase } from '../../application/useCases/ListMyS
 import { ListMySqlTableRowPageUseCase } from '../../application/useCases/ListMySqlTableRowPageUseCase';
 import { ListMySqlTablesUseCase } from '../../application/useCases/ListMySqlTablesUseCase';
 import { ExecuteMySqlSqlUseCase } from '../../application/useCases/ExecuteMySqlSqlUseCase';
+import { ExportMySqlSchemaUseCase } from '../../application/useCases/ExportMySqlSchemaUseCase';
 import { ExportMySqlTableUseCase } from '../../application/useCases/ExportMySqlTableUseCase';
 import { SaveConnectionConfigUseCase } from '../../application/useCases/SaveConnectionConfigUseCase';
 import { TestConnectionUseCase } from '../../application/useCases/TestConnectionUseCase';
@@ -24,6 +25,7 @@ import { Mysql2TableDataProvider } from '../../infrastructure/mysql/Mysql2TableD
 import { TcpMySqlConnectionTester } from '../../infrastructure/mysql/TcpMySqlConnectionTester';
 import { GlobalStateConnectionRepository } from '../../infrastructure/storage/GlobalStateConnectionRepository';
 import { AddMySqlConnectionCommand } from '../commands/AddMySqlConnectionCommand';
+import { ExportMySqlSchemaSqlCommand } from '../commands/ExportMySqlSchemaSqlCommand';
 import { ExportMySqlTableSqlCommand } from '../commands/ExportMySqlTableSqlCommand';
 import { ManageMySqlConnectionsCommand } from '../commands/ManageMySqlConnectionsCommand';
 import { OpenMySqlTableDataCommand } from '../commands/OpenMySqlTableDataCommand';
@@ -129,6 +131,9 @@ export function createExtensionBootstrap(
 	const exportMySqlTableUseCase = new ExportMySqlTableUseCase(
 		mySqlExportProvider
 	);
+	const exportMySqlSchemaUseCase = new ExportMySqlSchemaUseCase(
+		mySqlExportProvider
+	);
 	const mySqlConnectionsTreeDataProvider =
 		new MySqlConnectionsTreeDataProvider(
 			listStoredConnectionsUseCase,
@@ -183,6 +188,27 @@ export function createExtensionBootstrap(
 				kind: 'both',
 			},
 			exportMySqlTableUseCase
+		),
+		new ExportMySqlSchemaSqlCommand(
+			{
+				id: ExportMySqlSchemaSqlCommand.exportDdlId,
+				kind: 'ddl',
+			},
+			exportMySqlSchemaUseCase
+		),
+		new ExportMySqlSchemaSqlCommand(
+			{
+				id: ExportMySqlSchemaSqlCommand.exportDmlId,
+				kind: 'dml',
+			},
+			exportMySqlSchemaUseCase
+		),
+		new ExportMySqlSchemaSqlCommand(
+			{
+				id: ExportMySqlSchemaSqlCommand.exportBothId,
+				kind: 'both',
+			},
+			exportMySqlSchemaUseCase
 		),
 		new ShowProjectStatusCommand(getBootstrapStatusUseCase),
 	], [

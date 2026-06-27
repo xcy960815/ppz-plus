@@ -12,11 +12,23 @@ export interface SqlExportTableTarget {
 }
 
 /**
+ * 描述 schema 级 SQL 导出目标。
+ */
+export interface SqlExportSchemaTarget {
+	readonly schemaName: string;
+}
+
+/**
+ * 描述 SQL 导出目标。
+ */
+export type SqlExportTarget = SqlExportTableTarget | SqlExportSchemaTarget;
+
+/**
  * 描述一次 SQL 导出生成的文档内容。
  */
 export interface SqlExportDocument {
 	readonly title: string;
 	readonly kind: SqlExportKind;
-	readonly target: SqlExportTableTarget;
+	readonly target: SqlExportTarget;
 	readonly content: string;
 }

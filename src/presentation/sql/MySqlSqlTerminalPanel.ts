@@ -46,12 +46,20 @@ export class MySqlSqlTerminalPanel {
 	 * 打开或显示 MySQL SQL Terminal。
 	 *
 	 * @param initialConnection 可选的初始选中连接。
+	 * @param initialSql 可选的初始 SQL 文本。
 	 */
-	public async open(initialConnection?: MysqlConnectionConfig): Promise<void> {
+	public async open(
+		initialConnection?: MysqlConnectionConfig,
+		initialSql?: string
+	): Promise<void> {
 		if (this.panelState) {
 			this.panelState.panel.reveal(vscode.ViewColumn.Active);
 			if (initialConnection) {
 				this.panelState.selectedConnectionId = initialConnection.id;
+			}
+			if (initialSql !== undefined) {
+				this.panelState.sql = initialSql;
+				this.panelState.result = undefined;
 			}
 			await this.render(this.panelState);
 			return;
@@ -69,7 +77,7 @@ export class MySqlSqlTerminalPanel {
 		const state: MySqlSqlTerminalPanelState = {
 			panel,
 			selectedConnectionId: initialConnection?.id,
-			sql: '',
+			sql: initialSql ?? '',
 		};
 
 		this.panelState = state;

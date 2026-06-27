@@ -3,6 +3,7 @@ import type {
 	MySqlTableCellValue,
 	MySqlTableColumnMetadata,
 	MySqlTableDataProvider,
+	MySqlTableQueryOptions,
 	MySqlTableRowPage,
 } from '../../application/mysql/MySqlTableDataProvider';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
@@ -67,7 +68,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 		schemaName: string,
 		tableName: string,
 		pageIndex: number,
-		pageSize: number
+		pageSize: number,
+		options?: MySqlTableQueryOptions
 	): Promise<MySqlTableRowPage> {
 		const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
 		const runtimeConnection = await mysql.createConnection(
@@ -80,27 +82,26 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 				schemaName,
 				tableName
 			);
-			const primaryKeyColumns = columns
-				.filter((column) => column.isPrimaryKey)
-				.map((column) => column.name);
 			const normalizedPageIndex = Math.max(pageIndex, 0);
-			const offset = normalizedPageIndex * pageSize;
-			const orderByClause =
-				primaryKeyColumns.length > 0
-					? ` ORDER BY ${primaryKeyColumns
-							.map((columnName) => this.escapeIdentifier(columnName))
-							.join(', ')}`
-					: '';
+			const rowPageQuery = this.createRowPageQuery(
+				schemaName,
+				tableName,
+				columns,
+				normalizedPageIndex,
+				pageSize,
+				options
+			);
 			const [rows] = await runtimeConnection.query(
-				[
-					`SELECT * FROM ${this.escapeQualifiedTableName(schemaName, tableName)}`,
-					orderByClause,
-					'LIMIT ? OFFSET ?',
-				].join(' '),
-				[pageSize + 1, offset]
+				rowPageQuery.sql,
+				rowPageQuery.values
 			);
 
-			return this.normalizeRowPage(rows, normalizedPageIndex, pageSize);
+			return this.normalizeRowPage(
+				rows,
+				normalizedPageIndex,
+				pageSize,
+				rowPageQuery.displaySql
+			);
 		} finally {
 			await runtimeConnection.end();
 		}
@@ -187,13 +188,15 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	private normalizeRowPage(
 		rows: unknown,
 		pageIndex: number,
-		pageSize: number
+		pageSize: number,
+		sql: string
 	): MySqlTableRowPage {
 		if (!Array.isArray(rows)) {
 			return {
 				pageIndex,
 				pageSize,
 				hasNextPage: false,
+				sql,
 				rows: [],
 			};
 		}
@@ -210,8 +213,125 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 			pageIndex,
 			pageSize,
 			hasNextPage: rows.length > pageSize,
+			sql,
 			rows: normalizedRows,
 		};
+	}
+
+	/**
+	 * 创建分页行数据查询。
+	 *
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要加载行数据的表。
+	 * @param columns 当前表字段元数据。
+	 * @param pageIndex 从 0 开始的页码。
+	 * @param pageSize 每页请求的行数。
+	 * @param options 排序和过滤等查询选项。
+	 * @returns 可执行 SQL、参数和展示 SQL。
+	 */
+	private createRowPageQuery(
+		schemaName: string,
+		tableName: string,
+		columns: readonly MySqlTableColumnMetadata[],
+		pageIndex: number,
+		pageSize: number,
+		options?: MySqlTableQueryOptions
+	): {
+		readonly sql: string;
+		readonly values: readonly unknown[];
+		readonly displaySql: string;
+	} {
+		const offset = pageIndex * pageSize;
+		const tableSql = this.escapeQualifiedTableName(schemaName, tableName);
+		const filterClause = this.createFilterClause(columns, options);
+		const orderByClause = this.createOrderByClause(columns, options);
+		const executableParts = [
+			`SELECT * FROM ${tableSql}`,
+			filterClause.sql,
+			orderByClause,
+			'LIMIT ? OFFSET ?',
+		].filter((part) => part.length > 0);
+		const displayParts = [
+			`SELECT * FROM ${tableSql}`,
+			filterClause.displaySql,
+			orderByClause,
+			`LIMIT ${pageSize + 1} OFFSET ${offset}`,
+		].filter((part) => part.length > 0);
+
+		return {
+			sql: executableParts.join(' '),
+			values: [...filterClause.values, pageSize + 1, offset],
+			displaySql: displayParts.join(' '),
+		};
+	}
+
+	/**
+	 * 创建关键词过滤 SQL 片段。
+	 *
+	 * @param columns 当前表字段元数据。
+	 * @param options 查询选项。
+	 * @returns 过滤 SQL、展示 SQL 和参数。
+	 */
+	private createFilterClause(
+		columns: readonly MySqlTableColumnMetadata[],
+		options?: MySqlTableQueryOptions
+	): {
+		readonly sql: string;
+		readonly displaySql: string;
+		readonly values: readonly unknown[];
+	} {
+		const keyword = options?.filter?.keyword.trim() ?? '';
+		if (keyword.length === 0 || columns.length === 0) {
+			return {
+				sql: '',
+				displaySql: '',
+				values: [],
+			};
+		}
+
+		const searchableColumnsSql = columns
+			.map(
+				(column) =>
+					`CAST(${this.escapeIdentifier(column.name)} AS CHAR)`
+			)
+			.join(', ');
+		const pattern = `%${keyword}%`;
+
+		return {
+			sql: `WHERE CONCAT_WS('\\n', ${searchableColumnsSql}) LIKE ?`,
+			displaySql: `WHERE CONCAT_WS('\\n', ${searchableColumnsSql}) LIKE '${this.escapeSqlString(pattern)}'`,
+			values: [pattern],
+		};
+	}
+
+	/**
+	 * 创建排序 SQL 片段。
+	 *
+	 * @param columns 当前表字段元数据。
+	 * @param options 查询选项。
+	 * @returns ORDER BY SQL 片段。
+	 */
+	private createOrderByClause(
+		columns: readonly MySqlTableColumnMetadata[],
+		options?: MySqlTableQueryOptions
+	): string {
+		const requestedSortColumn = options?.sort
+			? columns.find((column) => column.name === options.sort?.columnName)
+			: undefined;
+
+		if (requestedSortColumn) {
+			return `ORDER BY ${this.escapeIdentifier(requestedSortColumn.name)} ${options?.sort?.direction === 'desc' ? 'DESC' : 'ASC'}`;
+		}
+
+		const primaryKeyColumns = columns
+			.filter((column) => column.isPrimaryKey)
+			.map((column) => column.name);
+
+		return primaryKeyColumns.length > 0
+			? `ORDER BY ${primaryKeyColumns
+					.map((columnName) => this.escapeIdentifier(columnName))
+					.join(', ')}`
+			: '';
 	}
 
 	/**
@@ -269,13 +389,31 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 
 		if (value && typeof value === 'object') {
 			try {
-				return JSON.stringify(value);
+				return JSON.stringify(value) ?? String(value);
 			} catch {
 				return String(value);
 			}
 		}
 
 		return String(value);
+	}
+
+	/**
+	 * 转义 MySQL 字符串字面量内容。
+	 *
+	 * @param value 待转义的字符串。
+	 * @returns 转义后的字符串字面量内容。
+	 */
+	private escapeSqlString(value: string): string {
+		return value
+			.replaceAll('\\', '\\\\')
+			.replaceAll('\0', '\\0')
+			.replaceAll('\n', '\\n')
+			.replaceAll('\r', '\\r')
+			.replaceAll('\b', '\\b')
+			.replaceAll('\t', '\\t')
+			.replaceAll('\u001a', '\\Z')
+			.replaceAll("'", "\\'");
 	}
 
 	/**
