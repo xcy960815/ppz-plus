@@ -15,8 +15,12 @@
   "activationEvents": [
     "onCommand:ppz-plus.showProjectStatus",
     "onCommand:ppz-plus.addMySqlConnection",
+    "onCommand:ppz-plus.exportMySqlTableBoth",
+    "onCommand:ppz-plus.exportMySqlTableDdl",
+    "onCommand:ppz-plus.exportMySqlTableDml",
     "onCommand:ppz-plus.manageMySqlConnections",
     "onCommand:ppz-plus.openMySqlTableData",
+    "onCommand:ppz-plus.openMySqlSqlTerminal",
     "onCommand:ppz-plus.refreshMySqlConnectionsTree",
     "onCommand:ppz-plus.testStoredMySqlConnection",
     "onView:ppzPlus.mysqlConnections"
@@ -62,6 +66,22 @@
         "title": "PPZ Plus: Open MySQL Table Data"
       },
       {
+        "command": "ppz-plus.openMySqlSqlTerminal",
+        "title": "PPZ Plus: Open MySQL SQL Terminal"
+      },
+      {
+        "command": "ppz-plus.exportMySqlTableDdl",
+        "title": "PPZ Plus: Export MySQL Table DDL"
+      },
+      {
+        "command": "ppz-plus.exportMySqlTableDml",
+        "title": "PPZ Plus: Export MySQL Table DML"
+      },
+      {
+        "command": "ppz-plus.exportMySqlTableBoth",
+        "title": "PPZ Plus: Export MySQL Table DDL + DML"
+      },
+      {
         "command": "ppz-plus.showProjectStatus",
         "title": "PPZ Plus: Show Project Status"
       }
@@ -77,6 +97,11 @@
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections",
           "group": "navigation@2"
+        },
+        {
+          "command": "ppz-plus.openMySqlSqlTerminal",
+          "when": "view == ppzPlus.mysqlConnections",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -96,6 +121,11 @@
           "group": "inline@3"
         },
         {
+          "command": "ppz-plus.openMySqlSqlTerminal",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
+          "group": "inline@4"
+        },
+        {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlSchema",
           "group": "inline@1"
@@ -109,6 +139,21 @@
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
           "group": "inline@2"
+        },
+        {
+          "command": "ppz-plus.exportMySqlTableDdl",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
+          "group": "export@1"
+        },
+        {
+          "command": "ppz-plus.exportMySqlTableDml",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
+          "group": "export@2"
+        },
+        {
+          "command": "ppz-plus.exportMySqlTableBoth",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
+          "group": "export@3"
         }
       ]
     }

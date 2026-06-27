@@ -33,7 +33,10 @@ export class MySqlRuntimeLoader {
 			};
 		} catch (error) {
 			throw new Error(
-				`MySQL metadata support requires the "mysql2" package to be installed. ${error instanceof Error ? error.message : String(error)}`
+				[
+					'MySQL runtime support requires the "mysql2" package to be installed.',
+					error instanceof Error ? error.message : String(error),
+				].join(' ')
 			);
 		}
 	}

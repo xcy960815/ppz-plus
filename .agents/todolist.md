@@ -1,6 +1,6 @@
 # ppz-plus Todo List
 
-更新时间：2026-06-27
+更新时间：2026-06-28
 
 说明：
 
@@ -28,8 +28,8 @@
 - 建立 MySQL 适配器骨架 `✅`
 - 建立 Explorer Tree 的节点 DTO 与 provider `✅`
 - 建立 Webview 通信协议 `✅`
-- 建立 SQL 执行用例
-- 建立导出用例骨架
+- 建立 SQL 执行用例 `✅`
+- 建立导出用例骨架 `✅`
 
 ## 2. 需要迁移的核心产品功能
 
@@ -63,18 +63,18 @@ Explorer Tree：
 
 SQL 功能：
 
-- SQL 终端
-- 执行查询 SQL
-- 执行非查询 SQL
-- 展示执行耗时
+- SQL 终端 `✅`
+- 执行查询 SQL `✅`
+- 执行非查询 SQL `✅`
+- 展示执行耗时 `✅`
 - 多数据库结果展示适配
 
 导出功能：
 
-- 导出 DML
-- 导出 DDL
-- 导出 DDL + DML
-- 从表节点导出
+- 导出 DML `✅`
+- 导出 DDL `✅`
+- 导出 DDL + DML `✅`
+- 从表节点导出 `✅`
 - 从 schema / database 节点导出
 - 导出能力差异提示
 
@@ -119,9 +119,9 @@ SQL 功能：
 - MySQL 连接支持 `✅`
 - MySQL 元数据读取 `✅`
 - MySQL 表数据读取 `✅`
-- MySQL SQL 执行
-- MySQL DDL 导出
-- MySQL DML 导出
+- MySQL SQL 执行 `✅`
+- MySQL DDL 导出 `✅`
+- MySQL DML 导出 `✅`
 
 第二优先级：
 

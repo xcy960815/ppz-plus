@@ -7,6 +7,8 @@ import { ListMySqlSchemasUseCase } from '../../application/useCases/ListMySqlSch
 import { ListMySqlTableColumnsUseCase } from '../../application/useCases/ListMySqlTableColumnsUseCase';
 import { ListMySqlTableRowPageUseCase } from '../../application/useCases/ListMySqlTableRowPageUseCase';
 import { ListMySqlTablesUseCase } from '../../application/useCases/ListMySqlTablesUseCase';
+import { ExecuteMySqlSqlUseCase } from '../../application/useCases/ExecuteMySqlSqlUseCase';
+import { ExportMySqlTableUseCase } from '../../application/useCases/ExportMySqlTableUseCase';
 import { SaveConnectionConfigUseCase } from '../../application/useCases/SaveConnectionConfigUseCase';
 import { TestConnectionUseCase } from '../../application/useCases/TestConnectionUseCase';
 import {
@@ -14,20 +16,25 @@ import {
 } from '../../domain/capabilities/DatabaseCapabilityDeclaration';
 import { InMemoryDatabaseCapabilityCatalog } from '../../infrastructure/capabilities/InMemoryDatabaseCapabilityCatalog';
 import { MySqlConnectionAdapter } from '../../infrastructure/mysql/MySqlConnectionAdapter';
+import { Mysql2ExportProvider } from '../../infrastructure/mysql/Mysql2ExportProvider';
 import { Mysql2MetadataProvider } from '../../infrastructure/mysql/Mysql2MetadataProvider';
 import { MySqlRuntimeLoader } from '../../infrastructure/mysql/MySqlRuntimeLoader';
+import { Mysql2SqlExecutor } from '../../infrastructure/mysql/Mysql2SqlExecutor';
 import { Mysql2TableDataProvider } from '../../infrastructure/mysql/Mysql2TableDataProvider';
 import { TcpMySqlConnectionTester } from '../../infrastructure/mysql/TcpMySqlConnectionTester';
 import { GlobalStateConnectionRepository } from '../../infrastructure/storage/GlobalStateConnectionRepository';
 import { AddMySqlConnectionCommand } from '../commands/AddMySqlConnectionCommand';
+import { ExportMySqlTableSqlCommand } from '../commands/ExportMySqlTableSqlCommand';
 import { ManageMySqlConnectionsCommand } from '../commands/ManageMySqlConnectionsCommand';
 import { OpenMySqlTableDataCommand } from '../commands/OpenMySqlTableDataCommand';
+import { OpenMySqlSqlTerminalCommand } from '../commands/OpenMySqlSqlTerminalCommand';
 import { RefreshMySqlConnectionsTreeCommand } from '../commands/RefreshMySqlConnectionsTreeCommand';
 import { ShowProjectStatusCommand } from '../commands/ShowProjectStatusCommand';
 import { TestStoredMySqlConnectionCommand } from '../commands/TestStoredMySqlConnectionCommand';
 import { ExtensionBootstrap } from './ExtensionBootstrap';
 import { MySqlConnectionsTreeDataProvider } from '../explorer/MySqlConnectionsTreeDataProvider';
 import { MySqlConnectionsView } from '../explorer/MySqlConnectionsView';
+import { MySqlSqlTerminalPanel } from '../sql/MySqlSqlTerminalPanel';
 import { MySqlTableDataPanel } from '../tableData/MySqlTableDataPanel';
 
 /**
@@ -64,7 +71,7 @@ export function createExtensionBootstrap(
 	const connectionTester = new TcpMySqlConnectionTester(mySqlConnectionAdapter);
 
 	/**
-	 * 为元数据浏览延迟加载 mysql2 运行时。
+	 * 为 MySQL 运行时能力延迟加载 mysql2。
 	 */
 	const mySqlRuntimeLoader = new MySqlRuntimeLoader();
 
@@ -76,6 +83,14 @@ export function createExtensionBootstrap(
 		mySqlRuntimeLoader
 	);
 	const mySqlTableDataProvider = new Mysql2TableDataProvider(
+		mySqlConnectionAdapter,
+		mySqlRuntimeLoader
+	);
+	const mySqlSqlExecutor = new Mysql2SqlExecutor(
+		mySqlConnectionAdapter,
+		mySqlRuntimeLoader
+	);
+	const mySqlExportProvider = new Mysql2ExportProvider(
 		mySqlConnectionAdapter,
 		mySqlRuntimeLoader
 	);
@@ -108,6 +123,12 @@ export function createExtensionBootstrap(
 	const listMySqlTableRowPageUseCase = new ListMySqlTableRowPageUseCase(
 		mySqlTableDataProvider
 	);
+	const executeMySqlSqlUseCase = new ExecuteMySqlSqlUseCase(
+		mySqlSqlExecutor
+	);
+	const exportMySqlTableUseCase = new ExportMySqlTableUseCase(
+		mySqlExportProvider
+	);
 	const mySqlConnectionsTreeDataProvider =
 		new MySqlConnectionsTreeDataProvider(
 			listStoredConnectionsUseCase,
@@ -117,6 +138,10 @@ export function createExtensionBootstrap(
 	const mySqlTableDataPanel = new MySqlTableDataPanel(
 		listMySqlTableColumnsUseCase,
 		listMySqlTableRowPageUseCase
+	);
+	const mySqlSqlTerminalPanel = new MySqlSqlTerminalPanel(
+		listStoredConnectionsUseCase,
+		executeMySqlSqlUseCase
 	);
 
 	return new ExtensionBootstrap([
@@ -137,6 +162,28 @@ export function createExtensionBootstrap(
 			testConnectionUseCase
 		),
 		new OpenMySqlTableDataCommand(mySqlTableDataPanel),
+		new OpenMySqlSqlTerminalCommand(mySqlSqlTerminalPanel),
+		new ExportMySqlTableSqlCommand(
+			{
+				id: ExportMySqlTableSqlCommand.exportDdlId,
+				kind: 'ddl',
+			},
+			exportMySqlTableUseCase
+		),
+		new ExportMySqlTableSqlCommand(
+			{
+				id: ExportMySqlTableSqlCommand.exportDmlId,
+				kind: 'dml',
+			},
+			exportMySqlTableUseCase
+		),
+		new ExportMySqlTableSqlCommand(
+			{
+				id: ExportMySqlTableSqlCommand.exportBothId,
+				kind: 'both',
+			},
+			exportMySqlTableUseCase
+		),
 		new ShowProjectStatusCommand(getBootstrapStatusUseCase),
 	], [
 		new MySqlConnectionsView(mySqlConnectionsTreeDataProvider),
