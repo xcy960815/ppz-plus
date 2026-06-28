@@ -4,6 +4,8 @@ import type { ListStoredConnectionsUseCase } from '../../application/useCases/Li
 import type { TestConnectionUseCase } from '../../application/useCases/TestConnectionUseCase';
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type { ExtensionCommand } from './ExtensionCommand';
+import { withMySqlConnectionTestProgress } from './MySqlConnectionProgressPresenter';
+import { showUserErrorMessage } from './UserErrorPresenter';
 import type { MySqlConnectionTreeNode } from '../explorer/MySqlConnectionsTreeNode';
 
 /**
@@ -50,14 +52,17 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 				}
 
 				try {
-					await this.testConnectionUseCase.execute(connection);
+					await withMySqlConnectionTestProgress(connection, () =>
+						this.testConnectionUseCase.execute(connection)
+					);
 					await vscode.window.showInformationMessage(
 						`Successfully reached "${connection.name}" over TCP.`
 					);
 				} catch (error) {
-					await vscode.window.showErrorMessage(
-						error instanceof Error ? error.message : String(error)
-					);
+					await showUserErrorMessage({
+						operation: 'Test MySQL connection',
+						error,
+					});
 				}
 			}
 		);

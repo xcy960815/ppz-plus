@@ -254,10 +254,15 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	): Promise<readonly MySqlTableColumnMetadata[]> {
 		const [rows] = await runtimeConnection.query(
 			[
-				'SELECT column_name, data_type, is_nullable, column_key, extra',
+				'SELECT',
+				'COLUMN_NAME AS columnName,',
+				'DATA_TYPE AS dataType,',
+				'IS_NULLABLE AS isNullable,',
+				'COLUMN_KEY AS columnKey,',
+				'EXTRA AS extra',
 				'FROM information_schema.columns',
-				'WHERE table_schema = ? AND table_name = ?',
-				'ORDER BY ordinal_position',
+				'WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+				'ORDER BY ORDINAL_POSITION',
 			].join(' '),
 			[schemaName, tableName]
 		);
@@ -284,10 +289,10 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 					return undefined;
 				}
 
-				const name = Reflect.get(row, 'column_name');
-				const dataType = Reflect.get(row, 'data_type');
-				const isNullable = Reflect.get(row, 'is_nullable');
-				const columnKey = Reflect.get(row, 'column_key');
+				const name = Reflect.get(row, 'columnName');
+				const dataType = Reflect.get(row, 'dataType');
+				const isNullable = Reflect.get(row, 'isNullable');
+				const columnKey = Reflect.get(row, 'columnKey');
 				const extra = Reflect.get(row, 'extra');
 
 				if (typeof name !== 'string' || typeof dataType !== 'string') {

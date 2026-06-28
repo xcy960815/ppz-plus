@@ -3,11 +3,16 @@
   "displayName": "ppz-plus",
   "description": "Database import/export tools for VS Code",
   "version": "0.0.1",
+  "packageManager": "pnpm@11.7.0",
   "engines": {
     "vscode": "^1.125.0"
   },
   "categories": [
     "Other"
+  ],
+  "activationEvents": [
+    "onWebviewPanel:ppzPlus.mysqlSqlTerminal",
+    "onWebviewPanel:ppzPlus.mysqlTableData"
   ],
   "dependencies": {
     "mysql2": "^3.11.3"
@@ -34,67 +39,93 @@
     "commands": [
       {
         "command": "ppz-plus.addMySqlConnection",
-        "title": "PPZ Plus: Add MySQL Connection"
+        "title": "PPZ Plus: Add MySQL Connection",
+        "icon": "$(add)"
       },
       {
         "command": "ppz-plus.manageMySqlConnections",
-        "title": "PPZ Plus: Manage MySQL Connections"
+        "title": "PPZ Plus: Manage MySQL Connections",
+        "icon": "$(settings-gear)"
       },
       {
         "command": "ppz-plus.refreshMySqlConnectionsTree",
-        "title": "PPZ Plus: Refresh MySQL Connections"
+        "title": "PPZ Plus: Refresh MySQL Connections",
+        "icon": "$(refresh)"
       },
       {
         "command": "ppz-plus.testStoredMySqlConnection",
-        "title": "PPZ Plus: Test Stored MySQL Connection"
+        "title": "PPZ Plus: Test Stored MySQL Connection",
+        "icon": "$(beaker)"
       },
       {
         "command": "ppz-plus.openMySqlTableData",
-        "title": "PPZ Plus: Open MySQL Table Data"
+        "title": "PPZ Plus: Open MySQL Table Data",
+        "icon": "$(table)"
       },
       {
         "command": "ppz-plus.openMySqlSqlTerminal",
-        "title": "PPZ Plus: Open MySQL SQL Terminal"
+        "title": "PPZ Plus: Open MySQL SQL Terminal",
+        "icon": "$(terminal)"
       },
       {
         "command": "ppz-plus.importMySqlSqlFile",
-        "title": "PPZ Plus: Import MySQL SQL File"
+        "title": "PPZ Plus: Import MySQL SQL File",
+        "icon": "$(file-code)"
       },
       {
         "command": "ppz-plus.importMySqlCsvFile",
-        "title": "PPZ Plus: Import MySQL CSV File"
+        "title": "PPZ Plus: Import MySQL CSV File",
+        "icon": "$(file-code)"
       },
       {
         "command": "ppz-plus.importMySqlJsonFile",
-        "title": "PPZ Plus: Import MySQL JSON File"
+        "title": "PPZ Plus: Import MySQL JSON File",
+        "icon": "$(file-code)"
       },
       {
         "command": "ppz-plus.exportMySqlTableDdl",
-        "title": "PPZ Plus: Export MySQL Table DDL"
+        "title": "PPZ Plus: Export MySQL Table DDL",
+        "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlTableDml",
-        "title": "PPZ Plus: Export MySQL Table DML"
+        "title": "PPZ Plus: Export MySQL Table DML",
+        "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlTableBoth",
-        "title": "PPZ Plus: Export MySQL Table DDL + DML"
+        "title": "PPZ Plus: Export MySQL Table DDL + DML",
+        "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlSchemaDdl",
-        "title": "PPZ Plus: Export MySQL Schema DDL"
+        "title": "PPZ Plus: Export MySQL Schema DDL",
+        "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlSchemaDml",
-        "title": "PPZ Plus: Export MySQL Schema DML"
+        "title": "PPZ Plus: Export MySQL Schema DML",
+        "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlSchemaBoth",
-        "title": "PPZ Plus: Export MySQL Schema DDL + DML"
+        "title": "PPZ Plus: Export MySQL Schema DDL + DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportMySqlTablesBatch",
+        "title": "PPZ Plus: Batch Export MySQL Tables",
+        "icon": "$(save-all)"
+      },
+      {
+        "command": "ppz-plus.showSqlExportTaskLogs",
+        "title": "PPZ Plus: Show SQL Export Logs",
+        "icon": "$(history)"
       },
       {
         "command": "ppz-plus.showProjectStatus",
-        "title": "PPZ Plus: Show Project Status"
+        "title": "PPZ Plus: Show Project Status",
+        "icon": "$(info)"
       }
     ],
     "menus": {
@@ -115,19 +146,9 @@
           "group": "navigation@3"
         },
         {
-          "command": "ppz-plus.importMySqlSqlFile",
+          "command": "ppz-plus.showSqlExportTaskLogs",
           "when": "view == ppzPlus.mysqlConnections",
           "group": "navigation@4"
-        },
-        {
-          "command": "ppz-plus.importMySqlCsvFile",
-          "when": "view == ppzPlus.mysqlConnections",
-          "group": "navigation@5"
-        },
-        {
-          "command": "ppz-plus.importMySqlJsonFile",
-          "when": "view == ppzPlus.mysqlConnections",
-          "group": "navigation@6"
         }
       ],
       "view/item/context": [
@@ -187,6 +208,11 @@
           "group": "export@3"
         },
         {
+          "command": "ppz-plus.exportMySqlTablesBatch",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlSchema",
+          "group": "export@4"
+        },
+        {
           "command": "ppz-plus.importMySqlCsvFile",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlSchema",
           "group": "import@1"
@@ -235,22 +261,23 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "preinstall": "node ./scripts/ensure-pnpm.cjs",
+    "vscode:prepublish": "pnpm compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
+    "pretest": "pnpm compile && pnpm lint",
     "lint": "eslint src",
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.125.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "24.x",
-    "typescript-eslint": "^8.61.1",
+    "@types/node": "^24.13.2",
+    "@types/vscode": "^1.125.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.0.0",
     "eslint": "^10.5.0",
     "typescript": "^6.0.3",
-    "@vscode/test-cli": "^0.0.15",
-    "@vscode/test-electron": "^3.0.0"
+    "typescript-eslint": "^8.61.1"
   },
   "overrides": {
     "diff": "^8.0.4",

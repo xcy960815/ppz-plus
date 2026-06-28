@@ -7,6 +7,7 @@ import type {
 	MysqlConnectionConfig,
 } from '../../domain/connections/ConnectionConfig';
 import type { SqlExecutionResult } from '../../domain/query/SqlExecutionResult';
+import type { ExtensionActivationParticipant } from '../bootstrap/ExtensionActivationParticipant';
 import { SqlExecutionResultRenderer } from './SqlExecutionResultRenderer';
 import type { MySqlSqlTerminalWebviewMessage } from './MySqlSqlTerminalWebviewMessage';
 
@@ -21,9 +22,24 @@ interface MySqlSqlTerminalPanelState {
 }
 
 /**
+ * 保存 MySQL SQL Terminal 可由 VS Code 恢复的轻量状态。
+ */
+interface MySqlSqlTerminalSerializedState {
+	readonly selectedConnectionId?: string;
+	readonly sql: string;
+}
+
+/**
  * 管理 MySQL SQL Terminal 面板。
  */
-export class MySqlSqlTerminalPanel {
+export class MySqlSqlTerminalPanel
+	implements ExtensionActivationParticipant, vscode.WebviewPanelSerializer
+{
+	/**
+	 * 保存 SQL Terminal Webview 的 VS Code viewType。
+	 */
+	private static readonly viewType = 'ppzPlus.mysqlSqlTerminal';
+
 	/**
 	 * 渲染通用 SQL 执行结果区域。
 	 */
@@ -44,6 +60,45 @@ export class MySqlSqlTerminalPanel {
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
 		private readonly executeMySqlSqlUseCase: ExecuteMySqlSqlUseCase
 	) {}
+
+	/**
+	 * 注册 SQL Terminal Webview 恢复器。
+	 *
+	 * @param context VS Code 扩展生命周期上下文。
+	 */
+	public activate(context: vscode.ExtensionContext): void {
+		context.subscriptions.push(
+			vscode.window.registerWebviewPanelSerializer(
+				MySqlSqlTerminalPanel.viewType,
+				this
+			)
+		);
+	}
+
+	/**
+	 * 从 VS Code 保存的 Webview 状态恢复 SQL Terminal 面板。
+	 *
+	 * @param panel VS Code 恢复出来的 Webview 面板。
+	 * @param serializedState Webview 前端保存的轻量状态。
+	 */
+	public async deserializeWebviewPanel(
+		panel: vscode.WebviewPanel,
+		serializedState: unknown
+	): Promise<void> {
+		panel.webview.options = {
+			enableScripts: true,
+		};
+		const restoredState = this.parseSerializedState(serializedState);
+		const state: MySqlSqlTerminalPanelState = {
+			panel,
+			selectedConnectionId: restoredState.selectedConnectionId,
+			sql: restoredState.sql,
+		};
+
+		this.panelState = state;
+		this.registerPanelHandlers(state);
+		await this.render(state);
+	}
 
 	/**
 	 * 打开或显示 MySQL SQL Terminal。
@@ -69,7 +124,7 @@ export class MySqlSqlTerminalPanel {
 		}
 
 		const panel = vscode.window.createWebviewPanel(
-			'ppzPlus.mysqlSqlTerminal',
+			MySqlSqlTerminalPanel.viewType,
 			'MySQL SQL Terminal',
 			vscode.ViewColumn.Active,
 			{
@@ -84,16 +139,27 @@ export class MySqlSqlTerminalPanel {
 		};
 
 		this.panelState = state;
-		panel.onDidDispose(() => {
-			this.panelState = undefined;
+		this.registerPanelHandlers(state);
+
+		await this.render(state);
+	}
+
+	/**
+	 * 为 SQL Terminal 面板注册生命周期和消息处理。
+	 *
+	 * @param state 当前面板状态。
+	 */
+	private registerPanelHandlers(state: MySqlSqlTerminalPanelState): void {
+		state.panel.onDidDispose(() => {
+			if (this.panelState?.panel === state.panel) {
+				this.panelState = undefined;
+			}
 		});
-		panel.webview.onDidReceiveMessage(
+		state.panel.webview.onDidReceiveMessage(
 			async (message: MySqlSqlTerminalWebviewMessage) => {
 				await this.handleWebviewMessage(state, message);
 			}
 		);
-
-		await this.render(state);
 	}
 
 	/**
@@ -181,6 +247,10 @@ export class MySqlSqlTerminalPanel {
 			? this.resultRenderer.render(state.result)
 			: '<div class="empty-result">No SQL has been executed yet.</div>';
 		const disabled = connections.length === 0 || isExecuting ? ' disabled' : '';
+		const serializedState = this.serializeScriptValue({
+			selectedConnectionId,
+			sql: state.sql,
+		} satisfies MySqlSqlTerminalSerializedState);
 
 		return `<!DOCTYPE html>
 <html lang="en">
@@ -340,18 +410,58 @@ export class MySqlSqlTerminalPanel {
 	</div>
 	<script>
 		const vscode = acquireVsCodeApi();
+		const initialState = ${serializedState};
+		vscode.setState(initialState);
+		function persistState() {
+			const connection = document.getElementById('connection');
+			const sql = document.getElementById('sql');
+			vscode.setState({
+				selectedConnectionId: connection ? connection.value : initialState.selectedConnectionId,
+				sql: sql ? sql.value : initialState.sql
+			});
+		}
 		function executeSql() {
 			const connection = document.getElementById('connection');
 			const sql = document.getElementById('sql');
+			persistState();
 			vscode.postMessage({
 				type: 'execute',
 				connectionId: connection.value,
 				sql: sql.value
 			});
 		}
+		document.getElementById('connection')?.addEventListener('change', persistState);
+		document.getElementById('sql')?.addEventListener('input', persistState);
 	</script>
 </body>
 </html>`;
+	}
+
+	/**
+	 * 解析 VS Code 保存的 SQL Terminal Webview 状态。
+	 *
+	 * @param value 原始恢复状态。
+	 * @returns 可用于重新渲染的 SQL Terminal 状态。
+	 */
+	private parseSerializedState(
+		value: unknown
+	): MySqlSqlTerminalSerializedState {
+		if (!value || typeof value !== 'object' || Array.isArray(value)) {
+			return {
+				sql: '',
+			};
+		}
+
+		const selectedConnectionId = Reflect.get(value, 'selectedConnectionId');
+		const sql = Reflect.get(value, 'sql');
+
+		return {
+			selectedConnectionId:
+				typeof selectedConnectionId === 'string'
+					? selectedConnectionId
+					: undefined,
+			sql: typeof sql === 'string' ? sql : '',
+		};
 	}
 
 	/**
@@ -437,5 +547,20 @@ export class MySqlSqlTerminalPanel {
 	 */
 	private escapeHtmlAttribute(value: string): string {
 		return this.escapeHtml(value);
+	}
+
+	/**
+	 * 将数据安全序列化为可嵌入 script 的 JSON。
+	 *
+	 * @param value 需要嵌入 Webview 脚本的数据。
+	 * @returns 经过转义的 JSON 字符串。
+	 */
+	private serializeScriptValue(value: unknown): string {
+		return JSON.stringify(value)
+			.replaceAll('<', '\\u003c')
+			.replaceAll('>', '\\u003e')
+			.replaceAll('&', '\\u0026')
+			.replaceAll('\u2028', '\\u2028')
+			.replaceAll('\u2029', '\\u2029');
 	}
 }

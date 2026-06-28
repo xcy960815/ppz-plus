@@ -64,11 +64,11 @@ export class Mysql2MetadataProvider implements MySqlMetadataProvider {
 		try {
 			const [rows] = await runtimeConnection.query(
 				[
-					'SELECT table_name',
+					'SELECT TABLE_NAME AS tableName',
 					'FROM information_schema.tables',
-					'WHERE table_schema = ?',
-					"AND table_type = 'BASE TABLE'",
-					'ORDER BY table_name',
+					'WHERE TABLE_SCHEMA = ?',
+					"AND TABLE_TYPE = 'BASE TABLE'",
+					'ORDER BY TABLE_NAME',
 				].join(' '),
 				[schemaName]
 			);
@@ -127,7 +127,10 @@ export class Mysql2MetadataProvider implements MySqlMetadataProvider {
 					return undefined;
 				}
 
-				const tableName = Reflect.get(row, 'table_name');
+				const tableName =
+					Reflect.get(row, 'tableName') ??
+					Reflect.get(row, 'TABLE_NAME') ??
+					Reflect.get(row, 'table_name');
 				return typeof tableName === 'string'
 					? { schemaName, name: tableName }
 					: undefined;

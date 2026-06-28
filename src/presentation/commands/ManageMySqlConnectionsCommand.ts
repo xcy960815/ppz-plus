@@ -4,6 +4,8 @@ import type { DeleteStoredConnectionUseCase } from '../../application/useCases/D
 import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
 import type { SaveConnectionConfigUseCase } from '../../application/useCases/SaveConnectionConfigUseCase';
 import type { TestConnectionUseCase } from '../../application/useCases/TestConnectionUseCase';
+import { withMySqlConnectionTestProgress } from './MySqlConnectionProgressPresenter';
+import { showUserErrorMessage } from './UserErrorPresenter';
 import type {
 	ConnectionInputMode,
 	MysqlConnectionConfig,
@@ -163,14 +165,17 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	 */
 	private async testConnection(connection: MysqlConnectionConfig): Promise<void> {
 		try {
-			await this.testConnectionUseCase.execute(connection);
+			await withMySqlConnectionTestProgress(connection, () =>
+				this.testConnectionUseCase.execute(connection)
+			);
 			await vscode.window.showInformationMessage(
 				`Successfully reached "${connection.name}" over TCP.`
 			);
 		} catch (error) {
-			await vscode.window.showErrorMessage(
-				error instanceof Error ? error.message : String(error)
-			);
+			await showUserErrorMessage({
+				operation: 'Manage MySQL connections',
+				error,
+			});
 		}
 	}
 

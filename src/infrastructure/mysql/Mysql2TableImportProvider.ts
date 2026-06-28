@@ -7,6 +7,12 @@ import type {
 	TableImportTarget,
 } from '../../domain/import/TableImportResult';
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
+import type { ImportTaskProgressReporter } from '../../domain/import/ImportTaskProgress';
+import type { CancellationSignal } from '../../domain/tasks/CancellationSignal';
+import {
+	isOperationCanceledError,
+	throwIfCancellationRequested,
+} from '../../domain/tasks/CancellationSignal';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
 
@@ -36,12 +42,16 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 	 * @param connection MySQL 连接配置。
 	 * @param target 导入目标表。
 	 * @param rows 准备写入的数据行。
+	 * @param progressReporter 可选的导入进度回调。
+	 * @param cancellationSignal 可选的长任务取消信号。
 	 * @returns 表级导入结果。
 	 */
 	public async importRows(
 		connection: MysqlConnectionConfig,
 		target: TableImportTarget,
-		rows: readonly MySqlTableImportRow[]
+		rows: readonly MySqlTableImportRow[],
+		progressReporter?: ImportTaskProgressReporter,
+		cancellationSignal?: CancellationSignal
 	): Promise<TableImportResult> {
 		const startedAt = Date.now();
 		let runtimeConnection:
@@ -61,6 +71,8 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 				};
 			}
 
+			throwIfCancellationRequested(cancellationSignal);
+			this.reportProgress(progressReporter, 0, rows.length);
 			const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
 			runtimeConnection = await mysql.createConnection(
 				this.mySqlConnectionAdapter.resolveDriverOptions(connection)
@@ -73,6 +85,7 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 				index < rows.length;
 				index += Mysql2TableImportProvider.batchSize
 			) {
+				throwIfCancellationRequested(cancellationSignal);
 				const chunk = rows.slice(
 					index,
 					index + Mysql2TableImportProvider.batchSize
@@ -82,6 +95,11 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 					this.flattenValues(chunk)
 				);
 				insertedRows += this.readNumberProperty(result, 'affectedRows');
+				this.reportProgress(
+					progressReporter,
+					Math.min(index + chunk.length, rows.length),
+					rows.length
+				);
 			}
 
 			await runtimeConnection.query('COMMIT');
@@ -102,6 +120,10 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 				}
 			}
 
+			if (isOperationCanceledError(error)) {
+				throw error;
+			}
+
 			return {
 				success: false,
 				durationMs: Date.now() - startedAt,
@@ -119,6 +141,32 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 				}
 			}
 		}
+	}
+
+	/**
+	 * 向调用方报告表级导入进度。
+	 *
+	 * @param progressReporter 可选的导入进度回调。
+	 * @param completedRows 已完成的导入行数。
+	 * @param totalRows 本次导入总行数。
+	 */
+	private reportProgress(
+		progressReporter: ImportTaskProgressReporter | undefined,
+		completedRows: number,
+		totalRows: number
+	): void {
+		if (!progressReporter) {
+			return;
+		}
+
+		const percentage =
+			totalRows === 0 ? 0 : Math.round((completedRows / totalRows) * 100);
+		progressReporter({
+			completedRows,
+			totalRows,
+			percentage,
+			message: `Imported ${completedRows}/${totalRows} row(s).`,
+		});
 	}
 
 	/**

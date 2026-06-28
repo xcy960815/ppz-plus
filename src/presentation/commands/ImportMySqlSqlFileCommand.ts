@@ -1,12 +1,19 @@
-import * as path from 'node:path';
+import * as path from 'path';
 
 import * as vscode from 'vscode';
 
 import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
+import type { CreateImportErrorReportUseCase } from '../../application/useCases/CreateImportErrorReportUseCase';
 import type { ImportMySqlSqlFileUseCase } from '../../application/useCases/ImportMySqlSqlFileUseCase';
 import type { PreviewMySqlSqlFileImportUseCase } from '../../application/useCases/PreviewMySqlSqlFileImportUseCase';
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
+import { isOperationCanceledError } from '../../domain/tasks/CancellationSignal';
 import type { ExtensionCommand } from './ExtensionCommand';
+import { showImportErrorReport } from './ImportErrorReportPresenter';
+import {
+	createVsCodeCancellationSignal,
+	showTaskCanceledMessage,
+} from './TaskCancellationPresenter';
 import type { MySqlConnectionsTreeNode } from '../explorer/MySqlConnectionsTreeNode';
 
 /**
@@ -27,11 +34,13 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 	 * 创建 MySQL SQL 文件导入命令。
 	 *
 	 * @param listStoredConnectionsUseCase 用于读取已保存 MySQL 连接的用例。
+	 * @param createImportErrorReportUseCase 用于生成导入错误报告。
 	 * @param previewMySqlSqlFileImportUseCase 用于生成 SQL 文件导入预览的用例。
 	 * @param importMySqlSqlFileUseCase 用于执行 SQL 文件导入的用例。
 	 */
 	public constructor(
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
+		private readonly createImportErrorReportUseCase: CreateImportErrorReportUseCase,
 		private readonly previewMySqlSqlFileImportUseCase: PreviewMySqlSqlFileImportUseCase,
 		private readonly importMySqlSqlFileUseCase: ImportMySqlSqlFileUseCase
 	) {}
@@ -150,9 +159,13 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 		const preview = await this.previewMySqlSqlFileImportUseCase.execute(filePath);
 
 		if (!preview.success) {
-			await vscode.window.showErrorMessage(
-				`Failed to preview "${fileName}": ${preview.errorMessage}`
-			);
+			await showImportErrorReport(this.createImportErrorReportUseCase, {
+				formatName: 'SQL',
+				fileName,
+				targetName: connection.name,
+				stage: 'preview',
+				errorMessage: preview.errorMessage,
+			});
 			return false;
 		}
 
@@ -193,9 +206,21 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 		const fileName = path.basename(filePath);
 
 		try {
-			const result = await this.importMySqlSqlFileUseCase.execute(
-				connection,
-				filePath
+			const result = await vscode.window.withProgress(
+				{
+					cancellable: true,
+					location: vscode.ProgressLocation.Notification,
+					title: `Importing SQL "${fileName}" into "${connection.name}"`,
+				},
+				async (progress, token) => {
+					progress.report({ message: 'Executing SQL file...' });
+
+					return this.importMySqlSqlFileUseCase.execute(
+						connection,
+						filePath,
+						createVsCodeCancellationSignal(token)
+					);
+				}
 			);
 
 			if (result.success) {
@@ -205,17 +230,26 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 				return;
 			}
 
-			await vscode.window.showErrorMessage(
-				`Failed to import "${fileName}" into "${connection.name}": ${
-					result.errorMessage ?? 'Unknown error.'
-				}`
-			);
+			await showImportErrorReport(this.createImportErrorReportUseCase, {
+				formatName: 'SQL',
+				fileName,
+				targetName: connection.name,
+				stage: 'execution',
+				errorMessage: result.errorMessage ?? 'Unknown error.',
+			});
 		} catch (error) {
-			await vscode.window.showErrorMessage(
-				`Failed to import "${fileName}" into "${connection.name}": ${
-					error instanceof Error ? error.message : String(error)
-				}`
-			);
+			if (isOperationCanceledError(error)) {
+				await showTaskCanceledMessage('SQL import');
+				return;
+			}
+
+			await showImportErrorReport(this.createImportErrorReportUseCase, {
+				formatName: 'SQL',
+				fileName,
+				targetName: connection.name,
+				stage: 'execution',
+				errorMessage: error instanceof Error ? error.message : String(error),
+			});
 		}
 	}
 }

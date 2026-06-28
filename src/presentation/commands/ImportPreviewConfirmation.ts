@@ -1,30 +1,42 @@
 import * as vscode from 'vscode';
 
+import type { CreateImportErrorReportUseCase } from '../../application/useCases/CreateImportErrorReportUseCase';
+import type { ImportColumnMapping } from '../../domain/import/ImportColumnMapping';
 import type {
 	ImportPreviewCellValue,
 	ImportPreviewResult,
 	ImportPreviewSuccessResult,
 } from '../../domain/import/ImportPreviewResult';
+import { showImportErrorReport } from './ImportErrorReportPresenter';
 
 /**
  * 展示导入预览确认弹窗。
  *
+ * @param createImportErrorReportUseCase 用于创建错误报告文档的用例。
  * @param formatName 导入文件格式名称。
  * @param fileName 导入文件名。
  * @param targetName 导入目标表名称。
  * @param preview 导入预览结果。
+ * @param mappings 可选的字段映射配置。
  * @returns 用户是否确认继续导入。
  */
 export async function confirmImportPreview(
+	createImportErrorReportUseCase: CreateImportErrorReportUseCase,
 	formatName: string,
 	fileName: string,
 	targetName: string,
-	preview: ImportPreviewResult
+	preview: ImportPreviewResult,
+	mappings?: readonly ImportColumnMapping[]
 ): Promise<boolean> {
 	if (!preview.success) {
-		await vscode.window.showErrorMessage(
-			`Failed to preview "${fileName}" for "${targetName}": ${preview.errorMessage}`
-		);
+		await showImportErrorReport(createImportErrorReportUseCase, {
+			formatName,
+			fileName,
+			targetName,
+			stage: 'preview',
+			errorMessage: preview.errorMessage,
+			mappings,
+		});
 		return false;
 	}
 

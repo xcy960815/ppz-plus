@@ -1,6 +1,7 @@
 import type * as vscode from 'vscode';
 
 import { CsvDocumentParser } from '../../application/import/CsvDocumentParser';
+import { ImportColumnMapper } from '../../application/import/ImportColumnMapper';
 import { JsonDocumentParser } from '../../application/import/JsonDocumentParser';
 import { CheckSqlExportCapabilityUseCase } from '../../application/useCases/CheckSqlExportCapabilityUseCase';
 import { GetBootstrapStatusUseCase } from '../../application/useCases/GetBootstrapStatusUseCase';
@@ -14,14 +15,21 @@ import { ListMySqlSchemasUseCase } from '../../application/useCases/ListMySqlSch
 import { ListMySqlTableColumnsUseCase } from '../../application/useCases/ListMySqlTableColumnsUseCase';
 import { ListMySqlTableRowPageUseCase } from '../../application/useCases/ListMySqlTableRowPageUseCase';
 import { ListMySqlTablesUseCase } from '../../application/useCases/ListMySqlTablesUseCase';
+import { ListSqlExportTaskLogsUseCase } from '../../application/useCases/ListSqlExportTaskLogsUseCase';
+import { CreateImportErrorReportUseCase } from '../../application/useCases/CreateImportErrorReportUseCase';
 import { ExecuteMySqlSqlUseCase } from '../../application/useCases/ExecuteMySqlSqlUseCase';
 import { ExportMySqlSchemaUseCase } from '../../application/useCases/ExportMySqlSchemaUseCase';
 import { ExportMySqlTableUseCase } from '../../application/useCases/ExportMySqlTableUseCase';
+import { ExportMySqlTablesBatchUseCase } from '../../application/useCases/ExportMySqlTablesBatchUseCase';
 import { InsertMySqlTableRowUseCase } from '../../application/useCases/InsertMySqlTableRowUseCase';
+import { PrepareMySqlCsvImportMappingUseCase } from '../../application/useCases/PrepareMySqlCsvImportMappingUseCase';
+import { PrepareMySqlJsonImportMappingUseCase } from '../../application/useCases/PrepareMySqlJsonImportMappingUseCase';
 import { PreviewMySqlCsvFileImportUseCase } from '../../application/useCases/PreviewMySqlCsvFileImportUseCase';
 import { PreviewMySqlJsonFileImportUseCase } from '../../application/useCases/PreviewMySqlJsonFileImportUseCase';
 import { PreviewMySqlSqlFileImportUseCase } from '../../application/useCases/PreviewMySqlSqlFileImportUseCase';
+import { RecordSqlExportTaskLogUseCase } from '../../application/useCases/RecordSqlExportTaskLogUseCase';
 import { SaveConnectionConfigUseCase } from '../../application/useCases/SaveConnectionConfigUseCase';
+import { SaveSqlExportDocumentUseCase } from '../../application/useCases/SaveSqlExportDocumentUseCase';
 import { TestConnectionUseCase } from '../../application/useCases/TestConnectionUseCase';
 import { UpdateMySqlTableRowUseCase } from '../../application/useCases/UpdateMySqlTableRowUseCase';
 import {
@@ -30,6 +38,7 @@ import {
 import { InMemoryDatabaseCapabilityCatalog } from '../../infrastructure/capabilities/InMemoryDatabaseCapabilityCatalog';
 import { NodeCsvFileReader } from '../../infrastructure/files/NodeCsvFileReader';
 import { NodeJsonFileReader } from '../../infrastructure/files/NodeJsonFileReader';
+import { NodeSqlExportFileWriter } from '../../infrastructure/files/NodeSqlExportFileWriter';
 import { NodeSqlFileReader } from '../../infrastructure/files/NodeSqlFileReader';
 import { MySqlConnectionAdapter } from '../../infrastructure/mysql/MySqlConnectionAdapter';
 import { Mysql2ExportProvider } from '../../infrastructure/mysql/Mysql2ExportProvider';
@@ -41,9 +50,11 @@ import { Mysql2TableImportProvider } from '../../infrastructure/mysql/Mysql2Tabl
 import { Mysql2TableDataProvider } from '../../infrastructure/mysql/Mysql2TableDataProvider';
 import { TcpMySqlConnectionTester } from '../../infrastructure/mysql/TcpMySqlConnectionTester';
 import { GlobalStateConnectionRepository } from '../../infrastructure/storage/GlobalStateConnectionRepository';
+import { GlobalStateSqlExportTaskLogRepository } from '../../infrastructure/storage/GlobalStateSqlExportTaskLogRepository';
 import { AddMySqlConnectionCommand } from '../commands/AddMySqlConnectionCommand';
 import { ExportMySqlSchemaSqlCommand } from '../commands/ExportMySqlSchemaSqlCommand';
 import { ExportMySqlTableSqlCommand } from '../commands/ExportMySqlTableSqlCommand';
+import { ExportMySqlTablesBatchSqlCommand } from '../commands/ExportMySqlTablesBatchSqlCommand';
 import { ImportMySqlCsvFileCommand } from '../commands/ImportMySqlCsvFileCommand';
 import { ImportMySqlJsonFileCommand } from '../commands/ImportMySqlJsonFileCommand';
 import { ImportMySqlSqlFileCommand } from '../commands/ImportMySqlSqlFileCommand';
@@ -51,6 +62,7 @@ import { ManageMySqlConnectionsCommand } from '../commands/ManageMySqlConnection
 import { OpenMySqlTableDataCommand } from '../commands/OpenMySqlTableDataCommand';
 import { OpenMySqlSqlTerminalCommand } from '../commands/OpenMySqlSqlTerminalCommand';
 import { RefreshMySqlConnectionsTreeCommand } from '../commands/RefreshMySqlConnectionsTreeCommand';
+import { ShowSqlExportTaskLogsCommand } from '../commands/ShowSqlExportTaskLogsCommand';
 import { ShowProjectStatusCommand } from '../commands/ShowProjectStatusCommand';
 import { TestStoredMySqlConnectionCommand } from '../commands/TestStoredMySqlConnectionCommand';
 import { ExtensionBootstrap } from './ExtensionBootstrap';
@@ -79,6 +91,9 @@ export function createExtensionBootstrap(
 	 * 将连接配置保存到 VS Code 全局状态中。
 	 */
 	const connectionRepository = new GlobalStateConnectionRepository(
+		context.globalState
+	);
+	const sqlExportTaskLogRepository = new GlobalStateSqlExportTaskLogRepository(
 		context.globalState
 	);
 
@@ -117,10 +132,12 @@ export function createExtensionBootstrap(
 		mySqlRuntimeLoader
 	);
 	const sqlFileReader = new NodeSqlFileReader();
+	const sqlExportFileWriter = new NodeSqlExportFileWriter();
 	const csvFileReader = new NodeCsvFileReader();
 	const jsonFileReader = new NodeJsonFileReader();
 	const csvDocumentParser = new CsvDocumentParser();
 	const jsonDocumentParser = new JsonDocumentParser();
+	const importColumnMapper = new ImportColumnMapper();
 	const mySqlSqlFileImportProvider = new Mysql2SqlFileImportProvider(
 		mySqlConnectionAdapter,
 		mySqlRuntimeLoader
@@ -167,6 +184,8 @@ export function createExtensionBootstrap(
 	const deleteMySqlTableRowUseCase = new DeleteMySqlTableRowUseCase(
 		mySqlTableDataProvider
 	);
+	const createImportErrorReportUseCase =
+		new CreateImportErrorReportUseCase();
 	const executeMySqlSqlUseCase = new ExecuteMySqlSqlUseCase(
 		mySqlSqlExecutor
 	);
@@ -179,6 +198,19 @@ export function createExtensionBootstrap(
 	const exportMySqlSchemaUseCase = new ExportMySqlSchemaUseCase(
 		mySqlExportProvider
 	);
+	const saveSqlExportDocumentUseCase = new SaveSqlExportDocumentUseCase(
+		sqlExportFileWriter
+	);
+	const exportMySqlTablesBatchUseCase = new ExportMySqlTablesBatchUseCase(
+		exportMySqlTableUseCase,
+		saveSqlExportDocumentUseCase
+	);
+	const recordSqlExportTaskLogUseCase = new RecordSqlExportTaskLogUseCase(
+		sqlExportTaskLogRepository
+	);
+	const listSqlExportTaskLogsUseCase = new ListSqlExportTaskLogsUseCase(
+		sqlExportTaskLogRepository
+	);
 	const importMySqlSqlFileUseCase = new ImportMySqlSqlFileUseCase(
 		sqlFileReader,
 		mySqlSqlFileImportProvider
@@ -188,25 +220,43 @@ export function createExtensionBootstrap(
 	const importMySqlCsvFileUseCase = new ImportMySqlCsvFileUseCase(
 		csvFileReader,
 		csvDocumentParser,
+		importColumnMapper,
 		mySqlTableDataProvider,
 		mySqlTableImportProvider
 	);
+	const prepareMySqlCsvImportMappingUseCase =
+		new PrepareMySqlCsvImportMappingUseCase(
+			csvFileReader,
+			csvDocumentParser,
+			importColumnMapper,
+			mySqlTableDataProvider
+		);
 	const previewMySqlCsvFileImportUseCase =
 		new PreviewMySqlCsvFileImportUseCase(
 			csvFileReader,
 			csvDocumentParser,
+			importColumnMapper,
 			mySqlTableDataProvider
 		);
 	const importMySqlJsonFileUseCase = new ImportMySqlJsonFileUseCase(
 		jsonFileReader,
 		jsonDocumentParser,
+		importColumnMapper,
 		mySqlTableDataProvider,
 		mySqlTableImportProvider
 	);
+	const prepareMySqlJsonImportMappingUseCase =
+		new PrepareMySqlJsonImportMappingUseCase(
+			jsonFileReader,
+			jsonDocumentParser,
+			importColumnMapper,
+			mySqlTableDataProvider
+		);
 	const previewMySqlJsonFileImportUseCase =
 		new PreviewMySqlJsonFileImportUseCase(
 			jsonFileReader,
 			jsonDocumentParser,
+			importColumnMapper,
 			mySqlTableDataProvider
 		);
 	const mySqlConnectionsTreeDataProvider =
@@ -216,6 +266,7 @@ export function createExtensionBootstrap(
 			listMySqlTablesUseCase
 		);
 	const mySqlTableDataPanel = new MySqlTableDataPanel(
+		listStoredConnectionsUseCase,
 		listMySqlTableColumnsUseCase,
 		listMySqlTableRowPageUseCase,
 		insertMySqlTableRowUseCase,
@@ -230,6 +281,7 @@ export function createExtensionBootstrap(
 	return new ExtensionBootstrap([
 		new AddMySqlConnectionCommand(
 			saveConnectionConfigUseCase,
+			testConnectionUseCase,
 			mySqlConnectionsTreeDataProvider
 		),
 		new ManageMySqlConnectionsCommand(
@@ -248,6 +300,7 @@ export function createExtensionBootstrap(
 		new OpenMySqlSqlTerminalCommand(mySqlSqlTerminalPanel),
 		new ImportMySqlSqlFileCommand(
 			listStoredConnectionsUseCase,
+			createImportErrorReportUseCase,
 			previewMySqlSqlFileImportUseCase,
 			importMySqlSqlFileUseCase
 		),
@@ -255,6 +308,8 @@ export function createExtensionBootstrap(
 			listStoredConnectionsUseCase,
 			listMySqlSchemasUseCase,
 			listMySqlTablesUseCase,
+			createImportErrorReportUseCase,
+			prepareMySqlCsvImportMappingUseCase,
 			previewMySqlCsvFileImportUseCase,
 			importMySqlCsvFileUseCase
 		),
@@ -262,6 +317,8 @@ export function createExtensionBootstrap(
 			listStoredConnectionsUseCase,
 			listMySqlSchemasUseCase,
 			listMySqlTablesUseCase,
+			createImportErrorReportUseCase,
+			prepareMySqlJsonImportMappingUseCase,
 			previewMySqlJsonFileImportUseCase,
 			importMySqlJsonFileUseCase
 		),
@@ -271,7 +328,9 @@ export function createExtensionBootstrap(
 				kind: 'ddl',
 			},
 			checkSqlExportCapabilityUseCase,
-			exportMySqlTableUseCase
+			exportMySqlTableUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
 		),
 		new ExportMySqlTableSqlCommand(
 			{
@@ -279,7 +338,9 @@ export function createExtensionBootstrap(
 				kind: 'dml',
 			},
 			checkSqlExportCapabilityUseCase,
-			exportMySqlTableUseCase
+			exportMySqlTableUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
 		),
 		new ExportMySqlTableSqlCommand(
 			{
@@ -287,7 +348,9 @@ export function createExtensionBootstrap(
 				kind: 'both',
 			},
 			checkSqlExportCapabilityUseCase,
-			exportMySqlTableUseCase
+			exportMySqlTableUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
 		),
 		new ExportMySqlSchemaSqlCommand(
 			{
@@ -295,7 +358,9 @@ export function createExtensionBootstrap(
 				kind: 'ddl',
 			},
 			checkSqlExportCapabilityUseCase,
-			exportMySqlSchemaUseCase
+			exportMySqlSchemaUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
 		),
 		new ExportMySqlSchemaSqlCommand(
 			{
@@ -303,7 +368,9 @@ export function createExtensionBootstrap(
 				kind: 'dml',
 			},
 			checkSqlExportCapabilityUseCase,
-			exportMySqlSchemaUseCase
+			exportMySqlSchemaUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
 		),
 		new ExportMySqlSchemaSqlCommand(
 			{
@@ -311,10 +378,21 @@ export function createExtensionBootstrap(
 				kind: 'both',
 			},
 			checkSqlExportCapabilityUseCase,
-			exportMySqlSchemaUseCase
+			exportMySqlSchemaUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
 		),
+		new ExportMySqlTablesBatchSqlCommand(
+			checkSqlExportCapabilityUseCase,
+			listMySqlTablesUseCase,
+			exportMySqlTablesBatchUseCase,
+			recordSqlExportTaskLogUseCase
+		),
+		new ShowSqlExportTaskLogsCommand(listSqlExportTaskLogsUseCase),
 		new ShowProjectStatusCommand(getBootstrapStatusUseCase),
 	], [
 		new MySqlConnectionsView(mySqlConnectionsTreeDataProvider),
+		mySqlTableDataPanel,
+		mySqlSqlTerminalPanel,
 	]);
 }

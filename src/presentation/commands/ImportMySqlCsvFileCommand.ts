@@ -1,16 +1,28 @@
-import * as path from 'node:path';
+import * as path from 'path';
 
 import * as vscode from 'vscode';
 
 import type { ListMySqlSchemasUseCase } from '../../application/useCases/ListMySqlSchemasUseCase';
 import type { ListMySqlTablesUseCase } from '../../application/useCases/ListMySqlTablesUseCase';
 import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
+import type { CreateImportErrorReportUseCase } from '../../application/useCases/CreateImportErrorReportUseCase';
 import type { ImportMySqlCsvFileUseCase } from '../../application/useCases/ImportMySqlCsvFileUseCase';
+import type { PrepareMySqlCsvImportMappingUseCase } from '../../application/useCases/PrepareMySqlCsvImportMappingUseCase';
 import type { PreviewMySqlCsvFileImportUseCase } from '../../application/useCases/PreviewMySqlCsvFileImportUseCase';
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type { CsvTableImportTarget } from '../../domain/import/CsvFileImportResult';
+import type { ImportColumnMapping } from '../../domain/import/ImportColumnMapping';
+import { isOperationCanceledError } from '../../domain/tasks/CancellationSignal';
 import type { ExtensionCommand } from './ExtensionCommand';
+import { promptImportColumnMapping } from './ImportColumnMappingPrompt';
 import { confirmImportPreview } from './ImportPreviewConfirmation';
+import { showImportErrorReport } from './ImportErrorReportPresenter';
+import { createVsCodeImportTaskProgressReporter } from './ImportTaskProgressPresenter';
+import {
+	createVsCodeCancellationSignal,
+	showTaskCanceledMessage,
+} from './TaskCancellationPresenter';
+import { showUserErrorMessage } from './UserErrorPresenter';
 import type { MySqlConnectionsTreeNode } from '../explorer/MySqlConnectionsTreeNode';
 
 /**
@@ -33,6 +45,8 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 	 * @param listStoredConnectionsUseCase 用于读取已保存 MySQL 连接的用例。
 	 * @param listMySqlSchemasUseCase 用于选择目标 schema 的用例。
 	 * @param listMySqlTablesUseCase 用于选择目标表的用例。
+	 * @param createImportErrorReportUseCase 用于生成导入错误报告。
+	 * @param prepareMySqlCsvImportMappingUseCase 用于准备 CSV 字段映射配置。
 	 * @param previewMySqlCsvFileImportUseCase 用于生成 CSV 导入预览的用例。
 	 * @param importMySqlCsvFileUseCase 用于执行 CSV 文件导入的用例。
 	 */
@@ -40,6 +54,8 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
 		private readonly listMySqlSchemasUseCase: ListMySqlSchemasUseCase,
 		private readonly listMySqlTablesUseCase: ListMySqlTablesUseCase,
+		private readonly createImportErrorReportUseCase: CreateImportErrorReportUseCase,
+		private readonly prepareMySqlCsvImportMappingUseCase: PrepareMySqlCsvImportMappingUseCase,
 		private readonly previewMySqlCsvFileImportUseCase: PreviewMySqlCsvFileImportUseCase,
 		private readonly importMySqlCsvFileUseCase: ImportMySqlCsvFileUseCase
 	) {}
@@ -66,15 +82,33 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 
 				const fileName = path.basename(filePath);
 				const targetName = `${selection.target.schemaName}.${selection.target.tableName}`;
+				const mappings = await promptImportColumnMapping(
+					this.createImportErrorReportUseCase,
+					'CSV',
+					fileName,
+					targetName,
+					await this.prepareMySqlCsvImportMappingUseCase.execute(
+						selection.connection,
+						selection.target,
+						filePath
+					)
+				);
+				if (!mappings) {
+					return;
+				}
+
 				const confirmed = await confirmImportPreview(
+					this.createImportErrorReportUseCase,
 					'CSV',
 					fileName,
 					targetName,
 					await this.previewMySqlCsvFileImportUseCase.execute(
 						selection.connection,
 						selection.target,
-						filePath
-					)
+						filePath,
+						mappings
+					),
+					mappings
 				);
 				if (!confirmed) {
 					return;
@@ -83,7 +117,8 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 				await this.importCsvFile(
 					selection.connection,
 					selection.target,
-					filePath
+					filePath,
+					mappings
 				);
 			}
 		);
@@ -205,9 +240,10 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 
 			return selectedSchema.schemaName;
 		} catch (error) {
-			await vscode.window.showErrorMessage(
-				error instanceof Error ? error.message : String(error)
-			);
+			await showUserErrorMessage({
+				operation: 'Load MySQL schemas for CSV import',
+				error,
+			});
 			return undefined;
 		}
 	}
@@ -253,9 +289,10 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 
 			return selectedTable.tableName;
 		} catch (error) {
-			await vscode.window.showErrorMessage(
-				error instanceof Error ? error.message : String(error)
-			);
+			await showUserErrorMessage({
+				operation: 'Load MySQL tables for CSV import',
+				error,
+			});
 			return undefined;
 		}
 	}
@@ -285,19 +322,53 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 	 * @param connection MySQL 连接配置。
 	 * @param target CSV 导入目标表。
 	 * @param filePath CSV 文件路径。
+	 * @param mappings 字段映射配置。
 	 */
 	private async importCsvFile(
 		connection: MysqlConnectionConfig,
 		target: CsvTableImportTarget,
-		filePath: string
+		filePath: string,
+		mappings: readonly ImportColumnMapping[]
 	): Promise<void> {
 		const fileName = path.basename(filePath);
 		const targetName = `${target.schemaName}.${target.tableName}`;
-		const result = await this.importMySqlCsvFileUseCase.execute(
-			connection,
-			target,
-			filePath
-		);
+		let result: CsvFileImportResult | undefined;
+		try {
+			result = await vscode.window.withProgress(
+				{
+					cancellable: true,
+					location: vscode.ProgressLocation.Notification,
+					title: `Importing CSV "${fileName}" into "${targetName}"`,
+				},
+				async (progress, token) => {
+					progress.report({ message: 'Preparing import...' });
+
+					return this.importMySqlCsvFileUseCase.execute(
+						connection,
+						target,
+						filePath,
+						mappings,
+						createVsCodeImportTaskProgressReporter(progress),
+						createVsCodeCancellationSignal(token)
+					);
+				}
+			);
+		} catch (error) {
+			if (isOperationCanceledError(error)) {
+				await showTaskCanceledMessage('CSV import');
+				return;
+			}
+
+			await showUserErrorMessage({
+				operation: 'Import CSV file',
+				error,
+			});
+			return;
+		}
+
+		if (!result) {
+			return;
+		}
 
 		if (result.success) {
 			await vscode.window.showInformationMessage(
@@ -306,10 +377,13 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 			return;
 		}
 
-		await vscode.window.showErrorMessage(
-			`Failed to import "${fileName}" into "${targetName}": ${
-				result.errorMessage ?? 'Unknown error.'
-			}`
-		);
+		await showImportErrorReport(this.createImportErrorReportUseCase, {
+			formatName: 'CSV',
+			fileName,
+			targetName,
+			stage: 'execution',
+			errorMessage: result.errorMessage ?? 'Unknown error.',
+			mappings,
+		});
 	}
 }

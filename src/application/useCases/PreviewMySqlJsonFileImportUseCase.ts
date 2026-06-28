@@ -1,8 +1,10 @@
 import type { JsonFileReader } from '../import/JsonFileReader';
 import { JsonDocumentParser } from '../import/JsonDocumentParser';
+import { ImportColumnMapper } from '../import/ImportColumnMapper';
 import type { MySqlTableDataProvider } from '../mysql/MySqlTableDataProvider';
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type { JsonTableImportTarget } from '../../domain/import/JsonFileImportResult';
+import type { ImportColumnMapping } from '../../domain/import/ImportColumnMapping';
 import type { ImportPreviewResult } from '../../domain/import/ImportPreviewResult';
 
 /**
@@ -19,11 +21,13 @@ export class PreviewMySqlJsonFileImportUseCase {
 	 *
 	 * @param jsonFileReader 用于读取 JSON 文件内容的基础设施能力。
 	 * @param jsonDocumentParser 用于解析 JSON 文本的解析器。
+	 * @param importColumnMapper 用于应用导入字段映射。
 	 * @param mySqlTableDataProvider 用于读取目标表字段信息。
 	 */
 	public constructor(
 		private readonly jsonFileReader: JsonFileReader,
 		private readonly jsonDocumentParser: JsonDocumentParser,
+		private readonly importColumnMapper: ImportColumnMapper,
 		private readonly mySqlTableDataProvider: MySqlTableDataProvider
 	) {}
 
@@ -33,12 +37,14 @@ export class PreviewMySqlJsonFileImportUseCase {
 	 * @param connection MySQL 连接配置。
 	 * @param target JSON 导入目标表。
 	 * @param filePath JSON 文件路径。
+	 * @param mappings 可选的字段映射配置。
 	 * @returns 导入预览结果。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,
 		target: JsonTableImportTarget,
-		filePath: string
+		filePath: string,
+		mappings?: readonly ImportColumnMapping[]
 	): Promise<ImportPreviewResult> {
 		try {
 			if (filePath.trim().length === 0) {
@@ -56,24 +62,27 @@ export class PreviewMySqlJsonFileImportUseCase {
 				target.schemaName,
 				target.tableName
 			);
-			const unknownHeaders = json.headers.filter(
-				(header) => !columns.some((column) => column.name === header)
+			const targetFields = columns.map((column) => column.name);
+			const headers = this.importColumnMapper.mapHeaders(
+				json.headers,
+				targetFields,
+				mappings
 			);
-
-			if (unknownHeaders.length > 0) {
-				return {
-					success: false,
-					errorMessage: `JSON object contains fields that do not exist in the target table: ${unknownHeaders.join(', ')}.`,
-				};
-			}
+			const rows = this.importColumnMapper.mapRows(
+				json.rows,
+				json.headers,
+				targetFields,
+				mappings,
+				(row, sourceName) => row[sourceName] ?? null
+			);
 
 			return {
 				success: true,
 				totalRows: json.rows.length,
-				headers: json.headers,
-				rows: json.rows
+				headers,
+				rows: rows
 					.slice(0, PreviewMySqlJsonFileImportUseCase.previewRowLimit)
-					.map((row) => json.headers.map((header) => row[header] ?? null)),
+					.map((row) => headers.map((header) => row[header] ?? null)),
 			};
 		} catch (error) {
 			return {

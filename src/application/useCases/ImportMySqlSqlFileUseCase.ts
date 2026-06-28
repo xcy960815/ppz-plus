@@ -2,6 +2,8 @@ import type { SqlFileReader } from '../import/SqlFileReader';
 import type { MySqlSqlFileImportProvider } from '../mysql/MySqlSqlFileImportProvider';
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type { SqlFileImportResult } from '../../domain/import/SqlFileImportResult';
+import type { CancellationSignal } from '../../domain/tasks/CancellationSignal';
+import { throwIfCancellationRequested } from '../../domain/tasks/CancellationSignal';
 
 /**
  * 导入 MySQL SQL 文件的应用用例。
@@ -23,11 +25,13 @@ export class ImportMySqlSqlFileUseCase {
 	 *
 	 * @param connection MySQL 连接配置。
 	 * @param filePath SQL 文件路径。
+	 * @param cancellationSignal 可选的长任务取消信号。
 	 * @returns SQL 文件导入结果。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,
-		filePath: string
+		filePath: string,
+		cancellationSignal?: CancellationSignal
 	): Promise<SqlFileImportResult> {
 		const normalizedFilePath = filePath.trim();
 
@@ -39,6 +43,7 @@ export class ImportMySqlSqlFileUseCase {
 			};
 		}
 
+		throwIfCancellationRequested(cancellationSignal);
 		const sql = await this.sqlFileReader.readText(normalizedFilePath);
 		if (sql.trim().length === 0) {
 			return {
@@ -48,6 +53,7 @@ export class ImportMySqlSqlFileUseCase {
 			};
 		}
 
+		throwIfCancellationRequested(cancellationSignal);
 		return this.mySqlSqlFileImportProvider.importSql(connection, sql);
 	}
 }

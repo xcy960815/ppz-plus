@@ -11,6 +11,7 @@ import type {
 	MySqlSchemaTreeNode,
 	MySqlTableTreeNode,
 } from './MySqlConnectionsTreeNode';
+import { showUserErrorMessage } from '../commands/UserErrorPresenter';
 
 /**
  * 为当前扩展会话提供 MySQL 连接资源树。
@@ -134,9 +135,10 @@ export class MySqlConnectionsTreeDataProvider
 
 			return [];
 		} catch (error) {
-			await vscode.window.showErrorMessage(
-				error instanceof Error ? error.message : String(error)
-			);
+			await showUserErrorMessage({
+				operation: 'Load MySQL resources',
+				error,
+			});
 			return [];
 		}
 	}

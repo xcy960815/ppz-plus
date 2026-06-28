@@ -1,16 +1,28 @@
-import * as path from 'node:path';
+import * as path from 'path';
 
 import * as vscode from 'vscode';
 
 import type { ListMySqlSchemasUseCase } from '../../application/useCases/ListMySqlSchemasUseCase';
 import type { ListMySqlTablesUseCase } from '../../application/useCases/ListMySqlTablesUseCase';
 import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
+import type { CreateImportErrorReportUseCase } from '../../application/useCases/CreateImportErrorReportUseCase';
 import type { ImportMySqlJsonFileUseCase } from '../../application/useCases/ImportMySqlJsonFileUseCase';
+import type { PrepareMySqlJsonImportMappingUseCase } from '../../application/useCases/PrepareMySqlJsonImportMappingUseCase';
 import type { PreviewMySqlJsonFileImportUseCase } from '../../application/useCases/PreviewMySqlJsonFileImportUseCase';
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
-import type { JsonTableImportTarget } from '../../domain/import/JsonFileImportResult';
+import type { JsonFileImportResult, JsonTableImportTarget } from '../../domain/import/JsonFileImportResult';
+import type { ImportColumnMapping } from '../../domain/import/ImportColumnMapping';
+import { isOperationCanceledError } from '../../domain/tasks/CancellationSignal';
 import type { ExtensionCommand } from './ExtensionCommand';
+import { promptImportColumnMapping } from './ImportColumnMappingPrompt';
 import { confirmImportPreview } from './ImportPreviewConfirmation';
+import { showImportErrorReport } from './ImportErrorReportPresenter';
+import { createVsCodeImportTaskProgressReporter } from './ImportTaskProgressPresenter';
+import {
+	createVsCodeCancellationSignal,
+	showTaskCanceledMessage,
+} from './TaskCancellationPresenter';
+import { showUserErrorMessage } from './UserErrorPresenter';
 import type { MySqlConnectionsTreeNode } from '../explorer/MySqlConnectionsTreeNode';
 
 /**
@@ -33,6 +45,8 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 	 * @param listStoredConnectionsUseCase 用于读取已保存 MySQL 连接的用例。
 	 * @param listMySqlSchemasUseCase 用于选择目标 schema 的用例。
 	 * @param listMySqlTablesUseCase 用于选择目标表的用例。
+	 * @param createImportErrorReportUseCase 用于生成导入错误报告。
+	 * @param prepareMySqlJsonImportMappingUseCase 用于准备 JSON 字段映射配置。
 	 * @param previewMySqlJsonFileImportUseCase 用于生成 JSON 导入预览的用例。
 	 * @param importMySqlJsonFileUseCase 用于执行 JSON 文件导入的用例。
 	 */
@@ -40,6 +54,8 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
 		private readonly listMySqlSchemasUseCase: ListMySqlSchemasUseCase,
 		private readonly listMySqlTablesUseCase: ListMySqlTablesUseCase,
+		private readonly createImportErrorReportUseCase: CreateImportErrorReportUseCase,
+		private readonly prepareMySqlJsonImportMappingUseCase: PrepareMySqlJsonImportMappingUseCase,
 		private readonly previewMySqlJsonFileImportUseCase: PreviewMySqlJsonFileImportUseCase,
 		private readonly importMySqlJsonFileUseCase: ImportMySqlJsonFileUseCase
 	) {}
@@ -66,15 +82,33 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 
 				const fileName = path.basename(filePath);
 				const targetName = `${selection.target.schemaName}.${selection.target.tableName}`;
+				const mappings = await promptImportColumnMapping(
+					this.createImportErrorReportUseCase,
+					'JSON',
+					fileName,
+					targetName,
+					await this.prepareMySqlJsonImportMappingUseCase.execute(
+						selection.connection,
+						selection.target,
+						filePath
+					)
+				);
+				if (!mappings) {
+					return;
+				}
+
 				const confirmed = await confirmImportPreview(
+					this.createImportErrorReportUseCase,
 					'JSON',
 					fileName,
 					targetName,
 					await this.previewMySqlJsonFileImportUseCase.execute(
 						selection.connection,
 						selection.target,
-						filePath
-					)
+						filePath,
+						mappings
+					),
+					mappings
 				);
 				if (!confirmed) {
 					return;
@@ -83,7 +117,8 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 				await this.importJsonFile(
 					selection.connection,
 					selection.target,
-					filePath
+					filePath,
+					mappings
 				);
 			}
 		);
@@ -205,9 +240,10 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 
 			return selectedSchema.schemaName;
 		} catch (error) {
-			await vscode.window.showErrorMessage(
-				error instanceof Error ? error.message : String(error)
-			);
+			await showUserErrorMessage({
+				operation: 'Load MySQL schemas for JSON import',
+				error,
+			});
 			return undefined;
 		}
 	}
@@ -253,9 +289,10 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 
 			return selectedTable.tableName;
 		} catch (error) {
-			await vscode.window.showErrorMessage(
-				error instanceof Error ? error.message : String(error)
-			);
+			await showUserErrorMessage({
+				operation: 'Load MySQL tables for JSON import',
+				error,
+			});
 			return undefined;
 		}
 	}
@@ -285,19 +322,53 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 	 * @param connection MySQL 连接配置。
 	 * @param target JSON 导入目标表。
 	 * @param filePath JSON 文件路径。
+	 * @param mappings 字段映射配置。
 	 */
 	private async importJsonFile(
 		connection: MysqlConnectionConfig,
 		target: JsonTableImportTarget,
-		filePath: string
+		filePath: string,
+		mappings: readonly ImportColumnMapping[]
 	): Promise<void> {
 		const fileName = path.basename(filePath);
 		const targetName = `${target.schemaName}.${target.tableName}`;
-		const result = await this.importMySqlJsonFileUseCase.execute(
-			connection,
-			target,
-			filePath
-		);
+		let result:  JsonFileImportResult | undefined;
+		try {
+			result = await vscode.window.withProgress(
+				{
+					cancellable: true,
+					location: vscode.ProgressLocation.Notification,
+					title: `Importing JSON "${fileName}" into "${targetName}"`,
+				},
+				async (progress, token) => {
+					progress.report({ message: 'Preparing import...' });
+
+					return this.importMySqlJsonFileUseCase.execute(
+						connection,
+						target,
+						filePath,
+						mappings,
+						createVsCodeImportTaskProgressReporter(progress),
+						createVsCodeCancellationSignal(token)
+					);
+				}
+			);
+		} catch (error) {
+			if (isOperationCanceledError(error)) {
+				await showTaskCanceledMessage('JSON import');
+				return;
+			}
+
+			await showUserErrorMessage({
+				operation: 'Import JSON file',
+				error,
+			});
+			return;
+		}
+
+		if (!result) {
+			return;
+		}
 
 		if (result.success) {
 			await vscode.window.showInformationMessage(
@@ -306,10 +377,13 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 			return;
 		}
 
-		await vscode.window.showErrorMessage(
-			`Failed to import "${fileName}" into "${targetName}": ${
-				result.errorMessage ?? 'Unknown error.'
-			}`
-		);
+		await showImportErrorReport(this.createImportErrorReportUseCase, {
+			formatName: 'JSON',
+			fileName,
+			targetName,
+			stage: 'execution',
+			errorMessage: result.errorMessage ?? 'Unknown error.',
+			mappings,
+		});
 	}
 }
