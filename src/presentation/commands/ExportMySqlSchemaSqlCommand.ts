@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 
+import type { CheckSqlExportCapabilityUseCase } from '../../application/useCases/CheckSqlExportCapabilityUseCase';
 import type { ExportMySqlSchemaUseCase } from '../../application/useCases/ExportMySqlSchemaUseCase';
 import type { SqlExportKind } from '../../domain/export/SqlExportDocument';
 import type { ExtensionCommand } from './ExtensionCommand';
 import type { MySqlSchemaTreeNode } from '../explorer/MySqlConnectionsTreeNode';
+import { formatSqlExportCapabilityMessage } from './SqlExportCapabilityMessage';
 
 /**
  * 描述 MySQL schema 级 SQL 导出命令配置。
@@ -46,10 +48,12 @@ export class ExportMySqlSchemaSqlCommand implements ExtensionCommand {
 	 * 创建 MySQL schema 级 SQL 导出命令。
 	 *
 	 * @param config 命令标识和导出内容类型配置。
+	 * @param checkSqlExportCapabilityUseCase 用于在命令入口判断导出能力。
 	 * @param exportMySqlSchemaUseCase 用于生成 SQL 导出文档的用例。
 	 */
 	public constructor(
 		config: ExportMySqlSchemaSqlCommandConfig,
+		private readonly checkSqlExportCapabilityUseCase: CheckSqlExportCapabilityUseCase,
 		private readonly exportMySqlSchemaUseCase: ExportMySqlSchemaUseCase
 	) {
 		this.id = config.id;
@@ -68,6 +72,18 @@ export class ExportMySqlSchemaSqlCommand implements ExtensionCommand {
 				if (!schemaNode || schemaNode.kind !== 'schema') {
 					await vscode.window.showInformationMessage(
 						'Choose a MySQL schema node to export SQL.'
+					);
+					return;
+				}
+
+				const capabilityCheck = this.checkSqlExportCapabilityUseCase.execute(
+					'mysql',
+					this.kind
+				);
+
+				if (!capabilityCheck.supported) {
+					await vscode.window.showWarningMessage(
+						formatSqlExportCapabilityMessage(capabilityCheck)
 					);
 					return;
 				}

@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 
+import type { CheckSqlExportCapabilityUseCase } from '../../application/useCases/CheckSqlExportCapabilityUseCase';
 import type { ExportMySqlTableUseCase } from '../../application/useCases/ExportMySqlTableUseCase';
 import type { SqlExportKind } from '../../domain/export/SqlExportDocument';
 import type { ExtensionCommand } from './ExtensionCommand';
 import type { MySqlTableTreeNode } from '../explorer/MySqlConnectionsTreeNode';
+import { formatSqlExportCapabilityMessage } from './SqlExportCapabilityMessage';
 
 /**
  * 描述 MySQL 表级 SQL 导出命令配置。
@@ -46,10 +48,12 @@ export class ExportMySqlTableSqlCommand implements ExtensionCommand {
 	 * 创建 MySQL 表级 SQL 导出命令。
 	 *
 	 * @param config 命令标识和导出内容类型配置。
+	 * @param checkSqlExportCapabilityUseCase 用于在命令入口判断导出能力。
 	 * @param exportMySqlTableUseCase 用于生成 SQL 导出文档的用例。
 	 */
 	public constructor(
 		config: ExportMySqlTableSqlCommandConfig,
+		private readonly checkSqlExportCapabilityUseCase: CheckSqlExportCapabilityUseCase,
 		private readonly exportMySqlTableUseCase: ExportMySqlTableUseCase
 	) {
 		this.id = config.id;
@@ -68,6 +72,18 @@ export class ExportMySqlTableSqlCommand implements ExtensionCommand {
 				if (!tableNode || tableNode.kind !== 'table') {
 					await vscode.window.showInformationMessage(
 						'Choose a MySQL table node to export SQL.'
+					);
+					return;
+				}
+
+				const capabilityCheck = this.checkSqlExportCapabilityUseCase.execute(
+					'mysql',
+					this.kind
+				);
+
+				if (!capabilityCheck.supported) {
+					await vscode.window.showWarningMessage(
+						formatSqlExportCapabilityMessage(capabilityCheck)
 					);
 					return;
 				}

@@ -6,10 +6,8 @@ import type {
 	ConnectionConfig,
 	MysqlConnectionConfig,
 } from '../../domain/connections/ConnectionConfig';
-import type {
-	SqlExecutionCellValue,
-	SqlExecutionResult,
-} from '../../domain/query/SqlExecutionResult';
+import type { SqlExecutionResult } from '../../domain/query/SqlExecutionResult';
+import { SqlExecutionResultRenderer } from './SqlExecutionResultRenderer';
 import type { MySqlSqlTerminalWebviewMessage } from './MySqlSqlTerminalWebviewMessage';
 
 /**
@@ -26,6 +24,11 @@ interface MySqlSqlTerminalPanelState {
  * 管理 MySQL SQL Terminal 面板。
  */
 export class MySqlSqlTerminalPanel {
+	/**
+	 * 渲染通用 SQL 执行结果区域。
+	 */
+	private readonly resultRenderer = new SqlExecutionResultRenderer();
+
 	/**
 	 * 保存当前已打开的 SQL Terminal 面板。
 	 */
@@ -175,7 +178,7 @@ export class MySqlSqlTerminalPanel {
 			})
 			.join('');
 		const resultMarkup = state.result
-			? this.renderResult(state.result)
+			? this.resultRenderer.render(state.result)
 			: '<div class="empty-result">No SQL has been executed yet.</div>';
 		const disabled = connections.length === 0 || isExecuting ? ' disabled' : '';
 
@@ -349,87 +352,6 @@ export class MySqlSqlTerminalPanel {
 	</script>
 </body>
 </html>`;
-	}
-
-	/**
-	 * 渲染 SQL 执行结果。
-	 *
-	 * @param result SQL 执行结果。
-	 * @returns 结果区域 HTML。
-	 */
-	private renderResult(result: SqlExecutionResult): string {
-		const status = result.success ? 'Success' : 'Failed';
-		const affectedRows =
-			result.affectedRows === null ? 'N/A' : String(result.affectedRows);
-		const resultHeader = `<div class="result-header">
-			<span><strong>${status}</strong></span>
-			<span><strong>${result.isQuery ? 'Query' : 'Statement'}</strong></span>
-			<span><strong>${result.durationMs}</strong> ms</span>
-			<span><strong>${affectedRows}</strong> affected rows</span>
-			<span><strong>${result.rows.length}</strong> rows</span>
-		</div>`;
-
-		if (!result.success) {
-			return `${resultHeader}<pre class="error">${this.escapeHtml(
-				result.errorMessage ?? 'Unknown SQL execution error.'
-			)}</pre>`;
-		}
-
-		if (!result.isQuery) {
-			return `${resultHeader}<div class="empty-result">Statement executed.</div>`;
-		}
-
-		return `${resultHeader}${this.renderResultTable(result)}`;
-	}
-
-	/**
-	 * 渲染查询结果表格。
-	 *
-	 * @param result SQL 查询结果。
-	 * @returns 表格 HTML。
-	 */
-	private renderResultTable(result: SqlExecutionResult): string {
-		const fields = result.fields;
-
-		if (fields.length === 0) {
-			return '<div class="empty-result">No columns returned.</div>';
-		}
-
-		const headers = fields
-			.map((field) => `<th>${this.escapeHtml(field.name)}</th>`)
-			.join('');
-		const rows =
-			result.rows.length === 0
-				? `<tr><td colspan="${fields.length}" class="empty-cell">No rows returned.</td></tr>`
-				: result.rows
-						.map(
-							(row) =>
-								`<tr>${fields
-									.map((field) => this.renderCell(row[field.name] ?? null))
-									.join('')}</tr>`
-						)
-						.join('');
-
-		return `<div class="table-wrapper">
-			<table>
-				<thead><tr>${headers}</tr></thead>
-				<tbody>${rows}</tbody>
-			</table>
-		</div>`;
-	}
-
-	/**
-	 * 渲染单个 SQL 结果单元格。
-	 *
-	 * @param value 待渲染的单元格值。
-	 * @returns HTML 表格单元格标记。
-	 */
-	private renderCell(value: SqlExecutionCellValue): string {
-		if (value === null) {
-			return '<td><span class="null-cell">NULL</span></td>';
-		}
-
-		return `<td><code>${this.escapeHtml(String(value))}</code></td>`;
 	}
 
 	/**

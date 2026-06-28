@@ -98,7 +98,7 @@ export class MySqlConnectionsTreeDataProvider
 	 */
 	public async getChildren(
 		element?: MySqlConnectionsTreeNode
-	): Promise<readonly MySqlConnectionsTreeNode[]> {
+	): Promise<MySqlConnectionsTreeNode[]> {
 		try {
 			if (!element) {
 				const connections = await this.listStoredConnectionsUseCase.execute();

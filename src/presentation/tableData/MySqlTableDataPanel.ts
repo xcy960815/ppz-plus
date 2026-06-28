@@ -1,13 +1,20 @@
 import * as vscode from 'vscode';
 
 import type {
+	MySqlTableCellValue,
 	MySqlTableColumnMetadata,
+	MySqlTableInsertValues,
 	MySqlTableQueryOptions,
+	MySqlTableRowIdentityValues,
 	MySqlTableSortDirection,
+	MySqlTableUpdateValues,
 	MySqlTableRowPage,
 } from '../../application/mysql/MySqlTableDataProvider';
+import type { DeleteMySqlTableRowUseCase } from '../../application/useCases/DeleteMySqlTableRowUseCase';
+import type { InsertMySqlTableRowUseCase } from '../../application/useCases/InsertMySqlTableRowUseCase';
 import type { ListMySqlTableColumnsUseCase } from '../../application/useCases/ListMySqlTableColumnsUseCase';
 import type { ListMySqlTableRowPageUseCase } from '../../application/useCases/ListMySqlTableRowPageUseCase';
+import type { UpdateMySqlTableRowUseCase } from '../../application/useCases/UpdateMySqlTableRowUseCase';
 import { OpenMySqlSqlTerminalCommand } from '../commands/OpenMySqlSqlTerminalCommand';
 import type { MySqlTableTreeNode } from '../explorer/MySqlConnectionsTreeNode';
 import type { MySqlTableDataWebviewMessage } from './MySqlTableDataWebviewMessage';
@@ -24,14 +31,16 @@ interface MySqlTablePanelState {
 	sortDirection: MySqlTableSortDirection;
 	hiddenColumnNames: Set<string>;
 	currentSql?: string;
+	latestColumns: readonly MySqlTableColumnMetadata[];
+	latestRows: readonly Record<string, MySqlTableCellValue>[];
 }
 
 /**
- * 管理只读 MySQL 表数据面板。
+ * 管理 MySQL 表数据面板。
  */
 export class MySqlTableDataPanel {
 	/**
-	 * 保存首版只读表数据 MVP 使用的分页大小。
+	 * 保存表数据页使用的分页大小。
 	 */
 	private static readonly pageSize = 50;
 
@@ -45,14 +54,20 @@ export class MySqlTableDataPanel {
 	 *
 	 * @param listMySqlTableColumnsUseCase 用于加载表字段的用例。
 	 * @param listMySqlTableRowPageUseCase 用于加载分页表数据的用例。
+	 * @param insertMySqlTableRowUseCase 用于新增单条表记录的用例。
+	 * @param updateMySqlTableRowUseCase 用于更新单条表记录的用例。
+	 * @param deleteMySqlTableRowUseCase 用于删除单条表记录的用例。
 	 */
 	public constructor(
 		private readonly listMySqlTableColumnsUseCase: ListMySqlTableColumnsUseCase,
-		private readonly listMySqlTableRowPageUseCase: ListMySqlTableRowPageUseCase
+		private readonly listMySqlTableRowPageUseCase: ListMySqlTableRowPageUseCase,
+		private readonly insertMySqlTableRowUseCase: InsertMySqlTableRowUseCase,
+		private readonly updateMySqlTableRowUseCase: UpdateMySqlTableRowUseCase,
+		private readonly deleteMySqlTableRowUseCase: DeleteMySqlTableRowUseCase
 	) {}
 
 	/**
-	 * 打开或显示选中表的只读数据页。
+	 * 打开或显示选中表的数据页。
 	 *
 	 * @param tableNode 当前选中的表 Tree 节点。
 	 */
@@ -83,6 +98,8 @@ export class MySqlTableDataPanel {
 			filterKeyword: '',
 			sortDirection: 'asc',
 			hiddenColumnNames: new Set<string>(),
+			latestColumns: [],
+			latestRows: [],
 		};
 
 		this.panelStatesByKey.set(panelKey, state);
@@ -150,7 +167,305 @@ export class MySqlTableDataPanel {
 					state.currentSql
 				);
 				return;
+			case 'insertRow':
+				await this.insertRow(state);
+				return;
+			case 'editRow':
+				await this.editRow(state, message.rowIndex);
+				return;
+			case 'deleteRow':
+				await this.deleteRow(state, message.rowIndex);
+				return;
 		}
+	}
+
+	/**
+	 * 收集字段值并新增一条表记录。
+	 *
+	 * @param state 当前表数据面板状态。
+	 */
+	private async insertRow(state: MySqlTablePanelState): Promise<void> {
+		try {
+			const columns = await this.listMySqlTableColumnsUseCase.execute(
+				state.tableNode.connection,
+				state.tableNode.schemaName,
+				state.tableNode.tableName
+			);
+			const values = await this.promptInsertValues(columns);
+
+			if (values === undefined) {
+				return;
+			}
+
+			const shouldSave = await this.confirmPendingChange(
+				`Save new row to ${state.tableNode.schemaName}.${state.tableNode.tableName}?`
+			);
+
+			if (!shouldSave) {
+				return;
+			}
+
+			const result = await this.insertMySqlTableRowUseCase.execute(
+				state.tableNode.connection,
+				state.tableNode.schemaName,
+				state.tableNode.tableName,
+				values
+			);
+
+			state.pageIndex = 0;
+			await vscode.window.showInformationMessage(
+				`Inserted ${result.affectedRows} row into ${state.tableNode.schemaName}.${state.tableNode.tableName}.`
+			);
+			await this.renderTableData(state);
+		} catch (error) {
+			await vscode.window.showErrorMessage(
+				error instanceof Error ? error.message : String(error)
+			);
+		}
+	}
+
+	/**
+	 * 通过 VS Code 输入框收集单条新增记录的字段值。
+	 *
+	 * @param columns 当前表字段元数据。
+	 * @returns 用户提交的字段值；取消时返回 undefined。
+	 */
+	private async promptInsertValues(
+		columns: readonly MySqlTableColumnMetadata[]
+	): Promise<MySqlTableInsertValues | undefined> {
+		const values: Record<string, string | number | boolean | null> = {};
+		const writableColumns = columns.filter(
+			(column) => !column.extra.toLowerCase().includes('auto_increment')
+		);
+
+		for (const column of writableColumns) {
+			const value = await vscode.window.showInputBox({
+				title: `Insert value for ${column.name}`,
+				prompt: `${column.dataType}${column.nullable ? ', nullable' : ''}. Leave empty to use DEFAULT; type NULL to insert NULL.`,
+				ignoreFocusOut: true,
+			});
+
+			if (value === undefined) {
+				return undefined;
+			}
+
+			if (value.length === 0) {
+				continue;
+			}
+
+			values[column.name] = value.toUpperCase() === 'NULL' ? null : value;
+		}
+
+		return values;
+	}
+
+	/**
+	 * 编辑当前页中的一条表记录。
+	 *
+	 * @param state 当前表数据面板状态。
+	 * @param rowIndex 当前页行索引。
+	 */
+	private async editRow(
+		state: MySqlTablePanelState,
+		rowIndex: number
+	): Promise<void> {
+		try {
+			const row = state.latestRows[rowIndex];
+			const primaryKeyColumns = state.latestColumns.filter(
+				(column) => column.isPrimaryKey
+			);
+
+			if (!row) {
+				await vscode.window.showWarningMessage(
+					'Selected row is no longer available.'
+				);
+				return;
+			}
+
+			if (primaryKeyColumns.length === 0) {
+				await vscode.window.showWarningMessage(
+					'Editing rows currently requires a primary key.'
+				);
+				return;
+			}
+
+			const identityValues = this.createIdentityValues(primaryKeyColumns, row);
+			const values = await this.promptUpdateValues(state.latestColumns, row);
+
+			if (values === undefined) {
+				return;
+			}
+
+			if (Object.keys(values).length === 0) {
+				await vscode.window.showInformationMessage('No row changes to apply.');
+				return;
+			}
+
+			const shouldSave = await this.confirmPendingChange(
+				`Save row changes to ${state.tableNode.schemaName}.${state.tableNode.tableName}?`
+			);
+
+			if (!shouldSave) {
+				return;
+			}
+
+			const result = await this.updateMySqlTableRowUseCase.execute(
+				state.tableNode.connection,
+				state.tableNode.schemaName,
+				state.tableNode.tableName,
+				identityValues,
+				values
+			);
+
+			await vscode.window.showInformationMessage(
+				`Updated ${result.affectedRows} row in ${state.tableNode.schemaName}.${state.tableNode.tableName}.`
+			);
+			await this.renderTableData(state);
+		} catch (error) {
+			await vscode.window.showErrorMessage(
+				error instanceof Error ? error.message : String(error)
+			);
+		}
+	}
+
+	/**
+	 * 根据主键字段从当前行创建原行定位值。
+	 *
+	 * @param primaryKeyColumns 主键字段列表。
+	 * @param row 当前页中的原始行。
+	 * @returns 原行定位值。
+	 */
+	private createIdentityValues(
+		primaryKeyColumns: readonly MySqlTableColumnMetadata[],
+		row: Record<string, MySqlTableCellValue>
+	): MySqlTableRowIdentityValues {
+		return Object.fromEntries(
+			primaryKeyColumns.map((column) => [column.name, row[column.name] ?? null])
+		);
+	}
+
+	/**
+	 * 删除当前页中的一条表记录。
+	 *
+	 * @param state 当前表数据面板状态。
+	 * @param rowIndex 当前页行索引。
+	 */
+	private async deleteRow(
+		state: MySqlTablePanelState,
+		rowIndex: number
+	): Promise<void> {
+		try {
+			const row = state.latestRows[rowIndex];
+			const primaryKeyColumns = state.latestColumns.filter(
+				(column) => column.isPrimaryKey
+			);
+
+			if (!row) {
+				await vscode.window.showWarningMessage(
+					'Selected row is no longer available.'
+				);
+				return;
+			}
+
+			if (primaryKeyColumns.length === 0) {
+				await vscode.window.showWarningMessage(
+					'Deleting rows currently requires a primary key.'
+				);
+				return;
+			}
+
+			const confirmation = await vscode.window.showWarningMessage(
+				`Delete one row from ${state.tableNode.schemaName}.${state.tableNode.tableName}?`,
+				{
+					modal: true,
+				},
+				'Delete'
+			);
+
+			if (confirmation !== 'Delete') {
+				return;
+			}
+
+			const result = await this.deleteMySqlTableRowUseCase.execute(
+				state.tableNode.connection,
+				state.tableNode.schemaName,
+				state.tableNode.tableName,
+				this.createIdentityValues(primaryKeyColumns, row)
+			);
+
+			await vscode.window.showInformationMessage(
+				`Deleted ${result.affectedRows} row from ${state.tableNode.schemaName}.${state.tableNode.tableName}.`
+			);
+			await this.renderTableData(state);
+		} catch (error) {
+			await vscode.window.showErrorMessage(
+				error instanceof Error ? error.message : String(error)
+			);
+		}
+	}
+
+	/**
+	 * 通过 VS Code 输入框收集单条记录更新值。
+	 *
+	 * @param columns 当前表字段元数据。
+	 * @param row 当前页中的原始行。
+	 * @returns 用户提交的更新值；取消时返回 undefined。
+	 */
+	private async promptUpdateValues(
+		columns: readonly MySqlTableColumnMetadata[],
+		row: Record<string, MySqlTableCellValue>
+	): Promise<MySqlTableUpdateValues | undefined> {
+		const values: Record<string, MySqlTableCellValue> = {};
+		const editableColumns = columns.filter(
+			(column) =>
+				!column.isPrimaryKey &&
+				!column.extra.toLowerCase().includes('auto_increment')
+		);
+
+		for (const column of editableColumns) {
+			const currentValue = row[column.name] ?? null;
+			const value = await vscode.window.showInputBox({
+				title: `Edit value for ${column.name}`,
+				value: currentValue === null ? '' : String(currentValue),
+				prompt: `${column.dataType}${column.nullable ? ', nullable' : ''}. Leave empty to keep current value; type NULL to set NULL.`,
+				ignoreFocusOut: true,
+			});
+
+			if (value === undefined) {
+				return undefined;
+			}
+
+			if (value.length === 0) {
+				continue;
+			}
+
+			const nextValue = value.toUpperCase() === 'NULL' ? null : value;
+
+			if (nextValue !== currentValue) {
+				values[column.name] = nextValue;
+			}
+		}
+
+		return values;
+	}
+
+	/**
+	 * 确认是否保存当前尚未写入数据库的修改。
+	 *
+	 * @param message 确认弹窗消息。
+	 * @returns 用户选择保存时返回 true。
+	 */
+	private async confirmPendingChange(message: string): Promise<boolean> {
+		const confirmation = await vscode.window.showWarningMessage(
+			message,
+			{
+				modal: true,
+			},
+			'Save',
+			'Discard'
+		);
+
+		return confirmation === 'Save';
 	}
 
 	/**
@@ -179,6 +494,8 @@ export class MySqlTableDataPanel {
 				),
 			]);
 			state.currentSql = rowPage.sql;
+			state.latestColumns = columns;
+			state.latestRows = rowPage.rows;
 
 			state.panel.webview.html = this.renderTableHtml(
 				state,
@@ -298,7 +615,7 @@ export class MySqlTableDataPanel {
 	}
 
 	/**
-	 * 渲染完整的只读表数据 HTML 文档。
+	 * 渲染完整的表数据 HTML 文档。
 	 *
 	 * @param state 当前面板状态。
 	 * @param columns 当前选中表的字段元数据。
@@ -311,6 +628,7 @@ export class MySqlTableDataPanel {
 		rowPage: MySqlTableRowPage
 	): string {
 		const tableNode = state.tableNode;
+		const hasPrimaryKey = columns.some((column) => column.isPrimaryKey);
 		const dataColumns = columns.filter(
 			(column) => !state.hiddenColumnNames.has(column.name)
 		);
@@ -351,11 +669,11 @@ export class MySqlTableDataPanel {
 
 		const rowsMarkup =
 			rowPage.rows.length === 0
-				? `<tr><td colspan="${visibleColumns.length}" class="empty-cell">No rows found for this page.</td></tr>`
+				? `<tr><td colspan="${visibleColumns.length + 1}" class="empty-cell">No rows found for this page.</td></tr>`
 				: rowPage.rows
 						.map(
-							(row) =>
-								`<tr>${visibleColumns
+							(row, rowIndex) =>
+								`<tr><td>${this.renderRowActions(rowIndex, hasPrimaryKey)}</td>${visibleColumns
 									.map((column) =>
 										column.name === '__empty__'
 											? this.renderCell(null)
@@ -386,6 +704,9 @@ export class MySqlTableDataPanel {
 			.join('');
 		const ascSelected = state.sortDirection === 'asc' ? ' selected' : '';
 		const descSelected = state.sortDirection === 'desc' ? ' selected' : '';
+		const pageNote = hasPrimaryKey
+			? 'Field visibility changes only affect this preview.'
+			: 'Edit and delete are disabled because this table has no primary key.';
 
 		return `<!DOCTYPE html>
 <html lang="en">
@@ -436,6 +757,13 @@ export class MySqlTableDataPanel {
 		button.secondary {
 			background: var(--vscode-button-secondaryBackground);
 			color: var(--vscode-button-secondaryForeground);
+		}
+		button.row-action {
+			padding: 3px 8px;
+		}
+		.row-actions {
+			display: flex;
+			gap: 6px;
 		}
 		button:disabled {
 			opacity: 0.5;
@@ -583,6 +911,7 @@ export class MySqlTableDataPanel {
 				<div class="subtitle">Connection: ${this.escapeHtml(tableNode.connection.name)}</div>
 			</div>
 			<div class="actions">
+				<button onclick="postAction('insertRow')">Add Row</button>
 				<button class="secondary" onclick="postAction('refresh')">Refresh</button>
 				<button class="secondary" onclick="postAction('openSqlTerminal')">SQL Terminal</button>
 				<button class="secondary" onclick="postAction('previousPage')" ${rowPage.pageIndex === 0 ? 'disabled' : ''}>Previous</button>
@@ -628,7 +957,7 @@ export class MySqlTableDataPanel {
 		<div class="table-wrapper">
 			<table>
 				<thead>
-					<tr>${columnHeaders}</tr>
+					<tr><th>Actions</th>${columnHeaders}</tr>
 				</thead>
 				<tbody>
 					${rowsMarkup}
@@ -639,12 +968,24 @@ export class MySqlTableDataPanel {
 			<summary>Current SQL</summary>
 			<pre><code>${this.escapeHtml(rowPage.sql)}</code></pre>
 		</details>
-		<div class="page-note">Read-only preview. Editing and field visibility are not connected yet.</div>
+		<div class="page-note">${this.escapeHtml(pageNote)}</div>
 	</div>
 	<script>
 		const vscode = acquireVsCodeApi();
 		function postAction(type) {
 			vscode.postMessage({ type });
+		}
+		function editRow(rowIndex) {
+			vscode.postMessage({
+				type: 'editRow',
+				rowIndex
+			});
+		}
+		function deleteRow(rowIndex) {
+			vscode.postMessage({
+				type: 'deleteRow',
+				rowIndex
+			});
 		}
 		function applyQueryOptions() {
 			vscode.postMessage({
@@ -674,6 +1015,27 @@ export class MySqlTableDataPanel {
 	</script>
 </body>
 </html>`;
+	}
+
+	/**
+	 * 渲染单行写操作按钮。
+	 *
+	 * @param rowIndex 当前页行索引。
+	 * @param canMutateRow 当前表是否可以通过主键定位行。
+	 * @returns 行操作按钮 HTML。
+	 */
+	private renderRowActions(rowIndex: number, canMutateRow: boolean): string {
+		if (!canMutateRow) {
+			return `<div class="row-actions">
+				<button class="secondary row-action" disabled>Edit</button>
+				<button class="secondary row-action" disabled>Delete</button>
+			</div>`;
+		}
+
+		return `<div class="row-actions">
+			<button class="secondary row-action" onclick="editRow(${rowIndex})">Edit</button>
+			<button class="secondary row-action" onclick="deleteRow(${rowIndex})">Delete</button>
+		</div>`;
 	}
 
 	/**

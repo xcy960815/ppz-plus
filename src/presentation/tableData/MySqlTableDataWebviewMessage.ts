@@ -52,6 +52,29 @@ export interface MySqlTableDataOpenSqlTerminalMessage {
 }
 
 /**
+ * 请求新增一条表记录。
+ */
+export interface MySqlTableDataInsertRowMessage {
+	readonly type: 'insertRow';
+}
+
+/**
+ * 请求编辑当前页中的一条表记录。
+ */
+export interface MySqlTableDataEditRowMessage {
+	readonly type: 'editRow';
+	readonly rowIndex: number;
+}
+
+/**
+ * 请求删除当前页中的一条表记录。
+ */
+export interface MySqlTableDataDeleteRowMessage {
+	readonly type: 'deleteRow';
+	readonly rowIndex: number;
+}
+
+/**
  * 描述 MySQL 表数据 Webview 可接收的消息。
  */
 export type MySqlTableDataWebviewMessage =
@@ -61,4 +84,7 @@ export type MySqlTableDataWebviewMessage =
 	| MySqlTableDataApplyQueryOptionsMessage
 	| MySqlTableDataClearQueryOptionsMessage
 	| MySqlTableDataSetVisibleColumnsMessage
-	| MySqlTableDataOpenSqlTerminalMessage;
+	| MySqlTableDataOpenSqlTerminalMessage
+	| MySqlTableDataInsertRowMessage
+	| MySqlTableDataEditRowMessage
+	| MySqlTableDataDeleteRowMessage;

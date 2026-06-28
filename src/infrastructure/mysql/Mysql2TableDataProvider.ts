@@ -3,8 +3,14 @@ import type {
 	MySqlTableCellValue,
 	MySqlTableColumnMetadata,
 	MySqlTableDataProvider,
+	MySqlTableDeleteResult,
+	MySqlTableInsertResult,
+	MySqlTableInsertValues,
 	MySqlTableQueryOptions,
 	MySqlTableRowPage,
+	MySqlTableRowIdentityValues,
+	MySqlTableUpdateResult,
+	MySqlTableUpdateValues,
 } from '../../application/mysql/MySqlTableDataProvider';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
@@ -102,6 +108,130 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 				pageSize,
 				rowPageQuery.displaySql
 			);
+		} finally {
+			await runtimeConnection.end();
+		}
+	}
+
+	/**
+	 * 向指定 MySQL 表新增一条记录。
+	 *
+	 * @param connection MySQL 连接配置。
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要新增记录的表。
+	 * @param values 需要显式写入的字段值。
+	 * @returns 单行新增结果。
+	 */
+	public async insertRow(
+		connection: MysqlConnectionConfig,
+		schemaName: string,
+		tableName: string,
+		values: MySqlTableInsertValues
+	): Promise<MySqlTableInsertResult> {
+		const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
+		const runtimeConnection = await mysql.createConnection(
+			this.mySqlConnectionAdapter.resolveDriverOptions(connection)
+		);
+
+		try {
+			const insertQuery = this.createInsertRowQuery(
+				schemaName,
+				tableName,
+				values
+			);
+			const [result] = await runtimeConnection.query(
+				insertQuery.sql,
+				insertQuery.values
+			);
+
+			return {
+				affectedRows: this.readNumberProperty(result, 'affectedRows'),
+				insertId: this.readInsertId(result),
+				sql: insertQuery.displaySql,
+			};
+		} finally {
+			await runtimeConnection.end();
+		}
+	}
+
+	/**
+	 * 更新指定 MySQL 表中的一条记录。
+	 *
+	 * @param connection MySQL 连接配置。
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要更新记录的表。
+	 * @param identityValues 用于定位原行的字段值。
+	 * @param values 需要更新的新字段值。
+	 * @returns 单行更新结果。
+	 */
+	public async updateRow(
+		connection: MysqlConnectionConfig,
+		schemaName: string,
+		tableName: string,
+		identityValues: MySqlTableRowIdentityValues,
+		values: MySqlTableUpdateValues
+	): Promise<MySqlTableUpdateResult> {
+		const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
+		const runtimeConnection = await mysql.createConnection(
+			this.mySqlConnectionAdapter.resolveDriverOptions(connection)
+		);
+
+		try {
+			const updateQuery = this.createUpdateRowQuery(
+				schemaName,
+				tableName,
+				identityValues,
+				values
+			);
+			const [result] = await runtimeConnection.query(
+				updateQuery.sql,
+				updateQuery.values
+			);
+
+			return {
+				affectedRows: this.readNumberProperty(result, 'affectedRows'),
+				sql: updateQuery.displaySql,
+			};
+		} finally {
+			await runtimeConnection.end();
+		}
+	}
+
+	/**
+	 * 删除指定 MySQL 表中的一条记录。
+	 *
+	 * @param connection MySQL 连接配置。
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要删除记录的表。
+	 * @param identityValues 用于定位原行的字段值。
+	 * @returns 单行删除结果。
+	 */
+	public async deleteRow(
+		connection: MysqlConnectionConfig,
+		schemaName: string,
+		tableName: string,
+		identityValues: MySqlTableRowIdentityValues
+	): Promise<MySqlTableDeleteResult> {
+		const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
+		const runtimeConnection = await mysql.createConnection(
+			this.mySqlConnectionAdapter.resolveDriverOptions(connection)
+		);
+
+		try {
+			const deleteQuery = this.createDeleteRowQuery(
+				schemaName,
+				tableName,
+				identityValues
+			);
+			const [result] = await runtimeConnection.query(
+				deleteQuery.sql,
+				deleteQuery.values
+			);
+
+			return {
+				affectedRows: this.readNumberProperty(result, 'affectedRows'),
+				sql: deleteQuery.displaySql,
+			};
 		} finally {
 			await runtimeConnection.end();
 		}
@@ -266,6 +396,137 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	}
 
 	/**
+	 * 创建单行新增 SQL。
+	 *
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要新增记录的表。
+	 * @param values 需要显式写入的字段值。
+	 * @returns 可执行 SQL、参数和展示 SQL。
+	 */
+	private createInsertRowQuery(
+		schemaName: string,
+		tableName: string,
+		values: MySqlTableInsertValues
+	): {
+		readonly sql: string;
+		readonly values: readonly unknown[];
+		readonly displaySql: string;
+	} {
+		const tableSql = this.escapeQualifiedTableName(schemaName, tableName);
+		const entries = Object.entries(values);
+
+		if (entries.length === 0) {
+			return {
+				sql: `INSERT INTO ${tableSql} () VALUES ()`,
+				values: [],
+				displaySql: `INSERT INTO ${tableSql} () VALUES ()`,
+			};
+		}
+
+		const columnSql = entries
+			.map(([columnName]) => this.escapeIdentifier(columnName))
+			.join(', ');
+		const placeholderSql = entries.map(() => '?').join(', ');
+		const executableValues = entries.map(([, value]) => value);
+		const displayValues = entries
+			.map(([, value]) => this.formatSqlLiteral(value))
+			.join(', ');
+
+		return {
+			sql: `INSERT INTO ${tableSql} (${columnSql}) VALUES (${placeholderSql})`,
+			values: executableValues,
+			displaySql: `INSERT INTO ${tableSql} (${columnSql}) VALUES (${displayValues})`,
+		};
+	}
+
+	/**
+	 * 创建单行更新 SQL。
+	 *
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要更新记录的表。
+	 * @param identityValues 用于定位原行的字段值。
+	 * @param values 需要更新的新字段值。
+	 * @returns 可执行 SQL、参数和展示 SQL。
+	 */
+	private createUpdateRowQuery(
+		schemaName: string,
+		tableName: string,
+		identityValues: MySqlTableRowIdentityValues,
+		values: MySqlTableUpdateValues
+	): {
+		readonly sql: string;
+		readonly values: readonly unknown[];
+		readonly displaySql: string;
+	} {
+		const tableSql = this.escapeQualifiedTableName(schemaName, tableName);
+		const valueEntries = Object.entries(values);
+		const identityEntries = Object.entries(identityValues);
+		const setSql = valueEntries
+			.map(([columnName]) => `${this.escapeIdentifier(columnName)} = ?`)
+			.join(', ');
+		const whereSql = identityEntries
+			.map(([columnName]) => `${this.escapeIdentifier(columnName)} <=> ?`)
+			.join(' AND ');
+		const displaySetSql = valueEntries
+			.map(
+				([columnName, value]) =>
+					`${this.escapeIdentifier(columnName)} = ${this.formatSqlLiteral(value)}`
+			)
+			.join(', ');
+		const displayWhereSql = identityEntries
+			.map(
+				([columnName, value]) =>
+					`${this.escapeIdentifier(columnName)} <=> ${this.formatSqlLiteral(value)}`
+			)
+			.join(' AND ');
+
+		return {
+			sql: `UPDATE ${tableSql} SET ${setSql} WHERE ${whereSql} LIMIT 1`,
+			values: [
+				...valueEntries.map(([, value]) => value),
+				...identityEntries.map(([, value]) => value),
+			],
+			displaySql: `UPDATE ${tableSql} SET ${displaySetSql} WHERE ${displayWhereSql} LIMIT 1`,
+		};
+	}
+
+	/**
+	 * 创建单行删除 SQL。
+	 *
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要删除记录的表。
+	 * @param identityValues 用于定位原行的字段值。
+	 * @returns 可执行 SQL、参数和展示 SQL。
+	 */
+	private createDeleteRowQuery(
+		schemaName: string,
+		tableName: string,
+		identityValues: MySqlTableRowIdentityValues
+	): {
+		readonly sql: string;
+		readonly values: readonly unknown[];
+		readonly displaySql: string;
+	} {
+		const tableSql = this.escapeQualifiedTableName(schemaName, tableName);
+		const identityEntries = Object.entries(identityValues);
+		const whereSql = identityEntries
+			.map(([columnName]) => `${this.escapeIdentifier(columnName)} <=> ?`)
+			.join(' AND ');
+		const displayWhereSql = identityEntries
+			.map(
+				([columnName, value]) =>
+					`${this.escapeIdentifier(columnName)} <=> ${this.formatSqlLiteral(value)}`
+			)
+			.join(' AND ');
+
+		return {
+			sql: `DELETE FROM ${tableSql} WHERE ${whereSql} LIMIT 1`,
+			values: identityEntries.map(([, value]) => value),
+			displaySql: `DELETE FROM ${tableSql} WHERE ${displayWhereSql} LIMIT 1`,
+		};
+	}
+
+	/**
 	 * 创建关键词过滤 SQL 片段。
 	 *
 	 * @param columns 当前表字段元数据。
@@ -414,6 +675,67 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 			.replaceAll('\t', '\\t')
 			.replaceAll('\u001a', '\\Z')
 			.replaceAll("'", "\\'");
+	}
+
+	/**
+	 * 将单个值格式化为展示 SQL 使用的字面量。
+	 *
+	 * @param value 待格式化的字段值。
+	 * @returns 仅用于展示的 SQL 字面量。
+	 */
+	private formatSqlLiteral(value: MySqlTableCellValue): string {
+		if (value === null) {
+			return 'NULL';
+		}
+
+		if (typeof value === 'number') {
+			return String(value);
+		}
+
+		if (typeof value === 'boolean') {
+			return value ? 'TRUE' : 'FALSE';
+		}
+
+		return `'${this.escapeSqlString(value)}'`;
+	}
+
+	/**
+	 * 从 mysql2 执行结果中读取数字属性。
+	 *
+	 * @param result mysql2 返回的执行结果。
+	 * @param propertyName 需要读取的属性名。
+	 * @returns 可用数字，不存在时返回 0。
+	 */
+	private readNumberProperty(result: unknown, propertyName: string): number {
+		if (!result || typeof result !== 'object') {
+			return 0;
+		}
+
+		const value = Reflect.get(result, propertyName);
+		return typeof value === 'number' ? value : 0;
+	}
+
+	/**
+	 * 从 mysql2 执行结果中读取 insertId。
+	 *
+	 * @param result mysql2 返回的执行结果。
+	 * @returns 新增记录标识，不存在时返回 null。
+	 */
+	private readInsertId(result: unknown): string | number | null {
+		if (!result || typeof result !== 'object') {
+			return null;
+		}
+
+		const value = Reflect.get(result, 'insertId');
+		if (typeof value === 'number' || typeof value === 'string') {
+			return value;
+		}
+
+		if (typeof value === 'bigint') {
+			return value.toString();
+		}
+
+		return null;
 	}
 
 	/**

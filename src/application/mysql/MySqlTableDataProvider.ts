@@ -6,6 +6,32 @@ import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionC
 export type MySqlTableCellValue = string | number | boolean | null;
 
 /**
+ * 表示新增单行记录时可写入的字段值。
+ */
+export type MySqlTableInsertValue = MySqlTableCellValue;
+
+/**
+ * 描述新增单行记录时提交的字段值。
+ */
+export type MySqlTableInsertValues = Readonly<
+	Record<string, MySqlTableInsertValue>
+>;
+
+/**
+ * 描述更新单行记录时定位原行的字段值。
+ */
+export type MySqlTableRowIdentityValues = Readonly<
+	Record<string, MySqlTableCellValue>
+>;
+
+/**
+ * 描述更新单行记录时提交的新字段值。
+ */
+export type MySqlTableUpdateValues = Readonly<
+	Record<string, MySqlTableCellValue>
+>;
+
+/**
  * 描述 MySQL 表数据页中可见的字段。
  */
 export interface MySqlTableColumnMetadata {
@@ -56,7 +82,32 @@ export interface MySqlTableRowPage {
 }
 
 /**
- * 向应用层提供只读 MySQL 表结构和行数据。
+ * 描述 MySQL 单行新增结果。
+ */
+export interface MySqlTableInsertResult {
+	readonly affectedRows: number;
+	readonly insertId: string | number | null;
+	readonly sql: string;
+}
+
+/**
+ * 描述 MySQL 单行更新结果。
+ */
+export interface MySqlTableUpdateResult {
+	readonly affectedRows: number;
+	readonly sql: string;
+}
+
+/**
+ * 描述 MySQL 单行删除结果。
+ */
+export interface MySqlTableDeleteResult {
+	readonly affectedRows: number;
+	readonly sql: string;
+}
+
+/**
+ * 向应用层提供 MySQL 表结构、行数据和单行写入能力。
  */
 export interface MySqlTableDataProvider {
 	/**
@@ -92,4 +143,54 @@ export interface MySqlTableDataProvider {
 		pageSize: number,
 		options?: MySqlTableQueryOptions
 	): Promise<MySqlTableRowPage>;
+
+	/**
+	 * 向选中 MySQL 表新增一条记录。
+	 *
+	 * @param connection MySQL 连接配置。
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要新增记录的表。
+	 * @param values 需要显式写入的字段值，未出现的字段使用数据库默认值。
+	 * @returns 单行新增结果。
+	 */
+	insertRow(
+		connection: MysqlConnectionConfig,
+		schemaName: string,
+		tableName: string,
+		values: MySqlTableInsertValues
+	): Promise<MySqlTableInsertResult>;
+
+	/**
+	 * 更新选中 MySQL 表中的一条记录。
+	 *
+	 * @param connection MySQL 连接配置。
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要更新记录的表。
+	 * @param identityValues 用于定位原行的字段值。
+	 * @param values 需要更新的新字段值。
+	 * @returns 单行更新结果。
+	 */
+	updateRow(
+		connection: MysqlConnectionConfig,
+		schemaName: string,
+		tableName: string,
+		identityValues: MySqlTableRowIdentityValues,
+		values: MySqlTableUpdateValues
+	): Promise<MySqlTableUpdateResult>;
+
+	/**
+	 * 删除选中 MySQL 表中的一条记录。
+	 *
+	 * @param connection MySQL 连接配置。
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要删除记录的表。
+	 * @param identityValues 用于定位原行的字段值。
+	 * @returns 单行删除结果。
+	 */
+	deleteRow(
+		connection: MysqlConnectionConfig,
+		schemaName: string,
+		tableName: string,
+		identityValues: MySqlTableRowIdentityValues
+	): Promise<MySqlTableDeleteResult>;
 }
