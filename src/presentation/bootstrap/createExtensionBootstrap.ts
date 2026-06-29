@@ -15,6 +15,11 @@ import { ListMySqlSchemasUseCase } from '../../application/useCases/ListMySqlSch
 import { ListMySqlTableColumnsUseCase } from '../../application/useCases/ListMySqlTableColumnsUseCase';
 import { ListMySqlTableRowPageUseCase } from '../../application/useCases/ListMySqlTableRowPageUseCase';
 import { ListMySqlTablesUseCase } from '../../application/useCases/ListMySqlTablesUseCase';
+import { ListPostgreSqlDatabasesUseCase } from '../../application/useCases/ListPostgreSqlDatabasesUseCase';
+import { ListPostgreSqlSchemasUseCase } from '../../application/useCases/ListPostgreSqlSchemasUseCase';
+import { ListPostgreSqlTableColumnsUseCase } from '../../application/useCases/ListPostgreSqlTableColumnsUseCase';
+import { ListPostgreSqlTableRowPageUseCase } from '../../application/useCases/ListPostgreSqlTableRowPageUseCase';
+import { ListPostgreSqlTablesUseCase } from '../../application/useCases/ListPostgreSqlTablesUseCase';
 import { ListSqlExportTaskLogsUseCase } from '../../application/useCases/ListSqlExportTaskLogsUseCase';
 import { CreateImportErrorReportUseCase } from '../../application/useCases/CreateImportErrorReportUseCase';
 import { ExecuteMySqlSqlUseCase } from '../../application/useCases/ExecuteMySqlSqlUseCase';
@@ -34,8 +39,10 @@ import { TestConnectionUseCase } from '../../application/useCases/TestConnection
 import { UpdateMySqlTableRowUseCase } from '../../application/useCases/UpdateMySqlTableRowUseCase';
 import {
 	MYSQL_MVP_CAPABILITY_DECLARATION,
+	POSTGRESQL_TREE_CAPABILITY_DECLARATION,
 } from '../../domain/capabilities/DatabaseCapabilityDeclaration';
 import { InMemoryDatabaseCapabilityCatalog } from '../../infrastructure/capabilities/InMemoryDatabaseCapabilityCatalog';
+import { TcpDatabaseConnectionTester } from '../../infrastructure/connections/TcpDatabaseConnectionTester';
 import { NodeCsvFileReader } from '../../infrastructure/files/NodeCsvFileReader';
 import { NodeJsonFileReader } from '../../infrastructure/files/NodeJsonFileReader';
 import { NodeSqlExportFileWriter } from '../../infrastructure/files/NodeSqlExportFileWriter';
@@ -48,7 +55,10 @@ import { MySqlRuntimeLoader } from '../../infrastructure/mysql/MySqlRuntimeLoade
 import { Mysql2SqlExecutor } from '../../infrastructure/mysql/Mysql2SqlExecutor';
 import { Mysql2TableImportProvider } from '../../infrastructure/mysql/Mysql2TableImportProvider';
 import { Mysql2TableDataProvider } from '../../infrastructure/mysql/Mysql2TableDataProvider';
-import { TcpMySqlConnectionTester } from '../../infrastructure/mysql/TcpMySqlConnectionTester';
+import { PgPostgreSqlMetadataProvider } from '../../infrastructure/postgresql/PgPostgreSqlMetadataProvider';
+import { PgPostgreSqlTableDataProvider } from '../../infrastructure/postgresql/PgPostgreSqlTableDataProvider';
+import { PostgreSqlConnectionAdapter } from '../../infrastructure/postgresql/PostgreSqlConnectionAdapter';
+import { PostgreSqlRuntimeLoader } from '../../infrastructure/postgresql/PostgreSqlRuntimeLoader';
 import { GlobalStateConnectionRepository } from '../../infrastructure/storage/GlobalStateConnectionRepository';
 import { GlobalStateSqlExportTaskLogRepository } from '../../infrastructure/storage/GlobalStateSqlExportTaskLogRepository';
 import { AddMySqlConnectionCommand } from '../commands/AddMySqlConnectionCommand';
@@ -85,6 +95,7 @@ export function createExtensionBootstrap(
 	 */
 	const capabilityCatalog = new InMemoryDatabaseCapabilityCatalog([
 		MYSQL_MVP_CAPABILITY_DECLARATION,
+		POSTGRESQL_TREE_CAPABILITY_DECLARATION,
 	]);
 
 	/**
@@ -101,16 +112,21 @@ export function createExtensionBootstrap(
 	 * 归一化 MySQL 相关基础设施细节。
 	 */
 	const mySqlConnectionAdapter = new MySqlConnectionAdapter();
+	const postgreSqlConnectionAdapter = new PostgreSqlConnectionAdapter();
 
 	/**
-	 * 通过 TCP 探测 MySQL 端点，用于首版连接测试 MVP。
+	 * 通过 TCP 探测当前支持数据库的端点。
 	 */
-	const connectionTester = new TcpMySqlConnectionTester(mySqlConnectionAdapter);
+	const connectionTester = new TcpDatabaseConnectionTester(
+		mySqlConnectionAdapter,
+		postgreSqlConnectionAdapter
+	);
 
 	/**
 	 * 为 MySQL 运行时能力延迟加载 mysql2。
 	 */
 	const mySqlRuntimeLoader = new MySqlRuntimeLoader();
+	const postgreSqlRuntimeLoader = new PostgreSqlRuntimeLoader();
 
 	/**
 	 * 为资源树读取 MySQL schema 和表元数据。
@@ -118,6 +134,14 @@ export function createExtensionBootstrap(
 	const mySqlMetadataProvider = new Mysql2MetadataProvider(
 		mySqlConnectionAdapter,
 		mySqlRuntimeLoader
+	);
+	const postgreSqlMetadataProvider = new PgPostgreSqlMetadataProvider(
+		postgreSqlConnectionAdapter,
+		postgreSqlRuntimeLoader
+	);
+	const postgreSqlTableDataProvider = new PgPostgreSqlTableDataProvider(
+		postgreSqlConnectionAdapter,
+		postgreSqlRuntimeLoader
 	);
 	const mySqlTableDataProvider = new Mysql2TableDataProvider(
 		mySqlConnectionAdapter,
@@ -169,6 +193,16 @@ export function createExtensionBootstrap(
 	const listMySqlTablesUseCase = new ListMySqlTablesUseCase(
 		mySqlMetadataProvider
 	);
+	const listPostgreSqlDatabasesUseCase =
+		new ListPostgreSqlDatabasesUseCase(postgreSqlMetadataProvider);
+	const listPostgreSqlSchemasUseCase =
+		new ListPostgreSqlSchemasUseCase(postgreSqlMetadataProvider);
+	const listPostgreSqlTablesUseCase =
+		new ListPostgreSqlTablesUseCase(postgreSqlMetadataProvider);
+	const listPostgreSqlTableColumnsUseCase =
+		new ListPostgreSqlTableColumnsUseCase(postgreSqlTableDataProvider);
+	const listPostgreSqlTableRowPageUseCase =
+		new ListPostgreSqlTableRowPageUseCase(postgreSqlTableDataProvider);
 	const listMySqlTableColumnsUseCase = new ListMySqlTableColumnsUseCase(
 		mySqlTableDataProvider
 	);
@@ -263,7 +297,10 @@ export function createExtensionBootstrap(
 		new MySqlConnectionsTreeDataProvider(
 			listStoredConnectionsUseCase,
 			listMySqlSchemasUseCase,
-			listMySqlTablesUseCase
+			listMySqlTablesUseCase,
+			listPostgreSqlDatabasesUseCase,
+			listPostgreSqlSchemasUseCase,
+			listPostgreSqlTablesUseCase
 		);
 	const mySqlTableDataPanel = new MySqlTableDataPanel(
 		listStoredConnectionsUseCase,
@@ -271,7 +308,9 @@ export function createExtensionBootstrap(
 		listMySqlTableRowPageUseCase,
 		insertMySqlTableRowUseCase,
 		updateMySqlTableRowUseCase,
-		deleteMySqlTableRowUseCase
+		deleteMySqlTableRowUseCase,
+		listPostgreSqlTableColumnsUseCase,
+		listPostgreSqlTableRowPageUseCase
 	);
 	const mySqlSqlTerminalPanel = new MySqlSqlTerminalPanel(
 		listStoredConnectionsUseCase,

@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type {
 	ConnectionConfig,
 	MysqlConnectionConfig,
+	PostgreSqlConnectionConfig,
 } from '../../domain/connections/ConnectionConfig';
 import type {
 	MySqlTableCellValue,
@@ -20,19 +21,29 @@ import type { InsertMySqlTableRowUseCase } from '../../application/useCases/Inse
 import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
 import type { ListMySqlTableColumnsUseCase } from '../../application/useCases/ListMySqlTableColumnsUseCase';
 import type { ListMySqlTableRowPageUseCase } from '../../application/useCases/ListMySqlTableRowPageUseCase';
+import type { ListPostgreSqlTableColumnsUseCase } from '../../application/useCases/ListPostgreSqlTableColumnsUseCase';
+import type { ListPostgreSqlTableRowPageUseCase } from '../../application/useCases/ListPostgreSqlTableRowPageUseCase';
 import type { UpdateMySqlTableRowUseCase } from '../../application/useCases/UpdateMySqlTableRowUseCase';
 import type { ExtensionActivationParticipant } from '../bootstrap/ExtensionActivationParticipant';
 import { showUserErrorMessage } from '../commands/UserErrorPresenter';
 import { OpenMySqlSqlTerminalCommand } from '../commands/OpenMySqlSqlTerminalCommand';
-import type { MySqlTableTreeNode } from '../explorer/MySqlConnectionsTreeNode';
+import type {
+	MySqlTableTreeNode,
+	PostgreSqlTableTreeNode,
+} from '../explorer/MySqlConnectionsTreeNode';
 import type { MySqlTableDataWebviewMessage } from './MySqlTableDataWebviewMessage';
+
+/**
+ * 表示当前表数据页可打开的表节点。
+ */
+type TableDataTreeNode = MySqlTableTreeNode | PostgreSqlTableTreeNode;
 
 /**
  * 保存单个 MySQL 表数据面板的可变状态。
  */
 interface MySqlTablePanelState {
 	readonly panel: vscode.WebviewPanel;
-	readonly tableNode: MySqlTableTreeNode;
+	readonly tableNode: TableDataTreeNode;
 	pageIndex: number;
 	pageSize: number;
 	filterKeyword: string;
@@ -49,7 +60,9 @@ interface MySqlTablePanelState {
  * 保存表数据页可由 VS Code 恢复的轻量状态。
  */
 interface MySqlTablePanelSerializedState {
+	readonly engine: 'mysql' | 'postgresql';
 	readonly connectionId: string;
+	readonly databaseName?: string;
 	readonly schemaName: string;
 	readonly tableName: string;
 	readonly pageIndex: number;
@@ -91,6 +104,8 @@ export class MySqlTableDataPanel
 	 * @param insertMySqlTableRowUseCase 用于新增单条表记录的用例。
 	 * @param updateMySqlTableRowUseCase 用于更新单条表记录的用例。
 	 * @param deleteMySqlTableRowUseCase 用于删除单条表记录的用例。
+	 * @param listPostgreSqlTableColumnsUseCase 用于加载 PostgreSQL 表字段的用例。
+	 * @param listPostgreSqlTableRowPageUseCase 用于加载 PostgreSQL 分页表数据的用例。
 	 */
 	public constructor(
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
@@ -98,7 +113,9 @@ export class MySqlTableDataPanel
 		private readonly listMySqlTableRowPageUseCase: ListMySqlTableRowPageUseCase,
 		private readonly insertMySqlTableRowUseCase: InsertMySqlTableRowUseCase,
 		private readonly updateMySqlTableRowUseCase: UpdateMySqlTableRowUseCase,
-		private readonly deleteMySqlTableRowUseCase: DeleteMySqlTableRowUseCase
+		private readonly deleteMySqlTableRowUseCase: DeleteMySqlTableRowUseCase,
+		private readonly listPostgreSqlTableColumnsUseCase: ListPostgreSqlTableColumnsUseCase,
+		private readonly listPostgreSqlTableRowPageUseCase: ListPostgreSqlTableRowPageUseCase
 	) {}
 
 	/**
@@ -132,28 +149,24 @@ export class MySqlTableDataPanel
 
 		if (!restoredState) {
 			panel.webview.html = this.renderRestoreErrorHtml(
-				'MySQL 表数据页状态无效。'
+				'表数据页状态无效。'
 			);
 			return;
 		}
 
 		const connection = await this.findRestoredConnection(
-			restoredState.connectionId
+			restoredState.connectionId,
+			restoredState.engine
 		);
 
 		if (!connection) {
 			panel.webview.html = this.renderRestoreErrorHtml(
-				'未找到此表数据页对应的 MySQL 连接。'
+				'未找到此表数据页对应的数据库连接。'
 			);
 			return;
 		}
 
-		const tableNode: MySqlTableTreeNode = {
-			kind: 'table',
-			connection,
-			schemaName: restoredState.schemaName,
-			tableName: restoredState.tableName,
-		};
+		const tableNode = this.createRestoredTableNode(connection, restoredState);
 		const state: MySqlTablePanelState = {
 			panel,
 			tableNode,
@@ -179,7 +192,7 @@ export class MySqlTableDataPanel
 	 *
 	 * @param tableNode 当前选中的表 Tree 节点。
 	 */
-	public async open(tableNode: MySqlTableTreeNode): Promise<void> {
+	public async open(tableNode: TableDataTreeNode): Promise<void> {
 		const panelKey = this.createPanelKey(tableNode);
 		const existingState = this.panelStatesByKey.get(panelKey);
 
@@ -248,9 +261,10 @@ export class MySqlTableDataPanel
 			return undefined;
 		}
 
-		const connectionId = Reflect.get(value, 'connectionId');
-		const schemaName = Reflect.get(value, 'schemaName');
-		const tableName = Reflect.get(value, 'tableName');
+		const serializedState = value as Record<string, unknown>;
+		const connectionId = serializedState.connectionId;
+		const schemaName = serializedState.schemaName;
+		const tableName = serializedState.tableName;
 
 		if (
 			typeof connectionId !== 'string' ||
@@ -263,16 +277,19 @@ export class MySqlTableDataPanel
 			return undefined;
 		}
 
-		const pageIndex = Reflect.get(value, 'pageIndex');
-		const pageSize = Reflect.get(value, 'pageSize');
-		const filterKeyword = Reflect.get(value, 'filterKeyword');
-		const filterConditions = Reflect.get(value, 'filterConditions');
-		const sortColumnName = Reflect.get(value, 'sortColumnName');
-		const sortDirection = Reflect.get(value, 'sortDirection');
-		const hiddenColumnNames = Reflect.get(value, 'hiddenColumnNames');
+		const pageIndex = serializedState.pageIndex;
+		const pageSize = serializedState.pageSize;
+		const filterKeyword = serializedState.filterKeyword;
+		const filterConditions = serializedState.filterConditions;
+		const sortColumnName = serializedState.sortColumnName;
+		const sortDirection = serializedState.sortDirection;
+		const hiddenColumnNames = serializedState.hiddenColumnNames;
+		const databaseName = serializedState.databaseName;
 
 		return {
+			engine: serializedState.engine === 'postgresql' ? 'postgresql' : 'mysql',
 			connectionId,
+			databaseName: typeof databaseName === 'string' ? databaseName : undefined,
 			schemaName,
 			tableName,
 			pageIndex:
@@ -334,9 +351,10 @@ export class MySqlTableDataPanel
 			return undefined;
 		}
 
-		const columnName = Reflect.get(value, 'columnName');
-		const operator = Reflect.get(value, 'operator');
-		const rawConditionValue = Reflect.get(value, 'value');
+		const filterCondition = value as Record<string, unknown>;
+		const columnName = filterCondition.columnName;
+		const operator = filterCondition.operator;
+		const rawConditionValue = filterCondition.value;
 
 		if (
 			typeof columnName !== 'string' ||
@@ -383,22 +401,57 @@ export class MySqlTableDataPanel
 	}
 
 	/**
-	 * 按连接 ID 查找可恢复的 MySQL 连接配置。
+	 * 按连接 ID 和数据库引擎查找可恢复的连接配置。
 	 *
 	 * @param connectionId 需要恢复的连接标识。
-	 * @returns 匹配的 MySQL 连接配置；不存在时为空。
+	 * @param engine 需要恢复的数据库引擎。
+	 * @returns 匹配的连接配置；不存在时为空。
 	 */
 	private async findRestoredConnection(
-		connectionId: string
-	): Promise<MysqlConnectionConfig | undefined> {
+		connectionId: string,
+		engine: 'mysql' | 'postgresql'
+	): Promise<ConnectionConfig | undefined> {
 		const connections = await this.listStoredConnectionsUseCase.execute();
 		const connection = connections.find((item) => item.id === connectionId);
 
-		if (!connection || !this.isMySqlConnection(connection)) {
+		if (!connection || connection.engine !== engine) {
 			return undefined;
 		}
 
 		return connection;
+	}
+
+	/**
+	 * 根据恢复状态创建表节点。
+	 *
+	 * @param connection 已恢复的连接配置。
+	 * @param restoredState 已解析的 Webview 状态。
+	 * @returns 可供表数据页使用的表节点。
+	 */
+	private createRestoredTableNode(
+		connection: ConnectionConfig,
+		restoredState: MySqlTablePanelSerializedState
+	): TableDataTreeNode {
+		if (connection.engine === 'postgresql') {
+			const databaseName =
+				restoredState.databaseName ??
+				(connection.mode === 'parameters' ? connection.database : undefined);
+
+			return {
+				kind: 'postgresqlTable',
+				connection,
+				databaseName: databaseName ?? '',
+				schemaName: restoredState.schemaName,
+				tableName: restoredState.tableName,
+			};
+		}
+
+		return {
+			kind: 'table',
+			connection,
+			schemaName: restoredState.schemaName,
+			tableName: restoredState.tableName,
+		};
 	}
 
 	/**
@@ -411,6 +464,18 @@ export class MySqlTableDataPanel
 		connection: ConnectionConfig
 	): connection is MysqlConnectionConfig {
 		return connection.engine === 'mysql';
+	}
+
+	/**
+	 * 判断连接配置是否为 PostgreSQL 连接。
+	 *
+	 * @param connection 待检查的连接配置。
+	 * @returns 是否为 PostgreSQL 连接。
+	 */
+	private isPostgreSqlConnection(
+		connection: ConnectionConfig
+	): connection is PostgreSqlConnectionConfig {
+		return connection.engine === 'postgresql';
 	}
 
 	/**
@@ -464,6 +529,12 @@ export class MySqlTableDataPanel
 				state.hiddenColumnNames = new Set(message.hiddenColumnNames);
 				return;
 			case 'openSqlTerminal':
+				if (this.isReadOnlyTableNode(state.tableNode)) {
+					await vscode.window.showInformationMessage(
+						'PostgreSQL SQL 终端尚未支持。'
+					);
+					return;
+				}
 				await vscode.commands.executeCommand(
 					OpenMySqlSqlTerminalCommand.id,
 					state.tableNode,
@@ -477,21 +548,72 @@ export class MySqlTableDataPanel
 				await this.openCurrentSqlDocument(message.sql);
 				return;
 			case 'insertRow':
+				if (this.isReadOnlyTableNode(state.tableNode)) {
+					await this.showReadOnlyTableMessage();
+					return;
+				}
 				await this.insertRow(state);
 				return;
 			case 'copyRow':
+				if (this.isReadOnlyTableNode(state.tableNode)) {
+					await this.showReadOnlyTableMessage();
+					return;
+				}
 				await this.copyRow(state, message.rowIndex);
 				return;
 			case 'editRow':
+				if (this.isReadOnlyTableNode(state.tableNode)) {
+					await this.showReadOnlyTableMessage();
+					return;
+				}
 				await this.editRow(state, message.rowIndex);
 				return;
 			case 'deleteRow':
+				if (this.isReadOnlyTableNode(state.tableNode)) {
+					await this.showReadOnlyTableMessage();
+					return;
+				}
 				await this.deleteRow(state, message.rowIndex);
 				return;
 			case 'saveEditedRows':
+				if (this.isReadOnlyTableNode(state.tableNode)) {
+					await this.showReadOnlyTableMessage();
+					return;
+				}
 				await this.saveEditedRows(state, message.edits);
 				return;
 		}
+	}
+
+	/**
+	 * 判断当前表节点是否只读。
+	 *
+	 * @param tableNode 当前表节点。
+	 * @returns 是否只开放只读能力。
+	 */
+	private isReadOnlyTableNode(tableNode: TableDataTreeNode): boolean {
+		return tableNode.kind === 'postgresqlTable';
+	}
+
+	/**
+	 * 从当前面板状态中读取可写的 MySQL 表节点。
+	 *
+	 * @param state 当前表数据面板状态。
+	 * @returns MySQL 表节点；非 MySQL 表时返回 undefined。
+	 */
+	private getMySqlTableNode(
+		state: MySqlTablePanelState
+	): MySqlTableTreeNode | undefined {
+		return state.tableNode.kind === 'table' ? state.tableNode : undefined;
+	}
+
+	/**
+	 * 展示只读表页提示。
+	 */
+	private async showReadOnlyTableMessage(): Promise<void> {
+		await vscode.window.showInformationMessage(
+			'当前 PostgreSQL 表数据页暂时只支持读取。'
+		);
 	}
 
 	/**
@@ -530,10 +652,17 @@ export class MySqlTableDataPanel
 		sourceRow?: Record<string, MySqlTableCellValue>
 	): Promise<void> {
 		try {
+			const tableNode = this.getMySqlTableNode(state);
+
+			if (!tableNode) {
+				await this.showReadOnlyTableMessage();
+				return;
+			}
+
 			const columns = await this.listMySqlTableColumnsUseCase.execute(
-				state.tableNode.connection,
-				state.tableNode.schemaName,
-				state.tableNode.tableName
+				tableNode.connection,
+				tableNode.schemaName,
+				tableNode.tableName
 			);
 			const values = await this.promptInsertValues(columns, sourceRow);
 
@@ -550,9 +679,9 @@ export class MySqlTableDataPanel
 			}
 
 			const result = await this.insertMySqlTableRowUseCase.execute(
-				state.tableNode.connection,
-				state.tableNode.schemaName,
-				state.tableNode.tableName,
+				tableNode.connection,
+				tableNode.schemaName,
+				tableNode.tableName,
 				values
 			);
 
@@ -641,6 +770,13 @@ export class MySqlTableDataPanel
 		rowIndex: number
 	): Promise<void> {
 		try {
+			const tableNode = this.getMySqlTableNode(state);
+
+			if (!tableNode) {
+				await this.showReadOnlyTableMessage();
+				return;
+			}
+
 			const row = state.latestRows[rowIndex];
 			const primaryKeyColumns = state.latestColumns.filter(
 				(column) => column.isPrimaryKey
@@ -655,7 +791,7 @@ export class MySqlTableDataPanel
 
 			if (primaryKeyColumns.length === 0) {
 				await vscode.window.showWarningMessage(
-					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
+					`${tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
 				);
 				return;
 			}
@@ -681,9 +817,9 @@ export class MySqlTableDataPanel
 			}
 
 			const result = await this.updateMySqlTableRowUseCase.execute(
-				state.tableNode.connection,
-				state.tableNode.schemaName,
-				state.tableNode.tableName,
+				tableNode.connection,
+				tableNode.schemaName,
+				tableNode.tableName,
 				identityValues,
 				values
 			);
@@ -714,13 +850,20 @@ export class MySqlTableDataPanel
 		}[]
 	): Promise<void> {
 		try {
+			const tableNode = this.getMySqlTableNode(state);
+
+			if (!tableNode) {
+				await this.showReadOnlyTableMessage();
+				return;
+			}
+
 			const primaryKeyColumns = state.latestColumns.filter(
 				(column) => column.isPrimaryKey
 			);
 
 			if (primaryKeyColumns.length === 0) {
 				await vscode.window.showWarningMessage(
-					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
+					`${tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
 				);
 				return;
 			}
@@ -762,9 +905,9 @@ export class MySqlTableDataPanel
 			let affectedRows = 0;
 			for (const edit of normalizedEdits) {
 				const result = await this.updateMySqlTableRowUseCase.execute(
-					state.tableNode.connection,
-					state.tableNode.schemaName,
-					state.tableNode.tableName,
+					tableNode.connection,
+					tableNode.schemaName,
+					tableNode.tableName,
 					this.createIdentityValues(primaryKeyColumns, edit.row),
 					edit.values
 				);
@@ -841,6 +984,13 @@ export class MySqlTableDataPanel
 		rowIndex: number
 	): Promise<void> {
 		try {
+			const tableNode = this.getMySqlTableNode(state);
+
+			if (!tableNode) {
+				await this.showReadOnlyTableMessage();
+				return;
+			}
+
 			const row = state.latestRows[rowIndex];
 			const primaryKeyColumns = state.latestColumns.filter(
 				(column) => column.isPrimaryKey
@@ -855,7 +1005,7 @@ export class MySqlTableDataPanel
 
 			if (primaryKeyColumns.length === 0) {
 				await vscode.window.showWarningMessage(
-					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
+					`${tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
 				);
 				return;
 			}
@@ -877,9 +1027,9 @@ export class MySqlTableDataPanel
 			}
 
 			const result = await this.deleteMySqlTableRowUseCase.execute(
-				state.tableNode.connection,
-				state.tableNode.schemaName,
-				state.tableNode.tableName,
+				tableNode.connection,
+				tableNode.schemaName,
+				tableNode.tableName,
 				this.createIdentityValues(primaryKeyColumns, row)
 			);
 
@@ -1006,21 +1156,7 @@ export class MySqlTableDataPanel
 		state.panel.webview.html = this.renderLoadingHtml(state.tableNode);
 
 		try {
-			const [columns, rowPage] = await Promise.all([
-				this.listMySqlTableColumnsUseCase.execute(
-					state.tableNode.connection,
-					state.tableNode.schemaName,
-					state.tableNode.tableName
-				),
-				this.listMySqlTableRowPageUseCase.execute(
-					state.tableNode.connection,
-					state.tableNode.schemaName,
-					state.tableNode.tableName,
-					state.pageIndex,
-					state.pageSize,
-					this.createQueryOptions(state)
-				),
-			]);
+			const [columns, rowPage] = await this.loadTableData(state);
 			state.currentSql = rowPage.sql;
 			state.latestColumns = columns;
 			state.latestRows = rowPage.rows;
@@ -1034,10 +1170,58 @@ export class MySqlTableDataPanel
 			const message = error instanceof Error ? error.message : String(error);
 			state.panel.webview.html = this.renderErrorHtml(state.tableNode, message);
 			await showUserErrorMessage({
-				operation: '加载 MySQL 表数据',
+				operation: '加载表数据',
 				error,
 			});
 		}
+	}
+
+	/**
+	 * 根据表节点类型加载字段和分页行数据。
+	 *
+	 * @param state 正在渲染的面板状态。
+	 * @returns 字段和分页行数据。
+	 */
+	private async loadTableData(
+		state: MySqlTablePanelState
+	): Promise<
+		readonly [readonly MySqlTableColumnMetadata[], MySqlTableRowPage]
+	> {
+		if (state.tableNode.kind === 'postgresqlTable') {
+			return Promise.all([
+				this.listPostgreSqlTableColumnsUseCase.execute(
+					state.tableNode.connection,
+					state.tableNode.databaseName,
+					state.tableNode.schemaName,
+					state.tableNode.tableName
+				),
+				this.listPostgreSqlTableRowPageUseCase.execute(
+					state.tableNode.connection,
+					state.tableNode.databaseName,
+					state.tableNode.schemaName,
+					state.tableNode.tableName,
+					state.pageIndex,
+					state.pageSize,
+					this.createQueryOptions(state)
+				),
+			]);
+		}
+
+		return Promise.all([
+			this.listMySqlTableColumnsUseCase.execute(
+				state.tableNode.connection,
+				state.tableNode.schemaName,
+				state.tableNode.tableName
+			),
+			this.listMySqlTableRowPageUseCase.execute(
+				state.tableNode.connection,
+				state.tableNode.schemaName,
+				state.tableNode.tableName,
+				state.pageIndex,
+				state.pageSize,
+				this.createQueryOptions(state)
+			),
+		]);
 	}
 
 	/**
@@ -1074,7 +1258,11 @@ export class MySqlTableDataPanel
 	 * @param tableNode 当前选中的表 Tree 节点。
 	 * @returns 唯一的面板键。
 	 */
-	private createPanelKey(tableNode: MySqlTableTreeNode): string {
+	private createPanelKey(tableNode: TableDataTreeNode): string {
+		if (tableNode.kind === 'postgresqlTable') {
+			return `${tableNode.connection.id}:${tableNode.databaseName}:${tableNode.schemaName}:${tableNode.tableName}`;
+		}
+
 		return `${tableNode.connection.id}:${tableNode.schemaName}:${tableNode.tableName}`;
 	}
 
@@ -1088,7 +1276,12 @@ export class MySqlTableDataPanel
 		state: MySqlTablePanelState
 	): MySqlTablePanelSerializedState {
 		return {
+			engine: state.tableNode.kind === 'postgresqlTable' ? 'postgresql' : 'mysql',
 			connectionId: state.tableNode.connection.id,
+			databaseName:
+				state.tableNode.kind === 'postgresqlTable'
+					? state.tableNode.databaseName
+					: undefined,
 			schemaName: state.tableNode.schemaName,
 			tableName: state.tableNode.tableName,
 			pageIndex: state.pageIndex,
@@ -1107,7 +1300,11 @@ export class MySqlTableDataPanel
 	 * @param tableNode 当前选中的表 Tree 节点。
 	 * @returns 加载状态的 HTML 文档。
 	 */
-	private renderLoadingHtml(tableNode: MySqlTableTreeNode): string {
+	private renderLoadingHtml(tableNode: TableDataTreeNode): string {
+		const qualifiedName =
+			tableNode.kind === 'postgresqlTable'
+				? `${tableNode.databaseName}.${tableNode.schemaName}.${tableNode.tableName}`
+				: `${tableNode.schemaName}.${tableNode.tableName}`;
 		return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1124,7 +1321,7 @@ export class MySqlTableDataPanel
 	</style>
 </head>
 <body>
-	<h2>正在加载 ${this.escapeHtml(tableNode.schemaName)}.${this.escapeHtml(tableNode.tableName)}...</h2>
+	<h2>正在加载 ${this.escapeHtml(qualifiedName)}...</h2>
 </body>
 </html>`;
 	}
@@ -1137,7 +1334,7 @@ export class MySqlTableDataPanel
 	 * @returns 错误状态的 HTML 文档。
 	 */
 	private renderErrorHtml(
-		tableNode: MySqlTableTreeNode,
+		tableNode: TableDataTreeNode,
 		message: string
 	): string {
 		return `<!DOCTYPE html>
@@ -1216,7 +1413,20 @@ export class MySqlTableDataPanel
 		rowPage: MySqlTableRowPage
 	): string {
 		const tableNode = state.tableNode;
-		const hasPrimaryKey = columns.some((column) => column.isPrimaryKey);
+		const isReadOnly = this.isReadOnlyTableNode(tableNode);
+		const hasPrimaryKey =
+			!isReadOnly && columns.some((column) => column.isPrimaryKey);
+		const readOnlyDisabled = isReadOnly ? ' disabled' : '';
+		const readOnlyTitle = isReadOnly ? 'PostgreSQL 表数据页暂时只支持读取' : '';
+		const breadcrumbTitle =
+			tableNode.kind === 'postgresqlTable'
+				? `${tableNode.connection.name} / ${tableNode.databaseName} / ${tableNode.schemaName} / ${tableNode.tableName}`
+				: `${tableNode.connection.name} / ${tableNode.schemaName} / ${tableNode.tableName}`;
+		const databaseBreadcrumb =
+			tableNode.kind === 'postgresqlTable'
+				? `${this.renderIcon('arrow-right')}
+					<span>${this.escapeHtml(tableNode.databaseName)}</span>`
+				: '';
 		const columnHeaders =
 			columns.length === 0
 				? '<th class="empty-header">无字段</th>'
@@ -1766,9 +1976,10 @@ export class MySqlTableDataPanel
 <body>
 	${iconSprite}
 		<header>
-			<nav title="${this.escapeHtml(tableNode.connection.name)} / ${this.escapeHtml(tableNode.schemaName)} / ${this.escapeHtml(tableNode.tableName)}">
+			<nav title="${this.escapeHtml(breadcrumbTitle)}">
 				<span>${this.escapeHtml(tableNode.connection.name)}</span>
 				${this.renderIcon('arrow-right')}
+				${databaseBreadcrumb}
 				<span>${this.escapeHtml(tableNode.schemaName)}</span>
 				${this.renderIcon('arrow-right')}
 				<span class="active">${this.escapeHtml(tableNode.tableName)}</span>
@@ -1778,13 +1989,13 @@ export class MySqlTableDataPanel
 				<button type="button" class="icon-btn" title="刷新" onclick="postAction('refresh')">${this.renderIcon('light')}</button>
 				<button type="button" class="icon-btn" title="搜索" onclick="showDialog('search')">${this.renderIcon('search')}</button>
 				<button type="button" class="icon-btn" title="字段选择" onclick="showDialog('fields')">${this.renderIcon('filter')}</button>
-				<button type="button" class="icon-btn" title="插入" onclick="postAction('insertRow')">${this.renderIcon('add')}</button>
+				<button type="button" class="icon-btn" title="${isReadOnly ? this.escapeHtml(readOnlyTitle) : '插入'}" onclick="postAction('insertRow')"${readOnlyDisabled}>${this.renderIcon('add')}</button>
 				<button type="button" class="icon-btn" title="拷贝" id="copyButton" onclick="copyFocusedRow()" disabled>${this.renderIcon('copy')}</button>
 				<button type="button" class="icon-btn" title="保存" id="saveButton" onclick="saveEditedRows()" disabled>${this.renderIcon('save')}</button>
 				<button type="button" class="icon-btn" title="撤销全部" id="undoButton" onclick="undoEditedRows()" disabled>${this.renderIcon('undo')}</button>
 				<button type="button" class="icon-btn" title="删除" id="deleteButton" onclick="deleteFocusedRow()" disabled>${this.renderIcon('delete')}</button>
 				<button type="button" class="icon-btn" title="查看当前 sql" onclick="showDialog('sql')">${this.renderIcon('sql')}</button>
-				<button type="button" class="icon-btn" title="打开终端" onclick="postAction('openSqlTerminal')">${this.renderIcon('terminal')}</button>
+				<button type="button" class="icon-btn" title="${isReadOnly ? 'PostgreSQL SQL 终端尚未支持' : '打开终端'}" onclick="postAction('openSqlTerminal')"${readOnlyDisabled}>${this.renderIcon('terminal')}</button>
 			</div>
 			<div class="pagination">
 				<button type="button" class="icon-btn" title="刷新" onclick="applyPagination()">${this.renderIcon('refresh')}</button>
@@ -1878,9 +2089,10 @@ export class MySqlTableDataPanel
 		let currentState = { ...initialState };
 		const paginatedSql = ${paginatedSql};
 		const sqlWithoutPagination = ${sqlWithoutPagination};
-		const filterColumnNames = ${filterColumnNames};
-		let filterConditions = ${filterConditions};
-		const hasPrimaryKey = ${hasPrimaryKey ? 'true' : 'false'};
+			const filterColumnNames = ${filterColumnNames};
+			let filterConditions = ${filterConditions};
+			const isReadOnly = ${isReadOnly ? 'true' : 'false'};
+			const hasPrimaryKey = ${hasPrimaryKey ? 'true' : 'false'};
 		const totalRowCount = ${rowPage.totalRowCount};
 		let focusedRowIndex = undefined;
 		const editing = {};
@@ -2225,10 +2437,10 @@ export class MySqlTableDataPanel
 		function updateToolbarState() {
 			const hasFocus = focusedRowIndex !== undefined && Number.isFinite(focusedRowIndex);
 			const hasEditing = Object.keys(editing).length > 0;
-			document.getElementById('copyButton').disabled = !hasFocus;
-			document.getElementById('deleteButton').disabled = !hasPrimaryKey || !hasFocus;
-			document.getElementById('saveButton').disabled = !hasPrimaryKey || !hasEditing;
-			document.getElementById('undoButton').disabled = !hasPrimaryKey || !hasEditing;
+			document.getElementById('copyButton').disabled = isReadOnly || !hasFocus;
+			document.getElementById('deleteButton').disabled = isReadOnly || !hasPrimaryKey || !hasFocus;
+			document.getElementById('saveButton').disabled = isReadOnly || !hasPrimaryKey || !hasEditing;
+			document.getElementById('undoButton').disabled = isReadOnly || !hasPrimaryKey || !hasEditing;
 		}
 		function recordCellEdit(cell) {
 			const row = cell.closest('tr[data-row-index]');

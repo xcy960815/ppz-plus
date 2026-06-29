@@ -51,3 +51,23 @@ export const MYSQL_MVP_CAPABILITY_DECLARATION = {
 		exportDml: 'supported',
 	},
 } satisfies DatabaseCapabilityDeclaration;
+
+/**
+ * 声明 PostgreSQL 当前已开放的连接与资源树能力。
+ */
+export const POSTGRESQL_TREE_CAPABILITY_DECLARATION = {
+	engine: 'postgresql',
+	capabilities: {
+		connectionManagement: 'supported',
+		connectionTest: 'supported',
+		treeExplorer: 'supported',
+		schemaBrowse: 'supported',
+		tableRead: 'planned',
+		tablePagination: 'planned',
+		tableSort: 'planned',
+		tableFilter: 'planned',
+		sqlExecute: 'planned',
+		exportDdl: 'planned',
+		exportDml: 'planned',
+	},
+} satisfies DatabaseCapabilityDeclaration;

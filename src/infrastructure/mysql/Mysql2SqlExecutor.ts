@@ -4,6 +4,8 @@ import type {
 	SqlExecutionCellValue,
 	SqlExecutionField,
 	SqlExecutionResult,
+	SqlExecutionResultMetadataEntry,
+	SqlExecutionResultSet,
 } from '../../domain/query/SqlExecutionResult';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
@@ -48,20 +50,23 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 		try {
 			const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
 			runtimeConnection = await mysql.createConnection(
-				this.mySqlConnectionAdapter.resolveDriverOptions(connection)
+				this.resolveSqlTerminalDriverOptions(connection)
 			);
 			const [rows, fields] = await runtimeConnection.query(sql);
 			const durationMs = Date.now() - startedAt;
-			const isQuery = Array.isArray(rows);
+			const resultSets = this.normalizeResultSets(rows, fields);
+			const primaryResultSet =
+				resultSets[0] ?? this.createEmptyStatementResultSet();
 
 			return {
 				sql,
 				success: true,
-				isQuery,
-				fields: isQuery ? this.normalizeFields(fields, rows) : [],
-				rows: isQuery ? this.normalizeRows(rows) : [],
-				affectedRows: isQuery ? null : this.normalizeAffectedRows(rows),
+				isQuery: primaryResultSet.isQuery,
+				fields: primaryResultSet.fields,
+				rows: primaryResultSet.rows,
+				affectedRows: primaryResultSet.affectedRows,
 				durationMs,
+				resultSets,
 			};
 		} catch (error) {
 			return {
@@ -72,6 +77,7 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 				rows: [],
 				affectedRows: null,
 				durationMs: Date.now() - startedAt,
+				resultSets: [],
 				errorMessage: error instanceof Error ? error.message : String(error),
 			};
 		} finally {
@@ -85,6 +91,155 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 				}
 			}
 		}
+	}
+
+	/**
+	 * 为 SQL 终端开启 mysql2 多语句执行选项。
+	 *
+	 * @param connection MySQL 连接配置。
+	 * @returns mysql2 可接收的 SQL 终端连接选项。
+	 */
+	private resolveSqlTerminalDriverOptions(
+		connection: MysqlConnectionConfig
+	): unknown {
+		const driverOptions =
+			this.mySqlConnectionAdapter.resolveDriverOptions(connection);
+
+		if (typeof driverOptions === 'string') {
+			return this.appendMultipleStatementsOption(driverOptions);
+		}
+
+		return {
+			...driverOptions,
+			multipleStatements: true,
+		};
+	}
+
+	/**
+	 * 为 MySQL URL 连接追加多语句执行选项。
+	 *
+	 * @param connectionUrl 用户保存的 MySQL 连接 URL。
+	 * @returns 带有 multipleStatements 参数的连接 URL。
+	 */
+	private appendMultipleStatementsOption(connectionUrl: string): string {
+		if (/[?&]multipleStatements=/.test(connectionUrl)) {
+			return connectionUrl;
+		}
+
+		return `${connectionUrl}${
+			connectionUrl.includes('?') ? '&' : '?'
+		}multipleStatements=true`;
+	}
+
+	/**
+	 * 将 mysql2 rows/fields 返回值归一化为一个或多个 SQL 结果集。
+	 *
+	 * @param rows mysql2 返回的原始 rows。
+	 * @param fields mysql2 返回的原始 fields。
+	 * @returns 可供 SQL 终端渲染的结果集列表。
+	 */
+	private normalizeResultSets(
+		rows: unknown,
+		fields: unknown
+	): readonly SqlExecutionResultSet[] {
+		if (this.isMultipleStatementResult(rows, fields)) {
+			return rows.map((rowSet, index) =>
+				this.normalizeResultSet(
+					rowSet,
+					Array.isArray(fields) ? fields[index] : undefined
+				)
+			);
+		}
+
+		return [this.normalizeResultSet(rows, fields)];
+	}
+
+	/**
+	 * 判断 mysql2 返回值是否为多语句结果。
+	 *
+	 * @param rows mysql2 返回的原始 rows。
+	 * @param fields mysql2 返回的原始 fields。
+	 * @returns 是否包含多个结果集。
+	 */
+	private isMultipleStatementResult(
+		rows: unknown,
+		fields: unknown
+	): rows is readonly unknown[] {
+		if (!Array.isArray(rows)) {
+			return false;
+		}
+
+		if (Array.isArray(fields)) {
+			return fields.some(
+				(fieldSet) => Array.isArray(fieldSet) || fieldSet === undefined
+			);
+		}
+
+		return fields === undefined && rows.some((row) => this.isResultHeader(row));
+	}
+
+	/**
+	 * 判断原始返回值是否像 mysql2 的 ResultSetHeader。
+	 *
+	 * @param value mysql2 返回的单个结果。
+	 * @returns 是否包含非查询结果常见字段。
+	 */
+	private isResultHeader(value: unknown): boolean {
+		return (
+				Boolean(value) &&
+				typeof value === 'object' &&
+				value !== null &&
+				['affectedRows', 'insertId', 'serverStatus', 'warningStatus'].some((key) =>
+					Reflect.has(value, key)
+				)
+		);
+	}
+
+	/**
+	 * 归一化单个 SQL 结果集。
+	 *
+	 * @param rows mysql2 返回的单个 rows 或 ResultSetHeader。
+	 * @param fields mysql2 返回的单个 fields。
+	 * @returns 单个 SQL 结果集。
+	 */
+	private normalizeResultSet(
+		rows: unknown,
+		fields: unknown
+	): SqlExecutionResultSet {
+		const isQuery = Array.isArray(rows);
+
+		if (isQuery) {
+			return {
+				isQuery: true,
+				fields: this.normalizeFields(fields, rows),
+				rows: this.normalizeRows(rows),
+				affectedRows: null,
+				metadata: [],
+			};
+		}
+
+		return {
+			isQuery: false,
+			fields: [],
+			rows: [],
+			affectedRows: this.normalizeAffectedRows(rows),
+			metadata: this.normalizeMetadata(rows),
+		};
+	}
+
+	/**
+	 * 创建空的语句结果集兜底。
+	 *
+	 * @returns 空的非查询结果集。
+	 */
+	private createEmptyStatementResultSet(): SqlExecutionResultSet {
+		return {
+			isQuery: false,
+			fields: [],
+			rows: [],
+			affectedRows: null,
+			metadata: [],
+		};
 	}
 
 	/**
@@ -256,6 +411,25 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 
 		const affectedRows = Reflect.get(result, 'affectedRows');
 		return typeof affectedRows === 'number' ? affectedRows : null;
+	}
+
+	/**
+	 * 将 mysql2 非查询执行摘要归一化为 key/value 列表。
+	 *
+	 * @param result mysql2 返回的非查询执行结果。
+	 * @returns 可供旧 PPZ 风格 key/value 表格展示的执行摘要。
+	 */
+	private normalizeMetadata(
+		result: unknown
+	): readonly SqlExecutionResultMetadataEntry[] {
+		if (!result || typeof result !== 'object') {
+			return [];
+		}
+
+		return Object.entries(result).map(([key, value]) => ({
+			key,
+			value: this.normalizeCellValue(value),
+		}));
 	}
 
 	/**

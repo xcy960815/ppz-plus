@@ -137,7 +137,10 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 		  }
 		| undefined
 	> {
-		const connection = node?.connection ?? (await this.pickConnection());
+		const connection =
+			node?.connection.engine === 'mysql'
+				? node.connection
+				: await this.pickConnection();
 		if (!connection) {
 			return undefined;
 		}
@@ -173,7 +176,12 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 	 * @returns 用户选择的 MySQL 连接；未选择时为空。
 	 */
 	private async pickConnection(): Promise<MysqlConnectionConfig | undefined> {
-		const connections = await this.listStoredConnectionsUseCase.execute();
+		const connections = (
+			await this.listStoredConnectionsUseCase.execute()
+		).filter(
+			(connection): connection is MysqlConnectionConfig =>
+				connection.engine === 'mysql'
+		);
 		if (connections.length === 0) {
 			await vscode.window.showInformationMessage(
 				'暂无已保存的 MySQL 连接，请先使用“PPZ Plus: 新增 MySQL 连接”创建连接。'

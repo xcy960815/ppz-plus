@@ -6,11 +6,20 @@ export type ConnectionInputMode = 'parameters' | 'url';
 interface BaseConnectionConfig {
 	readonly id: string;
 	readonly name: string;
-	readonly engine: 'mysql';
+	readonly engine: 'mysql' | 'postgresql';
 	readonly mode: ConnectionInputMode;
 }
 
-export interface MysqlParameterConnectionConfig extends BaseConnectionConfig {
+interface MysqlBaseConnectionConfig extends BaseConnectionConfig {
+	readonly engine: 'mysql';
+}
+
+interface PostgreSqlBaseConnectionConfig extends BaseConnectionConfig {
+	readonly engine: 'postgresql';
+}
+
+export interface MysqlParameterConnectionConfig
+	extends MysqlBaseConnectionConfig {
 	readonly mode: 'parameters';
 	readonly host: string;
 	readonly port: number;
@@ -19,7 +28,7 @@ export interface MysqlParameterConnectionConfig extends BaseConnectionConfig {
 	readonly database?: string;
 }
 
-export interface MysqlUrlConnectionConfig extends BaseConnectionConfig {
+export interface MysqlUrlConnectionConfig extends MysqlBaseConnectionConfig {
 	readonly mode: 'url';
 	readonly url: string;
 }
@@ -31,7 +40,30 @@ export type MysqlConnectionConfig =
 	| MysqlParameterConnectionConfig
 	| MysqlUrlConnectionConfig;
 
+export interface PostgreSqlParameterConnectionConfig
+	extends PostgreSqlBaseConnectionConfig {
+	readonly mode: 'parameters';
+	readonly host: string;
+	readonly port: number;
+	readonly username: string;
+	readonly password?: string;
+	readonly database?: string;
+}
+
+export interface PostgreSqlUrlConnectionConfig
+	extends PostgreSqlBaseConnectionConfig {
+	readonly mode: 'url';
+	readonly url: string;
+}
+
+/**
+ * 表示 PostgreSQL 连接配置变体。
+ */
+export type PostgreSqlConnectionConfig =
+	| PostgreSqlParameterConnectionConfig
+	| PostgreSqlUrlConnectionConfig;
+
 /**
  * 表示应用当前支持的连接配置联合类型。
  */
-export type ConnectionConfig = MysqlConnectionConfig;
+export type ConnectionConfig = MysqlConnectionConfig | PostgreSqlConnectionConfig;

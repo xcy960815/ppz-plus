@@ -1,11 +1,15 @@
-import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
+import type {
+	ConnectionConfig,
+	MysqlConnectionConfig,
+	PostgreSqlConnectionConfig,
+} from '../../domain/connections/ConnectionConfig';
 
 /**
- * 表示资源树中渲染的 MySQL 连接节点。
+ * 表示资源树中渲染的连接节点。
  */
 export interface MySqlConnectionTreeNode {
 	readonly kind: 'connection';
-	readonly connection: MysqlConnectionConfig;
+	readonly connection: ConnectionConfig;
 }
 
 /**
@@ -28,9 +32,43 @@ export interface MySqlTableTreeNode {
 }
 
 /**
+ * 表示 PostgreSQL 连接下渲染的 database 节点。
+ */
+export interface PostgreSqlDatabaseTreeNode {
+	readonly kind: 'postgresqlDatabase';
+	readonly connection: PostgreSqlConnectionConfig;
+	readonly databaseName: string;
+	readonly isDefault: boolean;
+}
+
+/**
+ * 表示 PostgreSQL database 下渲染的 schema 节点。
+ */
+export interface PostgreSqlSchemaTreeNode {
+	readonly kind: 'postgresqlSchema';
+	readonly connection: PostgreSqlConnectionConfig;
+	readonly databaseName: string;
+	readonly schemaName: string;
+}
+
+/**
+ * 表示 PostgreSQL schema 下渲染的表节点。
+ */
+export interface PostgreSqlTableTreeNode {
+	readonly kind: 'postgresqlTable';
+	readonly connection: PostgreSqlConnectionConfig;
+	readonly databaseName: string;
+	readonly schemaName: string;
+	readonly tableName: string;
+}
+
+/**
  * 表示 MySQL 资源视图中渲染的全部 Tree 节点类型。
  */
 export type MySqlConnectionsTreeNode =
 	| MySqlConnectionTreeNode
 	| MySqlSchemaTreeNode
-	| MySqlTableTreeNode;
+	| MySqlTableTreeNode
+	| PostgreSqlDatabaseTreeNode
+	| PostgreSqlSchemaTreeNode
+	| PostgreSqlTableTreeNode;

@@ -1,8 +1,16 @@
 import * as vscode from 'vscode';
 
 import type { ExtensionCommand } from './ExtensionCommand';
-import type { MySqlTableTreeNode } from '../explorer/MySqlConnectionsTreeNode';
+import type {
+	MySqlTableTreeNode,
+	PostgreSqlTableTreeNode,
+} from '../explorer/MySqlConnectionsTreeNode';
 import { MySqlTableDataPanel } from '../tableData/MySqlTableDataPanel';
+
+/**
+ * 表示可以打开表数据页的表节点。
+ */
+type TableDataTreeNode = MySqlTableTreeNode | PostgreSqlTableTreeNode;
 
 /**
  * 为选中的 MySQL 表节点打开只读数据页。
@@ -35,10 +43,13 @@ export class OpenMySqlTableDataCommand implements ExtensionCommand {
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
 			this.id,
-			async (tableNode?: MySqlTableTreeNode) => {
-				if (!tableNode || tableNode.kind !== 'table') {
+			async (tableNode?: TableDataTreeNode) => {
+				if (
+					!tableNode ||
+					(tableNode.kind !== 'table' && tableNode.kind !== 'postgresqlTable')
+				) {
 					await vscode.window.showInformationMessage(
-						'请选择一个 MySQL 表节点后再打开表数据页。'
+						'请选择一个表节点后再打开表数据页。'
 					);
 					return;
 				}

@@ -85,7 +85,7 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 	private resolveInitialConnection(
 		node?: MySqlConnectionsTreeNode
 	): MysqlConnectionConfig | undefined {
-		return node?.connection;
+		return node?.connection.engine === 'mysql' ? node.connection : undefined;
 	}
 
 	/**
@@ -94,7 +94,12 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 	 * @returns 用户选择的 MySQL 连接；未选择时为空。
 	 */
 	private async pickConnection(): Promise<MysqlConnectionConfig | undefined> {
-		const connections = await this.listStoredConnectionsUseCase.execute();
+		const connections = (
+			await this.listStoredConnectionsUseCase.execute()
+		).filter(
+			(connection): connection is MysqlConnectionConfig =>
+				connection.engine === 'mysql'
+		);
 		if (connections.length === 0) {
 			await vscode.window.showInformationMessage(
 				'暂无已保存的 MySQL 连接，请先使用“PPZ Plus: 新增 MySQL 连接”创建连接。'
