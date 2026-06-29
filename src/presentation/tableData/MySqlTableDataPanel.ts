@@ -1183,12 +1183,14 @@ export class MySqlTableDataPanel
 		.operations {
 			box-sizing: border-box;
 			display: flex;
-			justify-content: space-between;
+			justify-content: flex-start;
 			align-items: center;
 			min-height: 2rem;
 			padding: 0 var(--padding-h);
 			background: var(--vscode-button-background);
 			color: var(--vscode-button-foreground);
+			overflow: hidden;
+			white-space: nowrap;
 		}
 		.btns,
 		.pagination,
@@ -1197,10 +1199,10 @@ export class MySqlTableDataPanel
 			align-items: center;
 		}
 		.btns {
-			gap: .04rem;
+			flex: 0 0 auto;
 		}
 		.pagination {
-			gap: .36rem;
+			flex: 0 0 auto;
 			font-size: .86em;
 		}
 		button {
@@ -1209,13 +1211,13 @@ export class MySqlTableDataPanel
 		}
 		.operations button {
 			box-sizing: border-box;
-			width: 2.05rem;
+			min-width: 1.68rem;
 			height: 2rem;
 			border: 0;
 			border-radius: 0;
 			background: transparent;
 			color: inherit;
-			padding: 0;
+			padding: 0 .46em;
 			line-height: 2rem;
 			text-align: center;
 		}
@@ -1233,6 +1235,7 @@ export class MySqlTableDataPanel
 			margin: 0 .2em;
 		}
 		.pagination button {
+			min-width: 1.42rem;
 			padding: 0 .28em;
 		}
 		.pagination button.big {
@@ -1252,6 +1255,146 @@ export class MySqlTableDataPanel
 		.pagination .page-size {
 			margin: 0 .3em;
 		}
+		.icon {
+			position: relative;
+			display: inline-block;
+			width: 1em;
+			height: 1em;
+			vertical-align: -.16em;
+		}
+		.icon-light::before {
+			content: "⚡";
+			position: absolute;
+			inset: -.12em 0 0 0;
+			font-size: .9em;
+			line-height: 1;
+		}
+		.icon-search {
+			border: .14em solid currentColor;
+			border-radius: 50%;
+			box-sizing: border-box;
+			width: .78em;
+			height: .78em;
+			margin-right: .14em;
+		}
+		.icon-search::after {
+			content: "";
+			position: absolute;
+			right: -.1em;
+			bottom: -.04em;
+			width: .42em;
+			height: .14em;
+			background: currentColor;
+			transform: rotate(45deg);
+			transform-origin: center;
+		}
+		.icon-filter::before {
+			content: "";
+			position: absolute;
+			left: .12em;
+			top: .16em;
+			width: .76em;
+			height: .22em;
+			background: currentColor;
+			clip-path: polygon(0 0, 100% 0, 64% 100%, 36% 100%);
+		}
+		.icon-filter::after {
+			content: "";
+			position: absolute;
+			left: .42em;
+			top: .36em;
+			width: .16em;
+			height: .46em;
+			background: currentColor;
+		}
+		.icon-copy::before,
+		.icon-copy::after {
+			content: "";
+			position: absolute;
+			box-sizing: border-box;
+			width: .56em;
+			height: .68em;
+			border: .12em solid currentColor;
+			border-radius: .06em;
+		}
+		.icon-copy::before {
+			left: .18em;
+			top: .22em;
+			opacity: .55;
+		}
+		.icon-copy::after {
+			left: .34em;
+			top: .08em;
+			background: var(--vscode-button-background);
+		}
+		.icon-save::before {
+			content: "";
+			position: absolute;
+			left: .16em;
+			top: .12em;
+			box-sizing: border-box;
+			width: .7em;
+			height: .76em;
+			border: .12em solid currentColor;
+			border-radius: .05em;
+		}
+		.icon-save::after {
+			content: "";
+			position: absolute;
+			left: .32em;
+			bottom: .16em;
+			width: .38em;
+			height: .2em;
+			background: currentColor;
+		}
+		.icon-undo::before {
+			content: "↶";
+			position: absolute;
+			inset: -.18em 0 0 -.05em;
+			font-size: 1.22em;
+			line-height: 1;
+		}
+		.icon-delete::before {
+			content: "";
+			position: absolute;
+			left: .26em;
+			top: .28em;
+			box-sizing: border-box;
+			width: .48em;
+			height: .56em;
+			border: .12em solid currentColor;
+			border-top: 0;
+		}
+		.icon-delete::after {
+			content: "";
+			position: absolute;
+			left: .22em;
+			top: .14em;
+			width: .56em;
+			height: .12em;
+			background: currentColor;
+			box-shadow: .16em -.1em 0 -.04em currentColor;
+		}
+		.icon-terminal::before {
+			content: "";
+			position: absolute;
+			left: .1em;
+			top: .18em;
+			box-sizing: border-box;
+			width: .82em;
+			height: .64em;
+			border: .12em solid currentColor;
+			border-radius: .04em;
+		}
+		.icon-terminal::after {
+			content: ">";
+			position: absolute;
+			left: .25em;
+			top: .08em;
+			font-size: .8em;
+			font-weight: 700;
+			line-height: 1;
+		}
 		.table-wrapper {
 			height: calc(100vh - 3.76rem);
 			overflow: auto;
@@ -1260,6 +1403,9 @@ export class MySqlTableDataPanel
 			min-width: 100%;
 			border-collapse: collapse;
 			border-spacing: 0;
+		}
+		.pne thead {
+			background: rgba(var(--color0), .68);
 		}
 		.pne th,
 		.pne td {
@@ -1277,7 +1423,7 @@ export class MySqlTableDataPanel
 		.pne thead th {
 			position: sticky;
 			top: 0;
-			background: rgba(var(--color0), .68);
+			background: rgba(var(--color1), .08);
 			color: var(--vscode-editor-foreground);
 			z-index: 1;
 		}
@@ -1300,6 +1446,7 @@ export class MySqlTableDataPanel
 		.sort-field {
 			display: flex;
 			align-items: center;
+			min-width: 0;
 			cursor: pointer;
 		}
 		.sort-field span:first-child {
@@ -1308,29 +1455,34 @@ export class MySqlTableDataPanel
 			white-space: nowrap;
 		}
 		.sort-icons {
-			display: inline-flex;
-			flex-direction: column;
+			position: relative;
+			display: inline-block;
+			flex: 0 0 auto;
+			width: .73em;
+			height: .86em;
 			margin-left: .5em;
 			cursor: pointer;
 		}
 		.sort-icon {
 			display: block;
+			position: absolute;
+			left: .08em;
 			width: 0;
 			height: 0;
 			opacity: .5;
-			border-left: .28em solid transparent;
-			border-right: .28em solid transparent;
+			border-left: .24em solid transparent;
+			border-right: .24em solid transparent;
 		}
 		.sort-icon.selected {
 			opacity: 1;
 		}
 		.sort-icon.up {
-			border-bottom: .42em solid currentColor;
-			transform: translate(0, .16em);
+			top: .06em;
+			border-bottom: .32em solid currentColor;
 		}
 		.sort-icon.down {
-			border-top: .42em solid currentColor;
-			transform: translate(0, -.16em);
+			bottom: .06em;
+			border-top: .32em solid currentColor;
 		}
 		.pne td {
 			cursor: cell;
@@ -1467,16 +1619,16 @@ export class MySqlTableDataPanel
 		</nav>
 		<div class="operations">
 			<div class="btns">
-				<button type="button" title="刷新" onclick="postAction('refresh')">&#8635;</button>
-				<button type="button" title="搜索" onclick="showDialog('search')">&#8981;</button>
-				<button type="button" title="字段" onclick="showDialog('fields')">&#9638;</button>
+				<button type="button" title="刷新" onclick="postAction('refresh')"><span class="icon icon-light" aria-hidden="true"></span></button>
+				<button type="button" title="搜索" onclick="showDialog('search')"><span class="icon icon-search" aria-hidden="true"></span></button>
+				<button type="button" title="字段" onclick="showDialog('fields')"><span class="icon icon-filter" aria-hidden="true"></span></button>
 				<button type="button" title="新增" onclick="postAction('insertRow')">+</button>
-				<button type="button" title="复制" id="copyButton" onclick="copyFocusedRow()" disabled>C</button>
-				<button type="button" title="保存" id="saveButton" onclick="saveEditedRows()" disabled>S</button>
-				<button type="button" title="撤销" id="undoButton" onclick="undoEditedRows()" disabled>U</button>
-				<button type="button" title="删除" id="deleteButton" onclick="deleteFocusedRow()" disabled>-</button>
+				<button type="button" title="复制" id="copyButton" onclick="copyFocusedRow()" disabled><span class="icon icon-copy" aria-hidden="true"></span></button>
+				<button type="button" title="保存" id="saveButton" onclick="saveEditedRows()" disabled><span class="icon icon-save" aria-hidden="true"></span></button>
+				<button type="button" title="撤销" id="undoButton" onclick="undoEditedRows()" disabled><span class="icon icon-undo" aria-hidden="true"></span></button>
+				<button type="button" title="删除" id="deleteButton" onclick="deleteFocusedRow()" disabled><span class="icon icon-delete" aria-hidden="true"></span></button>
 				<button type="button" title="SQL" onclick="showDialog('sql')">SQL</button>
-				<button type="button" title="终端" onclick="postAction('openSqlTerminal')">&gt;</button>
+				<button type="button" title="终端" onclick="postAction('openSqlTerminal')"><span class="icon icon-terminal" aria-hidden="true"></span></button>
 			</div>
 			<div class="pagination">
 				<button type="button" title="刷新" onclick="applyPagination()">&#8635;</button>
