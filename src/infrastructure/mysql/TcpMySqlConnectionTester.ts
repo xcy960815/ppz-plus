@@ -29,7 +29,7 @@ export class TcpMySqlConnectionTester implements ConnectionTester {
 	 */
 	public async test(config: ConnectionConfig): Promise<void> {
 		if (!this.mySqlConnectionAdapter.supports(config)) {
-			throw new Error('Only MySQL connections are supported in the current MVP.');
+			throw new Error('当前 MVP 仅支持 MySQL 连接。');
 		}
 
 		/**

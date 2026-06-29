@@ -54,6 +54,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 		try {
 			const blocks: string[] = [
 				this.renderTableHeader(connection.name, target, kind),
+				this.renderDatabaseUseBlock(target.schemaName),
 			];
 
 			if (kind === 'ddl' || kind === 'both') {
@@ -63,6 +64,8 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 			if (kind === 'dml' || kind === 'both') {
 				blocks.push(await this.exportDml(runtimeConnection, target));
 			}
+
+			blocks.push(this.renderFooter());
 
 			return {
 				title: `${target.schemaName}.${target.tableName}.${kind}.sql`,
@@ -104,10 +107,11 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 			const tables = await this.listSchemaTables(runtimeConnection, target);
 			const blocks: string[] = [
 				this.renderSchemaHeader(connection.name, target, kind),
+				this.renderDatabaseUseBlock(target.schemaName),
 			];
 
 			if (tables.length === 0) {
-				blocks.push(`-- No base tables found in ${target.schemaName}.`);
+				blocks.push(`-- ${target.schemaName} 中未找到基础表。`);
 			}
 
 			for (const tableName of tables) {
@@ -122,6 +126,8 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 					)
 				);
 			}
+
+			blocks.push(this.renderFooter());
 
 			return {
 				title: `${target.schemaName}.${kind}.sql`,
@@ -178,6 +184,34 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 			`-- PPZ Plus MySQL ${kind.toUpperCase()} export`,
 			`-- Connection: ${connectionName}`,
 			`-- Schema: ${target.schemaName}`,
+		].join('\n');
+	}
+
+	/**
+	 * 生成可重新导入的数据库准备语句。
+	 *
+	 * @param schemaName 导出目标 schema 名称。
+	 * @returns 数据库创建和切换 SQL。
+	 */
+	private renderDatabaseUseBlock(schemaName: string): string {
+		const schemaSql = this.escapeIdentifier(schemaName);
+
+		return [
+			'SET FOREIGN_KEY_CHECKS = 0;',
+			`CREATE DATABASE IF NOT EXISTS ${schemaSql};`,
+			`USE ${schemaSql};`,
+		].join('\n');
+	}
+
+	/**
+	 * 生成导出文件尾部控制语句。
+	 *
+	 * @returns 导出文件尾部 SQL。
+	 */
+	private renderFooter(): string {
+		return [
+			'SET FOREIGN_KEY_CHECKS = 1;',
+			'-- PPZ Plus MySQL export completed.',
 		].join('\n');
 	}
 
@@ -287,11 +321,11 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 		const columnNames = this.normalizeFieldNames(fields);
 
 		if (columnNames.length === 0) {
-			return `-- No columns found for ${target.schemaName}.${target.tableName}.`;
+			return `-- ${target.schemaName}.${target.tableName} 未找到字段。`;
 		}
 
 		if (!Array.isArray(rows) || rows.length === 0) {
-			return `-- No rows found in ${target.schemaName}.${target.tableName}.`;
+			return `-- ${target.schemaName}.${target.tableName} 中未找到数据。`;
 		}
 
 		return rows

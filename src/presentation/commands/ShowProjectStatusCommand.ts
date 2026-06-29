@@ -46,10 +46,10 @@ export class ShowProjectStatusCommand implements ExtensionCommand {
 			/**
 			 * 构建后续阶段计划支持数据库引擎的可读摘要。
 			 */
-			const plannedEngines = status.plannedEngines.join(', ') || 'none';
+			const plannedEngines = status.plannedEngines.join(', ') || '无';
 
 			await vscode.window.showInformationMessage(
-				`ppz-plus bootstrap ready. Focus: ${status.focusEngine}. Supported MVP capabilities: ${capabilitySummary}. Planned engines: ${plannedEngines}.`
+				`ppz-plus 启动骨架已就绪。当前重点：${status.focusEngine}。已支持 MVP 能力：${capabilitySummary}。计划支持的数据库：${plannedEngines}。`
 			);
 		});
 	}

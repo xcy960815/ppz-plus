@@ -42,7 +42,7 @@ export async function promptImportColumnMapping(
 		preparation
 	);
 	if (shouldConfigure === undefined) {
-		await vscode.window.showInformationMessage(`${formatName} import canceled.`);
+		await vscode.window.showInformationMessage(`已取消 ${formatName} 导入。`);
 		return undefined;
 	}
 
@@ -78,26 +78,26 @@ async function shouldConfigureMapping(
 
 	if (hasUnmappedSources) {
 		await vscode.window.showInformationMessage(
-			`${formatName} file "${fileName}" has source fields without exact target matches. Configure column mapping before import.`
+			`${formatName} 文件“${fileName}”中有源字段未精确匹配到目标字段，请先配置字段映射。`
 		);
 		return true;
 	}
 
 	const action = await vscode.window.showInformationMessage(
-		`Use default ${formatName} column mapping for "${fileName}"?`,
+		`是否使用“${fileName}”的默认 ${formatName} 字段映射？`,
 		{
 			modal: true,
 			detail: formatMappingDetail(preparation.defaultMappings),
 		},
-		'Use Defaults',
-		'Configure'
+		'使用默认',
+		'手动配置'
 	);
 
-	if (action === 'Use Defaults') {
+	if (action === '使用默认') {
 		return false;
 	}
 
-	if (action === 'Configure') {
+	if (action === '手动配置') {
 		return true;
 	}
 
@@ -135,14 +135,14 @@ async function promptManualMappings(
 				defaultTarget
 			),
 			{
-				title: `Map ${formatName} Field`,
-				placeHolder: `Choose target column for "${sourceName}"`,
+				title: `映射 ${formatName} 字段`,
+				placeHolder: `选择“${sourceName}”对应的目标字段`,
 			}
 		);
 
 		if (!selected) {
 			await vscode.window.showInformationMessage(
-				`${formatName} import canceled.`
+				`已取消 ${formatName} 导入。`
 			);
 			return undefined;
 		}
@@ -163,7 +163,7 @@ async function promptManualMappings(
 			fileName,
 			targetName,
 			stage: 'mapping',
-			errorMessage: 'At least one import column must be mapped.',
+			errorMessage: '至少需要映射一个导入字段。',
 			mappings,
 		});
 		return undefined;
@@ -191,15 +191,15 @@ function createMappingItems(
 	);
 	const targetItems = availableTargets.map((targetField) => ({
 		label: targetField,
-		description: targetField === defaultTarget ? 'default match' : undefined,
+		description: targetField === defaultTarget ? '默认匹配' : undefined,
 		targetName: targetField,
 	}));
 
 	return [
 		...targetItems,
 		{
-			label: 'Skip this field',
-			description: 'Do not import this source field',
+			label: '跳过此字段',
+			description: '不导入这个源字段',
 			targetName: null,
 		},
 	];
@@ -217,7 +217,7 @@ function formatMappingDetail(
 	return mappings
 		.map(
 			(mapping) =>
-				`${mapping.sourceName} -> ${mapping.targetName ?? '(skip)'}`
+				`${mapping.sourceName} -> ${mapping.targetName ?? '（跳过）'}`
 		)
 		.join('\n');
 }

@@ -35,7 +35,7 @@ export class ExecuteMySqlSqlUseCase {
 				rows: [],
 				affectedRows: null,
 				durationMs: 0,
-				errorMessage: 'SQL cannot be empty.',
+				errorMessage: 'SQL 不能为空。',
 			};
 		}
 

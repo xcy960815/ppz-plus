@@ -34,11 +34,11 @@ export class InsertMySqlTableRowUseCase {
 		values: MySqlTableInsertValues
 	): Promise<MySqlTableInsertResult> {
 		if (schemaName.trim().length === 0) {
-			throw new Error('Schema name is required for MySQL row insert.');
+			throw new Error('新增 MySQL 记录需要提供 schema 名称。');
 		}
 
 		if (tableName.trim().length === 0) {
-			throw new Error('Table name is required for MySQL row insert.');
+			throw new Error('新增 MySQL 记录需要提供表名。');
 		}
 
 		return this.mySqlTableDataProvider.insertRow(

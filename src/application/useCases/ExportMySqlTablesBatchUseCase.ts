@@ -82,11 +82,11 @@ export class ExportMySqlTablesBatchUseCase {
 		const tables = this.normalizeTables(input.tables);
 
 		if (targetDirectory.length === 0) {
-			throw new Error('SQL export target directory is required.');
+			throw new Error('SQL 导出需要提供目标目录。');
 		}
 
 		if (tables.length === 0) {
-			throw new Error('Choose at least one MySQL table to export.');
+			throw new Error('请至少选择一张要导出的 MySQL 表。');
 		}
 
 		const successes: SqlExportBatchSuccessItem[] = [];
@@ -95,7 +95,7 @@ export class ExportMySqlTablesBatchUseCase {
 		this.reportProgress(input.progressReporter, {
 			completedItems: 0,
 			totalItems: tables.length,
-			message: `Preparing to export ${tables.length} MySQL table(s)...`,
+			message: `正在准备导出 ${tables.length} 张 MySQL 表...`,
 			percentage: 0,
 		});
 
@@ -108,7 +108,7 @@ export class ExportMySqlTablesBatchUseCase {
 			this.reportProgress(input.progressReporter, {
 				completedItems,
 				totalItems: tables.length,
-				message: `Exporting ${targetName}...`,
+				message: `正在导出 ${targetName}...`,
 				percentage: this.calculatePercentage(completedItems, tables.length),
 			});
 
@@ -172,7 +172,7 @@ export class ExportMySqlTablesBatchUseCase {
 			this.reportProgress(input.progressReporter, {
 				completedItems: index + 1,
 				totalItems: tables.length,
-				message: `Exported ${index + 1}/${tables.length} MySQL table(s).`,
+				message: `已导出 ${index + 1}/${tables.length} 张 MySQL 表。`,
 				percentage: this.calculatePercentage(index + 1, tables.length),
 			});
 		}
@@ -180,7 +180,7 @@ export class ExportMySqlTablesBatchUseCase {
 		this.reportProgress(input.progressReporter, {
 			completedItems: tables.length,
 			totalItems: tables.length,
-			message: 'MySQL batch export finished.',
+			message: 'MySQL 批量导出完成。',
 			percentage: 100,
 		});
 
@@ -209,11 +209,11 @@ export class ExportMySqlTablesBatchUseCase {
 			const tableName = table.tableName.trim();
 
 			if (schemaName.length === 0) {
-				throw new Error('Schema name is required for MySQL batch export.');
+				throw new Error('批量导出 MySQL 表需要提供 schema 名称。');
 			}
 
 			if (tableName.length === 0) {
-				throw new Error('Table name is required for MySQL batch export.');
+				throw new Error('批量导出 MySQL 表需要提供表名。');
 			}
 
 			return {

@@ -50,7 +50,7 @@ export class PreviewMySqlJsonFileImportUseCase {
 			if (filePath.trim().length === 0) {
 				return {
 					success: false,
-					errorMessage: 'JSON file path is required.',
+					errorMessage: 'JSON 文件路径不能为空。',
 				};
 			}
 

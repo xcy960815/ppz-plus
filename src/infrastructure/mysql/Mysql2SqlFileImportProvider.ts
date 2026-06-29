@@ -33,6 +33,7 @@ export class Mysql2SqlFileImportProvider
 		sql: string
 	): Promise<SqlFileImportResult> {
 		const startedAt = Date.now();
+		const normalizedSql = this.normalizeMySqlDumpText(sql);
 		let runtimeConnection:
 			| {
 					query(sql: string, values?: readonly unknown[]): Promise<[unknown, unknown]>;
@@ -45,7 +46,7 @@ export class Mysql2SqlFileImportProvider
 			runtimeConnection = await mysql.createConnection(
 				this.resolveImportDriverOptions(connection)
 			);
-			await runtimeConnection.query(sql);
+			await runtimeConnection.query(normalizedSql);
 
 			return {
 				success: true,
@@ -68,6 +69,66 @@ export class Mysql2SqlFileImportProvider
 				}
 			}
 		}
+	}
+
+	/**
+	 * 归一化 MySQL dump 文本，移除 mysql 客户端专属指令。
+	 *
+	 * @param sql SQL 文件原始文本。
+	 * @returns 可交给 mysql2 执行的 SQL 文本。
+	 */
+	private normalizeMySqlDumpText(sql: string): string {
+		const normalizedLines: string[] = [];
+		let delimiter = ';';
+
+		for (const rawLine of sql.replaceAll('\r\n', '\n').split('\n')) {
+			const delimiterDirective = this.parseDelimiterDirective(rawLine);
+			if (delimiterDirective !== undefined) {
+				delimiter = delimiterDirective;
+				continue;
+			}
+
+			normalizedLines.push(
+				delimiter === ';'
+					? rawLine
+					: this.replaceCustomDelimiterAtLineEnd(rawLine, delimiter)
+			);
+		}
+
+		return normalizedLines.join('\n');
+	}
+
+	/**
+	 * 解析 MySQL dump 中的 DELIMITER 指令。
+	 *
+	 * @param line SQL 文件中的单行文本。
+	 * @returns 指令指定的新分隔符；不是 DELIMITER 指令时为空。
+	 */
+	private parseDelimiterDirective(line: string): string | undefined {
+		const match = /^delimiter\s+(.+)$/i.exec(line.trim());
+		const delimiter = match?.[1]?.trim();
+
+		return delimiter && delimiter.length > 0 ? delimiter : undefined;
+	}
+
+	/**
+	 * 将自定义语句分隔符替换回标准分号。
+	 *
+	 * @param line SQL 文件中的单行文本。
+	 * @param delimiter 当前 MySQL dump 自定义分隔符。
+	 * @returns 替换后的 SQL 行文本。
+	 */
+	private replaceCustomDelimiterAtLineEnd(
+		line: string,
+		delimiter: string
+	): string {
+		const lineWithoutTrailingWhitespace = line.replace(/[ \t]+$/u, '');
+
+		if (!lineWithoutTrailingWhitespace.endsWith(delimiter)) {
+			return line;
+		}
+
+		return `${lineWithoutTrailingWhitespace.slice(0, -delimiter.length)};`;
 	}
 
 	/**

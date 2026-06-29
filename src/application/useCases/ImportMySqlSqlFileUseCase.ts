@@ -39,7 +39,7 @@ export class ImportMySqlSqlFileUseCase {
 			return {
 				success: false,
 				durationMs: 0,
-				errorMessage: 'SQL file path is required.',
+				errorMessage: 'SQL 文件路径不能为空。',
 			};
 		}
 
@@ -49,7 +49,7 @@ export class ImportMySqlSqlFileUseCase {
 			return {
 				success: false,
 				durationMs: 0,
-				errorMessage: 'SQL file is empty.',
+				errorMessage: 'SQL 文件为空。',
 			};
 		}
 

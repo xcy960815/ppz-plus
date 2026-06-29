@@ -31,11 +31,11 @@ export class ExportMySqlTableUseCase {
 		kind: SqlExportKind
 	): Promise<SqlExportDocument> {
 		if (target.schemaName.trim().length === 0) {
-			throw new Error('Schema name is required for MySQL table export.');
+			throw new Error('导出 MySQL 表需要提供 schema 名称。');
 		}
 
 		if (target.tableName.trim().length === 0) {
-			throw new Error('Table name is required for MySQL table export.');
+			throw new Error('导出 MySQL 表需要提供表名。');
 		}
 
 		return this.mySqlExportProvider.exportTable(connection, target, kind);

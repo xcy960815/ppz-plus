@@ -136,7 +136,7 @@ export class MySqlConnectionsTreeDataProvider
 			return [];
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: 'Load MySQL resources',
+				operation: '加载 MySQL 资源',
 				error,
 			});
 			return [];
@@ -205,7 +205,7 @@ export class MySqlConnectionsTreeDataProvider
 		treeItem.iconPath = new vscode.ThemeIcon('table');
 		treeItem.command = {
 			command: OpenMySqlTableDataCommand.id,
-			title: 'Open Table Data',
+			title: '打开表数据',
 			arguments: [element],
 		};
 		return treeItem;

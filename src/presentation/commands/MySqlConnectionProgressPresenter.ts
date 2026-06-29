@@ -15,18 +15,18 @@ export async function withMySqlConnectionTestProgress(
 	await vscode.window.withProgress(
 		{
 			location: vscode.ProgressLocation.Notification,
-			title: `PPZ Plus: Test MySQL Connection "${connection.name}"`,
+			title: `PPZ Plus: 测试 MySQL 连接“${connection.name}”`,
 		},
 		async (progress) => {
 			progress.report({
-				message: 'Opening TCP connection...',
+				message: '正在打开 TCP 连接...',
 				increment: 25,
 			});
 
 			await task();
 
 			progress.report({
-				message: 'Connection reached.',
+				message: '连接已建立。',
 				increment: 75,
 			});
 		}

@@ -86,7 +86,7 @@ export class ExportMySqlSchemaSqlCommand implements ExtensionCommand {
 			async (schemaNode?: MySqlSchemaTreeNode) => {
 				if (!schemaNode || schemaNode.kind !== 'schema') {
 					await vscode.window.showInformationMessage(
-						'Choose a MySQL schema node to export SQL.'
+						'请选择一个 MySQL schema 节点后再导出 SQL。'
 					);
 					return;
 				}
@@ -123,7 +123,7 @@ export class ExportMySqlSchemaSqlCommand implements ExtensionCommand {
 			);
 			const filePath = await promptSqlExportFilePath(document);
 			if (!filePath) {
-				await vscode.window.showInformationMessage('SQL export canceled.');
+				await vscode.window.showInformationMessage('已取消 SQL 导出。');
 				return;
 			}
 
@@ -152,7 +152,7 @@ export class ExportMySqlSchemaSqlCommand implements ExtensionCommand {
 				errorMessage
 			);
 			await showUserErrorMessage({
-				operation: 'Export MySQL schema SQL',
+				operation: '导出 MySQL schema SQL',
 				error,
 			});
 		}
@@ -172,10 +172,10 @@ export class ExportMySqlSchemaSqlCommand implements ExtensionCommand {
 		return vscode.window.withProgress(
 			{
 				location: vscode.ProgressLocation.Notification,
-				title: `PPZ Plus: Export MySQL Schema "${targetName}"`,
+				title: `PPZ Plus: 导出 MySQL Schema“${targetName}”`,
 			},
 			async (progress) => {
-				progress.report({ message: 'Generating SQL...', increment: 20 });
+				progress.report({ message: '正在生成 SQL...', increment: 20 });
 
 				const document = await this.exportMySqlSchemaUseCase.execute(
 					schemaNode.connection,
@@ -185,7 +185,7 @@ export class ExportMySqlSchemaSqlCommand implements ExtensionCommand {
 					this.kind
 				);
 
-				progress.report({ message: 'SQL generated.', increment: 80 });
+				progress.report({ message: 'SQL 已生成。', increment: 80 });
 				return document;
 			}
 		);
@@ -207,17 +207,17 @@ export class ExportMySqlSchemaSqlCommand implements ExtensionCommand {
 		return vscode.window.withProgress(
 			{
 				location: vscode.ProgressLocation.Notification,
-				title: `PPZ Plus: Save MySQL Schema SQL "${targetName}"`,
+				title: `PPZ Plus: 保存 MySQL Schema SQL“${targetName}”`,
 			},
 			async (progress) => {
-				progress.report({ message: 'Writing SQL file...', increment: 20 });
+				progress.report({ message: '正在写入 SQL 文件...', increment: 20 });
 
 				const saveResult = await this.saveSqlExportDocumentUseCase.execute(
 					document,
 					filePath
 				);
 
-				progress.report({ message: 'SQL file saved.', increment: 80 });
+				progress.report({ message: 'SQL 文件已保存。', increment: 80 });
 				return saveResult;
 			}
 		);

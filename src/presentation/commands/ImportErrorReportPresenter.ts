@@ -27,11 +27,13 @@ export async function showImportErrorReport(
 	input: ImportErrorReportPresentationInput
 ): Promise<void> {
 	const action = await vscode.window.showErrorMessage(
-		`${input.formatName} import failed during ${input.stage}: ${input.errorMessage}`,
-		'Open Report'
+		`${input.formatName} 导入在${formatImportStage(
+			input.stage
+		)}阶段失败：${input.errorMessage}`,
+		'打开报告'
 	);
 
-	if (action !== 'Open Report') {
+	if (action !== '打开报告') {
 		return;
 	}
 
@@ -44,4 +46,22 @@ export async function showImportErrorReport(
 	await vscode.window.showTextDocument(document, {
 		preview: false,
 	});
+}
+
+/**
+ * 格式化导入错误阶段。
+ *
+ * @param stage 原始导入错误阶段。
+ * @returns 面向用户展示的导入阶段名称。
+ */
+function formatImportStage(stage: ImportErrorStage): string {
+	if (stage === 'mapping') {
+		return '字段映射';
+	}
+
+	if (stage === 'preview') {
+		return '预览';
+	}
+
+	return '执行';
 }

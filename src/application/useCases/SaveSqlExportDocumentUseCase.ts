@@ -29,7 +29,7 @@ export class SaveSqlExportDocumentUseCase {
 		if (normalizedFilePath.length === 0) {
 			return {
 				success: false,
-				errorMessage: 'SQL export file path is required.',
+				errorMessage: 'SQL 导出需要提供文件路径。',
 			};
 		}
 
@@ -37,7 +37,7 @@ export class SaveSqlExportDocumentUseCase {
 			return {
 				success: false,
 				filePath: normalizedFilePath,
-				errorMessage: 'SQL export content is empty.',
+				errorMessage: 'SQL 导出内容为空。',
 			};
 		}
 

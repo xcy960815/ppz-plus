@@ -29,7 +29,7 @@ export class PreviewMySqlSqlFileImportUseCase {
 			if (normalizedFilePath.length === 0) {
 				return {
 					success: false,
-					errorMessage: 'SQL file path is required.',
+					errorMessage: 'SQL 文件路径不能为空。',
 				};
 			}
 
@@ -37,7 +37,7 @@ export class PreviewMySqlSqlFileImportUseCase {
 			if (sql.trim().length === 0) {
 				return {
 					success: false,
-					errorMessage: 'SQL file is empty.',
+					errorMessage: 'SQL 文件为空。',
 				};
 			}
 

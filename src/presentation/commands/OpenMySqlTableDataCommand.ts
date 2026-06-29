@@ -38,7 +38,7 @@ export class OpenMySqlTableDataCommand implements ExtensionCommand {
 			async (tableNode?: MySqlTableTreeNode) => {
 				if (!tableNode || tableNode.kind !== 'table') {
 					await vscode.window.showInformationMessage(
-						'Choose a MySQL table node to open its read-only data page.'
+						'请选择一个 MySQL 表节点后再打开表数据页。'
 					);
 					return;
 				}

@@ -56,11 +56,11 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 						this.testConnectionUseCase.execute(connection)
 					);
 					await vscode.window.showInformationMessage(
-						`Successfully reached "${connection.name}" over TCP.`
+						`已通过 TCP 连接到“${connection.name}”。`
 					);
 				} catch (error) {
 					await showUserErrorMessage({
-						operation: 'Test MySQL connection',
+						operation: '测试 MySQL 连接',
 						error,
 					});
 				}
@@ -77,7 +77,7 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 		const connections = await this.listStoredConnectionsUseCase.execute();
 		if (connections.length === 0) {
 			await vscode.window.showInformationMessage(
-				'No MySQL connections are stored yet. Use "PPZ Plus: Add MySQL Connection" first.'
+				'暂无已保存的 MySQL 连接，请先使用“PPZ Plus: 新增 MySQL 连接”创建连接。'
 			);
 			return undefined;
 		}
@@ -92,8 +92,8 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 				connection,
 			})),
 			{
-				title: 'PPZ Plus: Test MySQL Connection',
-				placeHolder: 'Choose a stored MySQL connection to test',
+				title: 'PPZ Plus: 测试 MySQL 连接',
+				placeHolder: '选择要测试的已保存 MySQL 连接',
 			}
 		);
 

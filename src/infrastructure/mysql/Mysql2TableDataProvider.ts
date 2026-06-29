@@ -4,6 +4,7 @@ import type {
 	MySqlTableColumnMetadata,
 	MySqlTableDataProvider,
 	MySqlTableDeleteResult,
+	MySqlTableFilterCondition,
 	MySqlTableInsertResult,
 	MySqlTableInsertValues,
 	MySqlTableQueryOptions,
@@ -111,10 +112,12 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 
 			return this.normalizeRowPage(
 				rows,
+				columns,
 				normalizedPageIndex,
 				pageSize,
 				totalRowCount,
-				rowPageQuery.displaySql
+				rowPageQuery.displaySql,
+				rowPageQuery.displaySqlWithoutPagination
 			);
 		} finally {
 			await runtimeConnection.end();
@@ -265,6 +268,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 				'SELECT',
 				'COLUMN_NAME AS columnName,',
 				'DATA_TYPE AS dataType,',
+				'DATETIME_PRECISION AS dateTimePrecision,',
 				'IS_NULLABLE AS isNullable,',
 				'COLUMN_KEY AS columnKey,',
 				'EXTRA AS extra',
@@ -299,6 +303,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 
 				const name = Reflect.get(row, 'columnName');
 				const dataType = Reflect.get(row, 'dataType');
+				const dateTimePrecision = Reflect.get(row, 'dateTimePrecision');
 				const isNullable = Reflect.get(row, 'isNullable');
 				const columnKey = Reflect.get(row, 'columnKey');
 				const extra = Reflect.get(row, 'extra');
@@ -310,6 +315,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 				return {
 					name,
 					dataType,
+					dateTimePrecision: this.normalizeDateTimePrecision(
+						dateTimePrecision
+					),
 					nullable: isNullable === 'YES',
 					isPrimaryKey: columnKey === 'PRI',
 					extra: typeof extra === 'string' ? extra : '',
@@ -321,19 +329,41 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	}
 
 	/**
+	 * 归一化 MySQL 返回的日期时间小数秒精度。
+	 *
+	 * @param value information_schema 中的 DATETIME_PRECISION 值。
+	 * @returns 可用于展示截断的小数秒精度。
+	 */
+	private normalizeDateTimePrecision(value: unknown): number | null {
+		if (typeof value === 'number' && Number.isFinite(value)) {
+			return Math.max(0, Math.floor(value));
+		}
+
+		if (typeof value === 'string' && value.trim().length > 0) {
+			const parsedValue = Number.parseInt(value, 10);
+			return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : null;
+		}
+
+		return null;
+	}
+
+	/**
 	 * 将 mysql2 行数据归一化为可序列化的分页载荷。
 	 *
 	 * @param rows mysql2 返回的原始行值。
+	 * @param columns 当前表字段元数据。
 	 * @param pageIndex 从 0 开始的页码。
 	 * @param pageSize 请求的分页大小。
 	 * @returns 归一化后的分页行数据。
 	 */
 	private normalizeRowPage(
 		rows: unknown,
+		columns: readonly MySqlTableColumnMetadata[],
 		pageIndex: number,
 		pageSize: number,
 		totalRowCount: number,
-		sql: string
+		sql: string,
+		sqlWithoutPagination: string
 	): MySqlTableRowPage {
 		if (!Array.isArray(rows)) {
 			return {
@@ -342,6 +372,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 				totalRowCount,
 				hasNextPage: false,
 				sql,
+				sqlWithoutPagination,
 				rows: [],
 			};
 		}
@@ -352,7 +383,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 					Boolean(row) && typeof row === 'object' && !Array.isArray(row)
 			)
 			.slice(0, pageSize)
-			.map((row) => this.normalizeRow(row));
+			.map((row) => this.normalizeRow(row, columns));
 
 		return {
 			pageIndex,
@@ -360,6 +391,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 			totalRowCount,
 			hasNextPage: rows.length > pageSize,
 			sql,
+			sqlWithoutPagination,
 			rows: normalizedRows,
 		};
 	}
@@ -417,6 +449,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 		readonly sql: string;
 		readonly values: readonly unknown[];
 		readonly displaySql: string;
+		readonly displaySqlWithoutPagination: string;
 	} {
 		const offset = pageIndex * pageSize;
 		const tableSql = this.escapeQualifiedTableName(schemaName, tableName);
@@ -434,11 +467,17 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 			orderByClause,
 			`LIMIT ${pageSize + 1} OFFSET ${offset}`,
 		].filter((part) => part.length > 0);
+		const displayPartsWithoutPagination = [
+			`SELECT * FROM ${tableSql}`,
+			filterClause.displaySql,
+			orderByClause,
+		].filter((part) => part.length > 0);
 
 		return {
 			sql: executableParts.join(' '),
 			values: [...filterClause.values, pageSize + 1, offset],
 			displaySql: displayParts.join(' '),
+			displaySqlWithoutPagination: displayPartsWithoutPagination.join(' '),
 		};
 	}
 
@@ -588,8 +627,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 		readonly displaySql: string;
 		readonly values: readonly unknown[];
 	} {
-		const keyword = options?.filter?.keyword.trim() ?? '';
-		if (keyword.length === 0 || columns.length === 0) {
+		const keyword = options?.filter?.keyword?.trim() ?? '';
+		if (columns.length === 0) {
 			return {
 				sql: '',
 				displaySql: '',
@@ -597,18 +636,182 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 			};
 		}
 
-		const searchableColumnsSql = columns
-			.map(
-				(column) =>
-					`CAST(${this.escapeIdentifier(column.name)} AS CHAR)`
-			)
-			.join(', ');
-		const pattern = `%${keyword}%`;
+		const clauses: {
+			readonly sql: string;
+			readonly displaySql: string;
+			readonly values: readonly unknown[];
+		}[] = [];
+
+		if (keyword.length > 0) {
+			const searchableColumnsSql = columns
+				.map(
+					(column) =>
+						`CAST(${this.escapeIdentifier(column.name)} AS CHAR)`
+				)
+				.join(', ');
+			const pattern = `%${keyword}%`;
+
+			clauses.push({
+				sql: `CONCAT_WS('\\n', ${searchableColumnsSql}) LIKE ?`,
+				displaySql: `CONCAT_WS('\\n', ${searchableColumnsSql}) LIKE '${this.escapeSqlString(pattern)}'`,
+				values: [pattern],
+			});
+		}
+
+		for (const condition of options?.filter?.conditions ?? []) {
+			const clause = this.createFilterConditionClause(columns, condition);
+			if (clause) {
+				clauses.push(clause);
+			}
+		}
+
+		if (clauses.length === 0) {
+			return {
+				sql: '',
+				displaySql: '',
+				values: [],
+			};
+		}
 
 		return {
-			sql: `WHERE CONCAT_WS('\\n', ${searchableColumnsSql}) LIKE ?`,
-			displaySql: `WHERE CONCAT_WS('\\n', ${searchableColumnsSql}) LIKE '${this.escapeSqlString(pattern)}'`,
-			values: [pattern],
+			sql: `WHERE ${clauses.map((clause) => clause.sql).join(' AND ')}`,
+			displaySql: `WHERE ${clauses
+				.map((clause) => clause.displaySql)
+				.join(' AND ')}`,
+			values: clauses.flatMap((clause) => clause.values),
+		};
+	}
+
+	/**
+	 * 创建单条字段过滤条件 SQL 片段。
+	 *
+	 * @param columns 当前表字段元数据。
+	 * @param condition Webview 提交的字段过滤条件。
+	 * @returns 可拼接到 WHERE 中的条件片段；字段无效时为空。
+	 */
+	private createFilterConditionClause(
+		columns: readonly MySqlTableColumnMetadata[],
+		condition: MySqlTableFilterCondition
+	):
+		| {
+				readonly sql: string;
+				readonly displaySql: string;
+				readonly values: readonly unknown[];
+		  }
+		| undefined {
+		const column = columns.find(
+			(item) => item.name === condition.columnName
+		);
+
+		if (!column) {
+			return undefined;
+		}
+
+		const columnSql = this.escapeIdentifier(column.name);
+
+		switch (condition.operator) {
+			case 'null':
+				return {
+					sql: `${columnSql} IS NULL`,
+					displaySql: `${columnSql} IS NULL`,
+					values: [],
+				};
+			case 'not null':
+				return {
+					sql: `${columnSql} IS NOT NULL`,
+					displaySql: `${columnSql} IS NOT NULL`,
+					values: [],
+				};
+			case 'in':
+			case 'not in':
+				return this.createSetFilterConditionClause(
+					columnSql,
+					condition.operator,
+					condition.value
+				);
+			case '=':
+			case '!=':
+			case '>':
+			case '>=':
+			case '<':
+			case '<=':
+			case 'like':
+				return this.createScalarFilterConditionClause(
+					columnSql,
+					condition.operator,
+					condition.value
+				);
+		}
+
+		return undefined;
+	}
+
+	/**
+	 * 创建单值字段过滤条件 SQL 片段。
+	 *
+	 * @param columnSql 已转义的字段名。
+	 * @param operator 字段过滤操作符。
+	 * @param value 字段过滤值。
+	 * @returns 可拼接到 WHERE 中的条件片段。
+	 */
+	private createScalarFilterConditionClause(
+		columnSql: string,
+		operator: '=' | '!=' | '>' | '>=' | '<' | '<=' | 'like',
+		value: MySqlTableFilterCondition['value']
+	): {
+		readonly sql: string;
+		readonly displaySql: string;
+		readonly values: readonly unknown[];
+	} {
+		const normalizedValue = Array.isArray(value) ? value[0] ?? '' : value ?? '';
+		const sqlOperator = operator === '!=' ? '<>' : operator.toUpperCase();
+
+		return {
+			sql: `${columnSql} ${sqlOperator} ?`,
+			displaySql: `${columnSql} ${sqlOperator} ${this.formatSqlLiteral(
+				normalizedValue
+			)}`,
+			values: [normalizedValue],
+		};
+	}
+
+	/**
+	 * 创建集合字段过滤条件 SQL 片段。
+	 *
+	 * @param columnSql 已转义的字段名。
+	 * @param operator 集合过滤操作符。
+	 * @param value 字段过滤值。
+	 * @returns 可拼接到 WHERE 中的条件片段；集合为空时为空。
+	 */
+	private createSetFilterConditionClause(
+		columnSql: string,
+		operator: 'in' | 'not in',
+		value: MySqlTableFilterCondition['value']
+	):
+		| {
+				readonly sql: string;
+				readonly displaySql: string;
+				readonly values: readonly unknown[];
+		  }
+		| undefined {
+		const values = (Array.isArray(value) ? value : String(value ?? '').split(','))
+			.map((item) => item.trim())
+			.filter((item) => item.length > 0);
+
+		if (values.length === 0) {
+			return undefined;
+		}
+
+		const placeholders = values.map(() => '?').join(', ');
+		const displayValues = values
+			.map((item) => this.formatSqlLiteral(item))
+			.join(', ');
+		const sqlOperator = operator === 'not in' ? 'NOT IN' : 'IN';
+
+		return {
+			sql: `${columnSql} ${sqlOperator} (${placeholders})`,
+			displaySql: `${columnSql} ${sqlOperator} (${displayValues})`,
+			values,
 		};
 	}
 
@@ -649,12 +852,17 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	 * @returns 归一化后的行对象。
 	 */
 	private normalizeRow(
-		row: Record<string, unknown>
+		row: Record<string, unknown>,
+		columns: readonly MySqlTableColumnMetadata[]
 	): Record<string, MySqlTableCellValue> {
+		const columnsByName = new Map(
+			columns.map((column) => [column.name, column])
+		);
+
 		return Object.fromEntries(
 			Object.entries(row).map(([key, value]) => [
 				key,
-				this.normalizeCellValue(value),
+				this.normalizeCellValue(value, columnsByName.get(key)),
 			])
 		);
 	}
@@ -665,7 +873,10 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	 * @param value 原始单元格值。
 	 * @returns 归一化后的单元格值。
 	 */
-	private normalizeCellValue(value: unknown): MySqlTableCellValue {
+	private normalizeCellValue(
+		value: unknown,
+		column?: MySqlTableColumnMetadata
+	): MySqlTableCellValue {
 		if (
 			value === null ||
 			typeof value === 'string' ||
@@ -680,7 +891,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 		}
 
 		if (value instanceof Date) {
-			return value.toISOString();
+			return this.formatDateCellValue(value, column);
 		}
 
 		if (Buffer.isBuffer(value)) {
@@ -704,6 +915,60 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 		}
 
 		return String(value);
+	}
+
+	/**
+	 * 按旧 PPZ 的 Date 展示规则格式化 MySQL 日期时间值。
+	 *
+	 * @param value mysql2 返回的 Date 值。
+	 * @param column 当前字段元数据。
+	 * @returns 面向表数据页展示的本地时间字符串。
+	 */
+	private formatDateCellValue(
+		value: Date,
+		column?: MySqlTableColumnMetadata
+	): string {
+		const formattedValue = [
+			this.padDatePart(value.getFullYear(), 4),
+			'-',
+			this.padDatePart(value.getMonth() + 1, 2),
+			'-',
+			this.padDatePart(value.getDate(), 2),
+			' ',
+			this.padDatePart(value.getHours(), 2),
+			':',
+			this.padDatePart(value.getMinutes(), 2),
+			':',
+			this.padDatePart(value.getSeconds(), 2),
+			'.',
+			this.padDatePart(value.getMilliseconds(), 3),
+		].join('');
+		const dataType = column?.dataType.toLowerCase();
+
+		if (dataType === 'date') {
+			return formattedValue.slice(0, 10);
+		}
+
+		if (dataType === 'datetime' || dataType === 'timestamp') {
+			const precision = Math.min(
+				Math.max(column?.dateTimePrecision ?? 0, 0),
+				3
+			);
+			return formattedValue.slice(0, precision === 0 ? 19 : 20 + precision);
+		}
+
+		return formattedValue.slice(0, 19);
+	}
+
+	/**
+	 * 将日期时间数字补齐到固定宽度。
+	 *
+	 * @param value 日期时间数字片段。
+	 * @param width 目标宽度。
+	 * @returns 补零后的数字片段。
+	 */
+	private padDatePart(value: number, width: number): string {
+		return String(value).padStart(width, '0');
 	}
 
 	/**

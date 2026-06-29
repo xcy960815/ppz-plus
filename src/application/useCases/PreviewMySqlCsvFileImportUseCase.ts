@@ -50,7 +50,7 @@ export class PreviewMySqlCsvFileImportUseCase {
 			if (filePath.trim().length === 0) {
 				return {
 					success: false,
-					errorMessage: 'CSV file path is required.',
+					errorMessage: 'CSV 文件路径不能为空。',
 				};
 			}
 

@@ -18,32 +18,50 @@ export class CreateImportErrorReportUseCase {
 			input.mappings && input.mappings.length > 0
 				? input.mappings.map(
 						(mapping) =>
-							`- \`${mapping.sourceName}\` -> \`${mapping.targetName ?? '(skip)'}\``
+							`- \`${mapping.sourceName}\` -> \`${mapping.targetName ?? '（跳过）'}\``
 					)
-				: ['- No column mapping was provided.'];
+				: ['- 未提供字段映射。'];
 
 		return {
 			language: 'markdown',
 			content: [
-				'# PPZ Plus Import Error Report',
+				'# PPZ Plus 导入错误报告',
 				'',
-				`- Format: ${input.formatName}`,
-				`- File: ${input.fileName}`,
-				`- Target: ${input.targetName}`,
-				`- Stage: ${input.stage}`,
-				`- Created At: ${new Date().toISOString()}`,
+				`- 格式：${input.formatName}`,
+				`- 文件：${input.fileName}`,
+				`- 目标：${input.targetName}`,
+				`- 阶段：${this.formatStage(input.stage)}`,
+				`- 创建时间：${new Date().toISOString()}`,
 				'',
-				'## Error',
+				'## 错误',
 				'',
 				'```text',
 				input.errorMessage,
 				'```',
 				'',
-				'## Column Mapping',
+				'## 字段映射',
 				'',
 				...mappingLines,
 				'',
 			].join('\n'),
 		};
+	}
+
+	/**
+	 * 格式化导入错误阶段。
+	 *
+	 * @param stage 原始导入错误阶段。
+	 * @returns 报告中展示的阶段名称。
+	 */
+	private formatStage(stage: ImportErrorReportInput['stage']): string {
+		if (stage === 'mapping') {
+			return '字段映射';
+		}
+
+		if (stage === 'preview') {
+			return '预览';
+		}
+
+		return '执行';
 	}
 }

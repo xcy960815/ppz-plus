@@ -37,6 +37,10 @@ export type MySqlTableUpdateValues = Readonly<
 export interface MySqlTableColumnMetadata {
 	readonly name: string;
 	readonly dataType: string;
+	/**
+	 * 日期时间字段的小数秒精度。
+	 */
+	readonly dateTimePrecision: number | null;
 	readonly nullable: boolean;
 	readonly isPrimaryKey: boolean;
 	readonly extra: string;
@@ -56,10 +60,41 @@ export interface MySqlTableSortOptions {
 }
 
 /**
+ * 描述 MySQL 表数据过滤操作符。
+ */
+export type MySqlTableFilterOperator =
+	| '='
+	| '!='
+	| '>'
+	| '>='
+	| '<'
+	| '<='
+	| 'like'
+	| 'in'
+	| 'not in'
+	| 'null'
+	| 'not null';
+
+/**
+ * 描述 MySQL 表数据过滤条件值。
+ */
+export type MySqlTableFilterConditionValue = string | readonly string[];
+
+/**
+ * 描述 MySQL 表数据单条字段过滤条件。
+ */
+export interface MySqlTableFilterCondition {
+	readonly columnName: string;
+	readonly operator: MySqlTableFilterOperator;
+	readonly value?: MySqlTableFilterConditionValue;
+}
+
+/**
  * 描述 MySQL 表数据过滤条件。
  */
 export interface MySqlTableFilterOptions {
-	readonly keyword: string;
+	readonly keyword?: string;
+	readonly conditions?: readonly MySqlTableFilterCondition[];
 }
 
 /**
@@ -81,7 +116,14 @@ export interface MySqlTableRowPage {
 	 */
 	readonly totalRowCount: number;
 	readonly hasNextPage: boolean;
+	/**
+	 * 当前表数据页带分页条件的展示 SQL。
+	 */
 	readonly sql: string;
+	/**
+	 * 当前表数据查询去掉分页条件后的展示 SQL。
+	 */
+	readonly sqlWithoutPagination: string;
 	readonly rows: readonly Record<string, MySqlTableCellValue>[];
 }
 

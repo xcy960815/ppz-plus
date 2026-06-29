@@ -6,7 +6,7 @@ import type { MySqlConnectionsTreeNode } from '../explorer/MySqlConnectionsTreeN
 import { MySqlSqlTerminalPanel } from '../sql/MySqlSqlTerminalPanel';
 
 /**
- * 打开 MySQL SQL Terminal。
+ * 打开 MySQL SQL 终端。
  */
 export class OpenMySqlSqlTerminalCommand implements ExtensionCommand {
 	/**
@@ -20,9 +20,9 @@ export class OpenMySqlSqlTerminalCommand implements ExtensionCommand {
 	public readonly id = OpenMySqlSqlTerminalCommand.id;
 
 	/**
-	 * 创建打开 MySQL SQL Terminal 命令。
+	 * 创建打开 MySQL SQL 终端命令。
 	 *
-	 * @param mySqlSqlTerminalPanel 用于渲染 SQL Terminal 的面板管理器。
+	 * @param mySqlSqlTerminalPanel 用于渲染 SQL 终端的面板管理器。
 	 */
 	public constructor(
 		private readonly mySqlSqlTerminalPanel: MySqlSqlTerminalPanel
@@ -46,7 +46,7 @@ export class OpenMySqlSqlTerminalCommand implements ExtensionCommand {
 	}
 
 	/**
-	 * 从 Tree 节点解析 SQL Terminal 初始连接。
+	 * 从 Tree 节点解析 SQL 终端初始连接。
 	 *
 	 * @param node 可选的 MySQL Tree 节点。
 	 * @returns 初始选中的 MySQL 连接。

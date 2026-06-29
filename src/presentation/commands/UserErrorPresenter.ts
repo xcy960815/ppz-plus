@@ -33,11 +33,11 @@ export async function showUserErrorMessage(
 		input.fallbackMessage
 	);
 	const action = await vscode.window.showErrorMessage(
-		`${input.operation} failed: ${errorMessage}`,
-		'Copy Details'
+		`${input.operation}失败：${errorMessage}`,
+		'复制详情'
 	);
 
-	if (action !== 'Copy Details') {
+	if (action !== '复制详情') {
 		return;
 	}
 
@@ -45,7 +45,7 @@ export async function showUserErrorMessage(
 		formatUserErrorDetails(input.operation, input.error, errorMessage)
 	);
 	await vscode.window.showInformationMessage(
-		'Copied error details to clipboard.'
+		'错误详情已复制到剪贴板。'
 	);
 }
 
@@ -58,7 +58,7 @@ export async function showUserErrorMessage(
  */
 export function extractUserErrorMessage(
 	error: unknown,
-	fallbackMessage = 'Unexpected error.'
+	fallbackMessage = '发生未知错误。'
 ): string {
 	if (error instanceof Error && error.message.trim().length > 0) {
 		return error.message.trim();
@@ -85,18 +85,18 @@ function formatUserErrorDetails(
 	errorMessage: string
 ): string {
 	const detailLines = [
-		`Operation: ${operation}`,
-		`Message: ${errorMessage}`,
-		`Created At: ${new Date().toISOString()}`,
+		`操作：${operation}`,
+		`消息：${errorMessage}`,
+		`创建时间：${new Date().toISOString()}`,
 	];
 
 	if (error instanceof Error && error.stack) {
-		detailLines.push('', 'Stack:', error.stack);
+		detailLines.push('', '堆栈：', error.stack);
 		return detailLines.join('\n');
 	}
 
 	if (typeof error !== 'string') {
-		detailLines.push('', 'Raw:', safeStringifyError(error));
+		detailLines.push('', '原始错误：', safeStringifyError(error));
 	}
 
 	return detailLines.join('\n');

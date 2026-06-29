@@ -16,16 +16,16 @@ export class JsonDocumentParser {
 	 */
 	public parse(content: string): JsonDocument {
 		if (content.trim().length === 0) {
-			throw new Error('JSON file is empty.');
+			throw new Error('JSON 文件为空。');
 		}
 
 		const parsedJson = this.parseJson(content);
 		if (!Array.isArray(parsedJson)) {
-			throw new Error('JSON import file must contain an array of objects.');
+			throw new Error('JSON 导入文件必须是对象数组。');
 		}
 
 		if (parsedJson.length === 0) {
-			throw new Error('JSON file does not contain data rows.');
+			throw new Error('JSON 文件不包含数据行。');
 		}
 
 		const headers: string[] = [];
@@ -35,7 +35,7 @@ export class JsonDocumentParser {
 		);
 
 		if (headers.length === 0) {
-			throw new Error('JSON rows must contain at least one field.');
+			throw new Error('JSON 数据行至少需要包含一个字段。');
 		}
 
 		return {
@@ -55,7 +55,7 @@ export class JsonDocumentParser {
 			return JSON.parse(content) as unknown;
 		} catch (error) {
 			throw new Error(
-				`Invalid JSON file: ${error instanceof Error ? error.message : String(error)}`
+				`JSON 文件格式无效：${error instanceof Error ? error.message : String(error)}`
 			);
 		}
 	}
@@ -76,13 +76,13 @@ export class JsonDocumentParser {
 		seenHeaders: Set<string>
 	): JsonDocumentRow {
 		if (!value || typeof value !== 'object' || Array.isArray(value)) {
-			throw new Error(`JSON row ${rowNumber} must be an object.`);
+			throw new Error(`JSON 第 ${rowNumber} 行必须是对象。`);
 		}
 
 		return Object.fromEntries(
 			Object.entries(value).map(([key, cellValue]) => {
 				if (key.trim().length === 0) {
-					throw new Error(`JSON row ${rowNumber} contains an empty field name.`);
+					throw new Error(`JSON 第 ${rowNumber} 行包含空字段名。`);
 				}
 
 				if (!seenHeaders.has(key)) {
@@ -118,7 +118,7 @@ export class JsonDocumentParser {
 		}
 
 		throw new Error(
-			`JSON row ${rowNumber} field "${key}" contains an unsupported nested value.`
+			`JSON 第 ${rowNumber} 行字段“${key}”包含不支持的嵌套值。`
 		);
 	}
 }

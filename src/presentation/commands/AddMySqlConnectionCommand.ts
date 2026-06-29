@@ -122,7 +122,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			await this.saveConnectionConfigUseCase.execute(config.value);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: 'Save MySQL connection',
+				operation: '保存 MySQL 连接',
 				error,
 			});
 			return;
@@ -136,19 +136,19 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 					this.testConnectionUseCase.execute(config.value)
 				);
 				await vscode.window.showInformationMessage(
-					`Saved and connected to MySQL connection "${config.value.name}".`
+					`已保存并连接到 MySQL 连接“${config.value.name}”。`
 				);
 				panel.dispose();
 			} catch (error) {
 				await vscode.window.showWarningMessage(
-					`Saved "${config.value.name}", but connection test failed: ${extractUserErrorMessage(error)}`
+					`已保存“${config.value.name}”，但连接测试失败：${extractUserErrorMessage(error)}`
 				);
 			}
 			return;
 		}
 
 		await vscode.window.showInformationMessage(
-			`Saved MySQL connection "${config.value.name}".`
+			`已保存 MySQL 连接“${config.value.name}”。`
 		);
 		panel.dispose();
 	}
@@ -172,7 +172,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		if (name.length === 0) {
 			return {
 				success: false,
-				errorMessage: 'Connection name is required.',
+				errorMessage: '请输入连接名称。',
 			};
 		}
 
@@ -203,7 +203,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		if (host.length === 0) {
 			return {
 				success: false,
-				errorMessage: 'Host is required.',
+				errorMessage: '请输入 host。',
 			};
 		}
 
@@ -211,7 +211,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		if (port === undefined) {
 			return {
 				success: false,
-				errorMessage: 'Port must be a positive integer.',
+				errorMessage: 'port 必须是正整数。',
 			};
 		}
 
@@ -219,7 +219,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		if (username.length === 0) {
 			return {
 				success: false,
-				errorMessage: 'Username is required.',
+				errorMessage: '请输入 user。',
 			};
 		}
 
@@ -251,11 +251,11 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		existingConfig?: MysqlConnectionConfig
 	): Promise<MysqlConnectionConfig | undefined> {
 		const name = await vscode.window.showInputBox({
-			title: 'PPZ Plus: MySQL Connection Name',
-			prompt: 'Enter the display name for the connection',
-			value: existingConfig?.name ?? 'MySQL Connection',
+			title: 'PPZ Plus: MySQL 连接名称',
+			prompt: '输入连接显示名称',
+			value: existingConfig?.name ?? 'MySQL 连接',
 			validateInput: (value) =>
-				value.trim().length > 0 ? undefined : 'Connection name is required.',
+				value.trim().length > 0 ? undefined : '请输入连接名称。',
 		});
 		if (!name) {
 			return undefined;
@@ -268,8 +268,8 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 
 		if (mode === 'url') {
 			const url = await vscode.window.showInputBox({
-				title: 'PPZ Plus: MySQL Connection URL',
-				prompt: 'Enter a mysql:// connection URL',
+				title: 'PPZ Plus: MySQL 连接 URL',
+				prompt: '输入 mysql:// 连接 URL',
 				value:
 					existingConfig?.mode === 'url'
 						? existingConfig.url
@@ -291,13 +291,13 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 
 		const host = await vscode.window.showInputBox({
 			title: 'PPZ Plus: MySQL Host',
-			prompt: 'Enter the MySQL server host',
+			prompt: '输入 MySQL 服务 host',
 			value:
 				existingConfig?.mode === 'parameters'
 					? existingConfig.host
 					: '127.0.0.1',
 			validateInput: (value) =>
-				value.trim().length > 0 ? undefined : 'Host is required.',
+				value.trim().length > 0 ? undefined : '请输入 host。',
 		});
 		if (!host) {
 			return undefined;
@@ -305,14 +305,14 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 
 		const portInput = await vscode.window.showInputBox({
 			title: 'PPZ Plus: MySQL Port',
-			prompt: 'Enter the MySQL server port',
+			prompt: '输入 MySQL 服务端口',
 			value:
 				existingConfig?.mode === 'parameters'
 					? String(existingConfig.port)
 					: '3306',
 			validateInput: (value) =>
 				AddMySqlConnectionCommand.parsePort(value) === undefined
-					? 'Port must be a positive integer.'
+					? 'port 必须是正整数。'
 					: undefined,
 		});
 		if (!portInput) {
@@ -320,14 +320,14 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		}
 
 		const username = await vscode.window.showInputBox({
-			title: 'PPZ Plus: MySQL Username',
-			prompt: 'Enter the MySQL username',
+			title: 'PPZ Plus: MySQL User',
+			prompt: '输入 MySQL 用户名',
 			value:
 				existingConfig?.mode === 'parameters'
 					? existingConfig.username
 					: 'root',
 			validateInput: (value) =>
-				value.trim().length > 0 ? undefined : 'Username is required.',
+				value.trim().length > 0 ? undefined : '请输入 user。',
 		});
 		if (!username) {
 			return undefined;
@@ -335,7 +335,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 
 		const password = await vscode.window.showInputBox({
 			title: 'PPZ Plus: MySQL Password',
-			prompt: 'Enter the MySQL password (optional)',
+			prompt: '输入 MySQL 密码（可选）',
 			password: true,
 			value:
 				existingConfig?.mode === 'parameters'
@@ -347,8 +347,8 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		}
 
 		const database = await vscode.window.showInputBox({
-			title: 'PPZ Plus: Default Database',
-			prompt: 'Enter the default database (optional)',
+			title: 'PPZ Plus: 默认 Database',
+			prompt: '输入默认 database（可选）',
 			value:
 				existingConfig?.mode === 'parameters'
 					? existingConfig.database ?? ''
@@ -717,9 +717,9 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			const parsedUrl = new URL(value.trim());
 			return parsedUrl.protocol === 'mysql:'
 				? undefined
-				: 'URL must start with mysql://';
+				: 'URL 必须以 mysql:// 开头。';
 		} catch {
-			return 'Enter a valid mysql:// URL.';
+			return '请输入有效的 mysql:// URL。';
 		}
 	}
 

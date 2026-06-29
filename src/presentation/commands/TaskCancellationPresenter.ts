@@ -24,5 +24,5 @@ export function createVsCodeCancellationSignal(
  * @param taskName 被取消的任务名称。
  */
 export async function showTaskCanceledMessage(taskName: string): Promise<void> {
-	await vscode.window.showInformationMessage(`${taskName} canceled.`);
+	await vscode.window.showInformationMessage(`已取消${taskName}。`);
 }

@@ -1,3 +1,5 @@
+import type { MySqlTableFilterCondition } from '../../application/mysql/MySqlTableDataProvider';
+
 /**
  * 请求当前表面板的上一页数据。
  */
@@ -34,6 +36,7 @@ export interface MySqlTableDataRefreshMessage {
 export interface MySqlTableDataApplyQueryOptionsMessage {
 	readonly type: 'applyQueryOptions';
 	readonly filterKeyword: string;
+	readonly filterConditions?: readonly MySqlTableFilterCondition[];
 	readonly sortColumnName: string;
 	readonly sortDirection: 'asc' | 'desc';
 }
@@ -54,10 +57,27 @@ export interface MySqlTableDataSetVisibleColumnsMessage {
 }
 
 /**
- * 请求使用当前 SQL 打开 SQL Terminal。
+ * 请求使用当前 SQL 打开 SQL 终端。
  */
 export interface MySqlTableDataOpenSqlTerminalMessage {
 	readonly type: 'openSqlTerminal';
+	readonly sql?: string;
+}
+
+/**
+ * 请求复制当前查看的 SQL。
+ */
+export interface MySqlTableDataCopyCurrentSqlMessage {
+	readonly type: 'copyCurrentSql';
+	readonly sql: string;
+}
+
+/**
+ * 请求在临时 SQL 文档中打开当前查看的 SQL。
+ */
+export interface MySqlTableDataOpenCurrentSqlDocumentMessage {
+	readonly type: 'openCurrentSqlDocument';
+	readonly sql: string;
 }
 
 /**
@@ -114,6 +134,8 @@ export type MySqlTableDataWebviewMessage =
 	| MySqlTableDataClearQueryOptionsMessage
 	| MySqlTableDataSetVisibleColumnsMessage
 	| MySqlTableDataOpenSqlTerminalMessage
+	| MySqlTableDataCopyCurrentSqlMessage
+	| MySqlTableDataOpenCurrentSqlDocumentMessage
 	| MySqlTableDataInsertRowMessage
 	| MySqlTableDataCopyRowMessage
 	| MySqlTableDataEditRowMessage

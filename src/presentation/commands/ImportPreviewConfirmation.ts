@@ -41,16 +41,16 @@ export async function confirmImportPreview(
 	}
 
 	const action = await vscode.window.showInformationMessage(
-		`Import ${preview.totalRows} row(s) from "${fileName}" into "${targetName}"?`,
+		`确定从“${fileName}”导入 ${preview.totalRows} 行到“${targetName}”？`,
 		{
 			modal: true,
 			detail: formatPreviewDetail(preview),
 		},
-		'Import'
+		'导入'
 	);
 
-	if (action !== 'Import') {
-		await vscode.window.showInformationMessage(`${formatName} import canceled.`);
+	if (action !== '导入') {
+		await vscode.window.showInformationMessage(`已取消 ${formatName} 导入。`);
 		return false;
 	}
 
@@ -76,13 +76,13 @@ function formatPreviewDetail(preview: ImportPreviewSuccessResult): string {
 	});
 	const moreRowsNote =
 		preview.totalRows > preview.rows.length
-			? `Showing first ${preview.rows.length} row(s).`
+			? `仅显示前 ${preview.rows.length} 行。`
 			: '';
 
 	return [
-		`Columns: ${preview.headers.join(', ')}`,
-		`Rows: ${preview.totalRows}`,
-		'Preview:',
+		`字段：${preview.headers.join(', ')}`,
+		`行数：${preview.totalRows}`,
+		'预览：',
 		previewRows.join('\n'),
 		moreRowsNote,
 	]

@@ -62,7 +62,7 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 
 				const filePath = await this.pickSqlFilePath();
 				if (!filePath) {
-					await vscode.window.showInformationMessage('No SQL file selected.');
+					await vscode.window.showInformationMessage('未选择 SQL 文件。');
 					return;
 				}
 
@@ -97,7 +97,7 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 		const connections = await this.listStoredConnectionsUseCase.execute();
 		if (connections.length === 0) {
 			await vscode.window.showInformationMessage(
-				'No MySQL connections are stored yet. Use "PPZ Plus: Add MySQL Connection" first.'
+				'暂无已保存的 MySQL 连接，请先使用“PPZ Plus: 新增 MySQL 连接”创建连接。'
 			);
 			return undefined;
 		}
@@ -112,13 +112,13 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 				connection,
 			})),
 			{
-				title: 'PPZ Plus: Import MySQL SQL File',
-				placeHolder: 'Choose a stored MySQL connection to import into',
+				title: 'PPZ Plus: 导入 MySQL SQL 文件',
+				placeHolder: '选择要导入到的已保存 MySQL 连接',
 			}
 		);
 
 		if (!selectedConnection) {
-			await vscode.window.showInformationMessage('No MySQL connection selected.');
+			await vscode.window.showInformationMessage('未选择 MySQL 连接。');
 			return undefined;
 		}
 
@@ -136,9 +136,9 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 			canSelectFolders: false,
 			canSelectMany: false,
 			filters: {
-				'SQL files': ['sql'],
+				SQL文件: ['sql'],
 			},
-			title: 'PPZ Plus: Choose SQL File to Import',
+			title: 'PPZ Plus: 选择要导入的 SQL 文件',
 		});
 
 		return selectedFiles?.[0]?.fsPath;
@@ -170,23 +170,23 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 		}
 
 		const action = await vscode.window.showInformationMessage(
-			`Execute SQL file "${fileName}" on "${connection.name}"?`,
+			`确定在“${connection.name}”上执行 SQL 文件“${fileName}”？`,
 			{
 				modal: true,
 				detail: [
-					`Lines: ${preview.totalLines}`,
-					preview.totalLines > 20 ? 'Showing first 20 line(s).' : '',
-					'Preview:',
+					`行数：${preview.totalLines}`,
+					preview.totalLines > 20 ? '仅显示前 20 行。' : '',
+					'预览：',
 					preview.previewText,
 				]
 					.filter((line) => line.length > 0)
 					.join('\n'),
 			},
-			'Execute'
+			'执行'
 		);
 
-		if (action !== 'Execute') {
-			await vscode.window.showInformationMessage('SQL file import canceled.');
+		if (action !== '执行') {
+			await vscode.window.showInformationMessage('已取消 SQL 文件导入。');
 			return false;
 		}
 
@@ -210,10 +210,10 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 				{
 					cancellable: true,
 					location: vscode.ProgressLocation.Notification,
-					title: `Importing SQL "${fileName}" into "${connection.name}"`,
+					title: `正在导入 SQL“${fileName}”到“${connection.name}”`,
 				},
 				async (progress, token) => {
-					progress.report({ message: 'Executing SQL file...' });
+					progress.report({ message: '正在执行 SQL 文件...' });
 
 					return this.importMySqlSqlFileUseCase.execute(
 						connection,
@@ -225,7 +225,7 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 
 			if (result.success) {
 				await vscode.window.showInformationMessage(
-					`Imported "${fileName}" into "${connection.name}" in ${result.durationMs} ms.`
+					`已导入“${fileName}”到“${connection.name}”，耗时 ${result.durationMs} ms。`
 				);
 				return;
 			}
@@ -235,11 +235,11 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 				fileName,
 				targetName: connection.name,
 				stage: 'execution',
-				errorMessage: result.errorMessage ?? 'Unknown error.',
+				errorMessage: result.errorMessage ?? '未知错误。',
 			});
 		} catch (error) {
 			if (isOperationCanceledError(error)) {
-				await showTaskCanceledMessage('SQL import');
+				await showTaskCanceledMessage('SQL 导入');
 				return;
 			}
 

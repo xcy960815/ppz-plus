@@ -24,8 +24,8 @@ export async function promptSqlExportFilePath(
 		filters: {
 			[format.dialogFilterLabel]: [format.fileExtension],
 		},
-		saveLabel: 'Export',
-		title: `PPZ Plus: Export ${format.label} to File`,
+		saveLabel: '导出',
+		title: `PPZ Plus: 导出 ${format.label} 到文件`,
 	});
 
 	return selectedFile?.fsPath;
@@ -55,14 +55,14 @@ export async function presentSqlExportFileSaveResult(
 			preview: false,
 		});
 		await vscode.window.showInformationMessage(
-			`Exported SQL to "${result.filePath}".`
+			`已导出 SQL 到“${result.filePath}”。`
 		);
 		return;
 	}
 
 	await vscode.window.showErrorMessage(
-		`Failed to export SQL${
-			result.filePath ? ` to "${result.filePath}"` : ''
-		}: ${result.errorMessage}`
+		`导出 SQL${result.filePath ? ` 到“${result.filePath}”` : ''}失败：${
+			result.errorMessage
+		}`
 	);
 }

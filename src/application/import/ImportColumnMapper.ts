@@ -59,7 +59,7 @@ export class ImportColumnMapper {
 		for (const mapping of effectiveMappings) {
 			if (!sourceFieldSet.has(mapping.sourceName)) {
 				throw new Error(
-					`Import mapping references unknown source field "${mapping.sourceName}".`
+					`导入映射引用了未知源字段“${mapping.sourceName}”。`
 				);
 			}
 
@@ -69,13 +69,13 @@ export class ImportColumnMapper {
 
 			if (!targetFieldSet.has(mapping.targetName)) {
 				throw new Error(
-					`Import mapping references unknown target field "${mapping.targetName}".`
+					`导入映射引用了未知目标字段“${mapping.targetName}”。`
 				);
 			}
 
 			if (usedTargets.has(mapping.targetName)) {
 				throw new Error(
-					`Import mapping assigns multiple source fields to "${mapping.targetName}".`
+					`导入映射将多个源字段指向了“${mapping.targetName}”。`
 				);
 			}
 
@@ -87,7 +87,7 @@ export class ImportColumnMapper {
 		}
 
 		if (normalizedMappings.length === 0) {
-			throw new Error('At least one import column must be mapped.');
+			throw new Error('至少需要映射一个导入字段。');
 		}
 
 		return normalizedMappings;

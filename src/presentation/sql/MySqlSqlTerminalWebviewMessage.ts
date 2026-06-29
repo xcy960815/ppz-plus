@@ -8,7 +8,7 @@ export interface MySqlSqlTerminalExecuteMessage {
 }
 
 /**
- * 描述 MySQL SQL Terminal Webview 可接收的消息。
+ * 描述 MySQL SQL 终端 Webview 可接收的消息。
  */
 export type MySqlSqlTerminalWebviewMessage =
 	MySqlSqlTerminalExecuteMessage;

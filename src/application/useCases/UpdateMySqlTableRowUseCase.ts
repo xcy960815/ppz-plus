@@ -37,19 +37,19 @@ export class UpdateMySqlTableRowUseCase {
 		values: MySqlTableUpdateValues
 	): Promise<MySqlTableUpdateResult> {
 		if (schemaName.trim().length === 0) {
-			throw new Error('Schema name is required for MySQL row update.');
+			throw new Error('更新 MySQL 记录需要提供 schema 名称。');
 		}
 
 		if (tableName.trim().length === 0) {
-			throw new Error('Table name is required for MySQL row update.');
+			throw new Error('更新 MySQL 记录需要提供表名。');
 		}
 
 		if (Object.keys(identityValues).length === 0) {
-			throw new Error('Primary key values are required for MySQL row update.');
+			throw new Error('更新 MySQL 记录需要提供主键值。');
 		}
 
 		if (Object.keys(values).length === 0) {
-			throw new Error('At least one column value is required for MySQL row update.');
+			throw new Error('更新 MySQL 记录至少需要提供一个字段值。');
 		}
 
 		return this.mySqlTableDataProvider.updateRow(

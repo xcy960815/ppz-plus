@@ -102,7 +102,7 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 			async (schemaNode?: MySqlSchemaTreeNode) => {
 				if (!schemaNode || schemaNode.kind !== 'schema') {
 					await vscode.window.showInformationMessage(
-						'Choose a MySQL schema node to batch export tables.'
+						'请选择一个 MySQL schema 节点后再批量导出表。'
 					);
 					return;
 				}
@@ -126,7 +126,7 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 
 			const kind = await this.promptExportKind();
 			if (!kind) {
-				await vscode.window.showInformationMessage('SQL batch export canceled.');
+				await vscode.window.showInformationMessage('已取消 SQL 批量导出。');
 				return;
 			}
 
@@ -144,14 +144,14 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 
 			const targetDirectory = await this.promptTargetDirectory();
 			if (!targetDirectory) {
-				await vscode.window.showInformationMessage('SQL batch export canceled.');
+				await vscode.window.showInformationMessage('已取消 SQL 批量导出。');
 				return;
 			}
 
 			const result = await vscode.window.withProgress(
 				{
 					location: vscode.ProgressLocation.Notification,
-					title: 'PPZ Plus: Batch Export MySQL Tables',
+					title: 'PPZ Plus: 批量导出 MySQL 表',
 					cancellable: true,
 				},
 				(progress, token) =>
@@ -172,12 +172,12 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 			await this.presentBatchResult(result);
 		} catch (error) {
 			if (isOperationCanceledError(error)) {
-				await showTaskCanceledMessage('MySQL batch export');
+				await showTaskCanceledMessage('MySQL 批量导出');
 				return;
 			}
 
 			await showUserErrorMessage({
-				operation: 'Batch export MySQL tables',
+				operation: '批量导出 MySQL 表',
 				error,
 			});
 		}
@@ -199,7 +199,7 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 
 		if (tables.length === 0) {
 			await vscode.window.showInformationMessage(
-				`No MySQL tables found in schema "${schemaNode.schemaName}".`
+				`schema“${schemaNode.schemaName}”中未找到 MySQL 表。`
 			);
 			return undefined;
 		}
@@ -211,18 +211,18 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 		}));
 		const selectedItems = await vscode.window.showQuickPick(tableItems, {
 			canPickMany: true,
-			placeHolder: 'Select MySQL tables to export',
-			title: 'PPZ Plus: Batch Export MySQL Tables',
+			placeHolder: '选择要导出的 MySQL 表',
+			title: 'PPZ Plus: 批量导出 MySQL 表',
 		});
 
 		if (!selectedItems) {
-			await vscode.window.showInformationMessage('SQL batch export canceled.');
+			await vscode.window.showInformationMessage('已取消 SQL 批量导出。');
 			return undefined;
 		}
 
 		if (selectedItems.length === 0) {
 			await vscode.window.showInformationMessage(
-				'Choose at least one MySQL table to export.'
+				'请至少选择一张要导出的 MySQL 表。'
 			);
 			return undefined;
 		}
@@ -239,8 +239,8 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 		const selectedItem = await vscode.window.showQuickPick(
 			this.exportKindItems,
 			{
-				placeHolder: 'Select SQL export type',
-				title: 'PPZ Plus: Batch Export MySQL Tables',
+				placeHolder: '选择 SQL 导出类型',
+				title: 'PPZ Plus: 批量导出 MySQL 表',
 			}
 		);
 
@@ -259,8 +259,8 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 			canSelectFolders: true,
 			canSelectMany: false,
 			defaultUri: defaultWorkspaceFolder?.uri,
-			openLabel: 'Export',
-			title: 'PPZ Plus: Select SQL Export Directory',
+			openLabel: '导出',
+			title: 'PPZ Plus: 选择 SQL 导出目录',
 		});
 
 		return selectedDirectories?.[0]?.fsPath;
@@ -346,13 +346,13 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	private async presentBatchResult(result: SqlExportBatchResult): Promise<void> {
 		if (result.failureCount === 0) {
 			await vscode.window.showInformationMessage(
-				`Batch exported ${result.successCount}/${result.totalCount} SQL files to "${result.targetDirectory}".`
+				`已批量导出 ${result.successCount}/${result.totalCount} 个 SQL 文件到“${result.targetDirectory}”。`
 			);
 			return;
 		}
 
 		const failureSummary = this.formatFailureSummary(result.failures);
-		const message = `Batch SQL export finished: ${result.successCount} succeeded, ${result.failureCount} failed. ${failureSummary}`;
+		const message = `SQL 批量导出完成：成功 ${result.successCount} 个，失败 ${result.failureCount} 个。${failureSummary}`;
 
 		if (result.successCount === 0) {
 			await vscode.window.showErrorMessage(message);
@@ -384,6 +384,6 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 			return summary;
 		}
 
-		return `${summary}; ${hiddenCount} more failed.`;
+		return `${summary}；另有 ${hiddenCount} 个失败。`;
 	}
 }

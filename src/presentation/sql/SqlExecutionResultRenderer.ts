@@ -14,25 +14,25 @@ export class SqlExecutionResultRenderer {
 	 * @returns 结果区域 HTML。
 	 */
 	public render(result: SqlExecutionResult): string {
-		const status = result.success ? 'Success' : 'Failed';
+		const status = result.success ? '成功' : '失败';
 		const affectedRows =
-			result.affectedRows === null ? 'N/A' : String(result.affectedRows);
+			result.affectedRows === null ? '-' : String(result.affectedRows);
 		const resultHeader = `<div class="result-header">
 			<span><strong>${status}</strong></span>
-			<span><strong>${result.isQuery ? 'Query' : 'Statement'}</strong></span>
-			<span><strong>${result.durationMs}</strong> ms</span>
-			<span><strong>${affectedRows}</strong> affected rows</span>
-			<span><strong>${result.rows.length}</strong> rows</span>
+			<span><strong>${result.isQuery ? '查询' : '语句'}</strong></span>
+			<span>耗时 <strong>${result.durationMs}</strong> ms</span>
+			<span>受影响行数 <strong>${affectedRows}</strong></span>
+			<span>结果 <strong>${result.rows.length}</strong> 条</span>
 		</div>`;
 
 		if (!result.success) {
 			return `${resultHeader}<pre class="error">${this.escapeHtml(
-				result.errorMessage ?? 'Unknown SQL execution error.'
+				result.errorMessage ?? '未知 SQL 执行错误。'
 			)}</pre>`;
 		}
 
 		if (!result.isQuery) {
-			return `${resultHeader}<div class="empty-result">Statement executed.</div>`;
+			return `${resultHeader}<div class="empty-result">语句已执行。</div>`;
 		}
 
 		return `${resultHeader}${this.renderResultTable(result)}`;
@@ -48,7 +48,7 @@ export class SqlExecutionResultRenderer {
 		const fields = result.fields;
 
 		if (fields.length === 0) {
-			return '<div class="empty-result">No columns returned.</div>';
+			return '<div class="empty-result">未返回字段。</div>';
 		}
 
 		const headers = fields
@@ -56,7 +56,7 @@ export class SqlExecutionResultRenderer {
 			.join('');
 		const rows =
 			result.rows.length === 0
-				? `<tr><td colspan="${fields.length}" class="empty-cell">No rows returned.</td></tr>`
+				? `<tr><td colspan="${fields.length}" class="empty-cell">未返回记录。</td></tr>`
 				: result.rows
 						.map(
 							(row) =>

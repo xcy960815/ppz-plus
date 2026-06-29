@@ -16,7 +16,7 @@ export class OperationCanceledError extends Error {
 	 * 创建用户取消错误。
 	 */
 	public constructor() {
-		super('Operation canceled by user.');
+		super('用户已取消操作。');
 		this.name = 'OperationCanceledError';
 	}
 }

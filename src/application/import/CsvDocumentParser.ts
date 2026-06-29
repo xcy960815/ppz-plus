@@ -16,7 +16,7 @@ export class CsvDocumentParser {
 		);
 
 		if (records.length === 0) {
-			throw new Error('CSV file is empty.');
+			throw new Error('CSV 文件为空。');
 		}
 
 		const headers = records[0].map((header, index) =>
@@ -27,7 +27,7 @@ export class CsvDocumentParser {
 		const rows = records.slice(1).map((record, index) => {
 			if (record.length > headers.length) {
 				throw new Error(
-					`CSV row ${index + 2} has more columns than the header row.`
+					`CSV 第 ${index + 2} 行的字段数超过表头字段数。`
 				);
 			}
 
@@ -37,7 +37,7 @@ export class CsvDocumentParser {
 		});
 
 		if (rows.length === 0) {
-			throw new Error('CSV file does not contain data rows.');
+			throw new Error('CSV 文件不包含数据行。');
 		}
 
 		return {
@@ -108,7 +108,7 @@ export class CsvDocumentParser {
 		}
 
 		if (inQuotedField) {
-			throw new Error('CSV file has an unclosed quoted field.');
+			throw new Error('CSV 文件中存在未闭合的引号字段。');
 		}
 
 		if (
@@ -130,17 +130,17 @@ export class CsvDocumentParser {
 	 */
 	private validateHeaders(headers: readonly string[]): void {
 		if (headers.length === 0) {
-			throw new Error('CSV header row is required.');
+			throw new Error('CSV 需要表头行。');
 		}
 
 		const seenHeaders = new Set<string>();
 		for (const header of headers) {
 			if (header.length === 0) {
-				throw new Error('CSV header cannot contain empty column names.');
+				throw new Error('CSV 表头不能包含空字段名。');
 			}
 
 			if (seenHeaders.has(header)) {
-				throw new Error(`CSV header contains duplicate column "${header}".`);
+				throw new Error(`CSV 表头包含重复字段“${header}”。`);
 			}
 
 			seenHeaders.add(header);

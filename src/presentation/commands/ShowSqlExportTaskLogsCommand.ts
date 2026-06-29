@@ -55,16 +55,16 @@ export class ShowSqlExportTaskLogsCommand implements ExtensionCommand {
 	private renderLogs(logs: readonly SqlExportTaskLogEntry[]): string {
 		if (logs.length === 0) {
 			return [
-				'# PPZ Plus SQL Export Logs',
+				'# PPZ Plus SQL 导出日志',
 				'',
-				'No SQL export task logs yet.',
+				'暂无 SQL 导出任务日志。',
 			].join('\n');
 		}
 
 		return [
-			'# PPZ Plus SQL Export Logs',
+			'# PPZ Plus SQL 导出日志',
 			'',
-			`Total recent logs: ${logs.length}`,
+			`最近日志数量：${logs.length}`,
 			'',
 			...logs.flatMap((log) => this.renderLogEntry(log)),
 		].join('\n');
@@ -77,19 +77,19 @@ export class ShowSqlExportTaskLogsCommand implements ExtensionCommand {
 	 * @returns Markdown 片段。
 	 */
 	private renderLogEntry(log: SqlExportTaskLogEntry): readonly string[] {
-		const status = log.status === 'success' ? 'Success' : 'Failure';
+		const status = log.status === 'success' ? '成功' : '失败';
 		return [
 			`## ${status}: ${log.targetName}`,
 			'',
-			`- Engine: ${log.engine}`,
-			`- Connection: ${log.connectionName}`,
-			`- Target: ${log.targetType}`,
-			`- Kind: ${log.kind}`,
-			`- Started: ${log.startedAt}`,
-			`- Ended: ${log.endedAt}`,
-			`- Duration: ${log.durationMs} ms`,
-			...(log.filePath ? [`- File: ${log.filePath}`] : []),
-			...(log.errorMessage ? [`- Error: ${log.errorMessage}`] : []),
+			`- 引擎：${log.engine}`,
+			`- 连接：${log.connectionName}`,
+			`- 目标：${log.targetType}`,
+			`- 类型：${log.kind}`,
+			`- 开始时间：${log.startedAt}`,
+			`- 结束时间：${log.endedAt}`,
+			`- 耗时：${log.durationMs} ms`,
+			...(log.filePath ? [`- 文件：${log.filePath}`] : []),
+			...(log.errorMessage ? [`- 错误：${log.errorMessage}`] : []),
 			'',
 		];
 	}

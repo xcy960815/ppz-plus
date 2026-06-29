@@ -31,7 +31,7 @@ export class ExportMySqlSchemaUseCase {
 		kind: SqlExportKind
 	): Promise<SqlExportDocument> {
 		if (target.schemaName.trim().length === 0) {
-			throw new Error('Schema name is required for MySQL schema export.');
+			throw new Error('导出 MySQL schema 需要提供 schema 名称。');
 		}
 
 		return this.mySqlExportProvider.exportSchema(connection, target, kind);

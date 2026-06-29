@@ -120,7 +120,7 @@ export class ImportMySqlCsvFileUseCase {
 				success: false,
 				durationMs: 0,
 				insertedRows: 0,
-				errorMessage: 'Schema name is required for MySQL CSV import.',
+				errorMessage: 'MySQL CSV 导入需要提供 schema 名称。',
 			};
 		}
 
@@ -129,7 +129,7 @@ export class ImportMySqlCsvFileUseCase {
 				success: false,
 				durationMs: 0,
 				insertedRows: 0,
-				errorMessage: 'Table name is required for MySQL CSV import.',
+				errorMessage: 'MySQL CSV 导入需要提供表名。',
 			};
 		}
 
@@ -138,7 +138,7 @@ export class ImportMySqlCsvFileUseCase {
 				success: false,
 				durationMs: 0,
 				insertedRows: 0,
-				errorMessage: 'CSV file path is required.',
+				errorMessage: 'CSV 文件路径不能为空。',
 			};
 		}
 

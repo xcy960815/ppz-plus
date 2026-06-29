@@ -7,6 +7,7 @@ import type {
 import type {
 	MySqlTableCellValue,
 	MySqlTableColumnMetadata,
+	MySqlTableFilterCondition,
 	MySqlTableInsertValues,
 	MySqlTableQueryOptions,
 	MySqlTableRowIdentityValues,
@@ -35,6 +36,7 @@ interface MySqlTablePanelState {
 	pageIndex: number;
 	pageSize: number;
 	filterKeyword: string;
+	filterConditions: readonly MySqlTableFilterCondition[];
 	sortColumnName?: string;
 	sortDirection: MySqlTableSortDirection;
 	hiddenColumnNames: Set<string>;
@@ -53,6 +55,7 @@ interface MySqlTablePanelSerializedState {
 	readonly pageIndex: number;
 	readonly pageSize: number;
 	readonly filterKeyword: string;
+	readonly filterConditions: readonly MySqlTableFilterCondition[];
 	readonly sortColumnName?: string;
 	readonly sortDirection: MySqlTableSortDirection;
 	readonly hiddenColumnNames: readonly string[];
@@ -129,7 +132,7 @@ export class MySqlTableDataPanel
 
 		if (!restoredState) {
 			panel.webview.html = this.renderRestoreErrorHtml(
-				'MySQL table data state is invalid.'
+				'MySQL 表数据页状态无效。'
 			);
 			return;
 		}
@@ -140,7 +143,7 @@ export class MySqlTableDataPanel
 
 		if (!connection) {
 			panel.webview.html = this.renderRestoreErrorHtml(
-				'The MySQL connection for this table data view was not found.'
+				'未找到此表数据页对应的 MySQL 连接。'
 			);
 			return;
 		}
@@ -157,6 +160,7 @@ export class MySqlTableDataPanel
 			pageIndex: restoredState.pageIndex,
 			pageSize: restoredState.pageSize,
 			filterKeyword: restoredState.filterKeyword,
+			filterConditions: restoredState.filterConditions,
 			sortColumnName: restoredState.sortColumnName,
 			sortDirection: restoredState.sortDirection,
 			hiddenColumnNames: new Set(restoredState.hiddenColumnNames),
@@ -187,7 +191,7 @@ export class MySqlTableDataPanel
 
 		const panel = vscode.window.createWebviewPanel(
 			MySqlTableDataPanel.viewType,
-			`${tableNode.tableName} Data`,
+			`${tableNode.tableName} 表数据`,
 			vscode.ViewColumn.Active,
 			{
 				enableScripts: true,
@@ -201,6 +205,7 @@ export class MySqlTableDataPanel
 			pageIndex: 0,
 			pageSize: MySqlTableDataPanel.defaultPageSize,
 			filterKeyword: '',
+			filterConditions: [],
 			sortDirection: 'asc',
 			hiddenColumnNames: new Set<string>(),
 			latestColumns: [],
@@ -261,6 +266,7 @@ export class MySqlTableDataPanel
 		const pageIndex = Reflect.get(value, 'pageIndex');
 		const pageSize = Reflect.get(value, 'pageSize');
 		const filterKeyword = Reflect.get(value, 'filterKeyword');
+		const filterConditions = Reflect.get(value, 'filterConditions');
 		const sortColumnName = Reflect.get(value, 'sortColumnName');
 		const sortDirection = Reflect.get(value, 'sortDirection');
 		const hiddenColumnNames = Reflect.get(value, 'hiddenColumnNames');
@@ -278,6 +284,7 @@ export class MySqlTableDataPanel
 					? Math.max(1, Math.floor(pageSize))
 					: MySqlTableDataPanel.defaultPageSize,
 			filterKeyword: typeof filterKeyword === 'string' ? filterKeyword : '',
+			filterConditions: this.parseFilterConditions(filterConditions),
 			sortColumnName:
 				typeof sortColumnName === 'string' && sortColumnName.length > 0
 					? sortColumnName
@@ -290,6 +297,89 @@ export class MySqlTableDataPanel
 					)
 				: [],
 		};
+	}
+
+	/**
+	 * 解析 Webview 状态中保存的字段过滤条件。
+	 *
+	 * @param value 原始过滤条件值。
+	 * @returns 可传给应用层的字段过滤条件列表。
+	 */
+	private parseFilterConditions(
+		value: unknown
+	): readonly MySqlTableFilterCondition[] {
+		if (!Array.isArray(value)) {
+			return [];
+		}
+
+		return value
+			.map((item) => this.parseFilterCondition(item))
+			.filter(
+				(
+					item
+				): item is MySqlTableFilterCondition => item !== undefined
+			);
+	}
+
+	/**
+	 * 解析单条字段过滤条件。
+	 *
+	 * @param value 原始字段过滤条件值。
+	 * @returns 可用字段过滤条件；无效时为空。
+	 */
+	private parseFilterCondition(
+		value: unknown
+	): MySqlTableFilterCondition | undefined {
+		if (!value || typeof value !== 'object' || Array.isArray(value)) {
+			return undefined;
+		}
+
+		const columnName = Reflect.get(value, 'columnName');
+		const operator = Reflect.get(value, 'operator');
+		const rawConditionValue = Reflect.get(value, 'value');
+
+		if (
+			typeof columnName !== 'string' ||
+			!this.isSupportedFilterOperator(operator)
+		) {
+			return undefined;
+		}
+
+		return {
+			columnName,
+			operator,
+			value: Array.isArray(rawConditionValue)
+				? rawConditionValue.filter(
+						(item): item is string => typeof item === 'string'
+					)
+				: typeof rawConditionValue === 'string'
+					? rawConditionValue
+					: undefined,
+		};
+	}
+
+	/**
+	 * 判断过滤操作符是否为表数据页支持的旧 PPZ 操作符。
+	 *
+	 * @param value 待检查的操作符。
+	 * @returns 是否为支持的过滤操作符。
+	 */
+	private isSupportedFilterOperator(
+		value: unknown
+	): value is MySqlTableFilterCondition['operator'] {
+		return (
+			value === '=' ||
+			value === '!=' ||
+			value === '>' ||
+			value === '>=' ||
+			value === '<' ||
+			value === '<=' ||
+			value === 'like' ||
+			value === 'in' ||
+			value === 'not in' ||
+			value === 'null' ||
+			value === 'not null'
+		);
 	}
 
 	/**
@@ -352,6 +442,7 @@ export class MySqlTableDataPanel
 				return;
 			case 'applyQueryOptions':
 				state.filterKeyword = message.filterKeyword;
+				state.filterConditions = message.filterConditions ?? [];
 				state.sortColumnName =
 					message.sortColumnName.length > 0
 						? message.sortColumnName
@@ -363,6 +454,7 @@ export class MySqlTableDataPanel
 				return;
 			case 'clearQueryOptions':
 				state.filterKeyword = '';
+				state.filterConditions = [];
 				state.sortColumnName = undefined;
 				state.sortDirection = 'asc';
 				state.pageIndex = 0;
@@ -370,14 +462,19 @@ export class MySqlTableDataPanel
 				return;
 			case 'setVisibleColumns':
 				state.hiddenColumnNames = new Set(message.hiddenColumnNames);
-				await this.renderTableData(state);
 				return;
 			case 'openSqlTerminal':
 				await vscode.commands.executeCommand(
 					OpenMySqlSqlTerminalCommand.id,
 					state.tableNode,
-					state.currentSql
+					message.sql ?? state.currentSql
 				);
+				return;
+			case 'copyCurrentSql':
+				await this.copyCurrentSql(message.sql);
+				return;
+			case 'openCurrentSqlDocument':
+				await this.openCurrentSqlDocument(message.sql);
 				return;
 			case 'insertRow':
 				await this.insertRow(state);
@@ -395,6 +492,32 @@ export class MySqlTableDataPanel
 				await this.saveEditedRows(state, message.edits);
 				return;
 		}
+	}
+
+	/**
+	 * 将当前查看的 SQL 写入系统剪贴板。
+	 *
+	 * @param sql Webview 当前选择的 SQL 文本。
+	 */
+	private async copyCurrentSql(sql: string): Promise<void> {
+		await vscode.env.clipboard.writeText(sql);
+		await vscode.window.showInformationMessage('已复制到剪切板');
+	}
+
+	/**
+	 * 在 VS Code 临时 SQL 文档中打开当前查看的 SQL。
+	 *
+	 * @param sql Webview 当前选择的 SQL 文本。
+	 */
+	private async openCurrentSqlDocument(sql: string): Promise<void> {
+		const document = await vscode.workspace.openTextDocument({
+			content: sql,
+			language: 'sql',
+		});
+
+		await vscode.window.showTextDocument(document, {
+			preview: false,
+		});
 	}
 
 	/**
@@ -419,7 +542,7 @@ export class MySqlTableDataPanel
 			}
 
 			const shouldSave = await this.confirmPendingChange(
-				`Save new row to ${state.tableNode.schemaName}.${state.tableNode.tableName}?`
+				'保存新增记录？'
 			);
 
 			if (!shouldSave) {
@@ -435,12 +558,12 @@ export class MySqlTableDataPanel
 
 			state.pageIndex = 0;
 			await vscode.window.showInformationMessage(
-				`Inserted ${result.affectedRows} row into ${state.tableNode.schemaName}.${state.tableNode.tableName}.`
+				`已新增 ${result.affectedRows} 条记录。`
 			);
 			await this.renderTableData(state);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: 'Insert MySQL table row',
+				operation: '新增 MySQL 表记录',
 				error,
 			});
 		}
@@ -460,7 +583,7 @@ export class MySqlTableDataPanel
 
 		if (!row) {
 			await vscode.window.showWarningMessage(
-				'Selected row is no longer available.'
+				'当前选中的记录已不可用。'
 			);
 			return;
 		}
@@ -487,9 +610,9 @@ export class MySqlTableDataPanel
 		for (const column of writableColumns) {
 			const sourceValue = sourceRow?.[column.name] ?? null;
 			const value = await vscode.window.showInputBox({
-				title: `Insert value for ${column.name}`,
+				title: `填写 ${column.name}`,
 				value: sourceValue === null ? '' : String(sourceValue),
-				prompt: `${column.dataType}${column.nullable ? ', nullable' : ''}. Leave empty to use DEFAULT; type NULL to insert NULL.`,
+				prompt: `类型：${column.dataType}${column.nullable ? '，可为空' : ''}。留空使用 DEFAULT；输入 NULL 写入 NULL。`,
 				ignoreFocusOut: true,
 			});
 
@@ -525,14 +648,14 @@ export class MySqlTableDataPanel
 
 			if (!row) {
 				await vscode.window.showWarningMessage(
-					'Selected row is no longer available.'
+					'当前选中的记录已不可用。'
 				);
 				return;
 			}
 
 			if (primaryKeyColumns.length === 0) {
 				await vscode.window.showWarningMessage(
-					'Editing rows currently requires a primary key.'
+					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
 				);
 				return;
 			}
@@ -545,12 +668,12 @@ export class MySqlTableDataPanel
 			}
 
 			if (Object.keys(values).length === 0) {
-				await vscode.window.showInformationMessage('No row changes to apply.');
+				await vscode.window.showInformationMessage('没有待保存的数据');
 				return;
 			}
 
 			const shouldSave = await this.confirmPendingChange(
-				`Save row changes to ${state.tableNode.schemaName}.${state.tableNode.tableName}?`
+				'保存修改？'
 			);
 
 			if (!shouldSave) {
@@ -566,12 +689,12 @@ export class MySqlTableDataPanel
 			);
 
 			await vscode.window.showInformationMessage(
-				`Updated ${result.affectedRows} row in ${state.tableNode.schemaName}.${state.tableNode.tableName}.`
+				`已保存 ${result.affectedRows} 条记录。`
 			);
 			await this.renderTableData(state);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: 'Edit MySQL table row',
+				operation: '编辑 MySQL 表记录',
 				error,
 			});
 		}
@@ -597,7 +720,7 @@ export class MySqlTableDataPanel
 
 			if (primaryKeyColumns.length === 0) {
 				await vscode.window.showWarningMessage(
-					'Editing rows currently requires a primary key.'
+					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
 				);
 				return;
 			}
@@ -632,15 +755,7 @@ export class MySqlTableDataPanel
 				);
 
 			if (normalizedEdits.length === 0) {
-				await vscode.window.showInformationMessage('No row changes to apply.');
-				return;
-			}
-
-			const shouldSave = await this.confirmPendingChange(
-				`Save ${normalizedEdits.length} row change(s) to ${state.tableNode.schemaName}.${state.tableNode.tableName}?`
-			);
-
-			if (!shouldSave) {
+				await vscode.window.showInformationMessage('没有待保存的数据');
 				return;
 			}
 
@@ -657,12 +772,12 @@ export class MySqlTableDataPanel
 			}
 
 			await vscode.window.showInformationMessage(
-				`Updated ${affectedRows} row(s) in ${state.tableNode.schemaName}.${state.tableNode.tableName}.`
+				`已保存 ${affectedRows} 条记录。`
 			);
 			await this.renderTableData(state);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: 'Save MySQL table row edits',
+				operation: '保存 MySQL 表记录修改',
 				error,
 			});
 		}
@@ -733,27 +848,31 @@ export class MySqlTableDataPanel
 
 			if (!row) {
 				await vscode.window.showWarningMessage(
-					'Selected row is no longer available.'
+					'当前选中的记录已不可用。'
 				);
 				return;
 			}
 
 			if (primaryKeyColumns.length === 0) {
 				await vscode.window.showWarningMessage(
-					'Deleting rows currently requires a primary key.'
+					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
 				);
 				return;
 			}
 
 			const confirmation = await vscode.window.showWarningMessage(
-				`Delete one row from ${state.tableNode.schemaName}.${state.tableNode.tableName}?`,
+				'确定删除？',
 				{
 					modal: true,
+					detail: this.createDeleteWarningMessage(
+						primaryKeyColumns,
+						row
+					),
 				},
-				'Delete'
+				'确定'
 			);
 
-			if (confirmation !== 'Delete') {
+			if (confirmation !== '确定') {
 				return;
 			}
 
@@ -765,15 +884,52 @@ export class MySqlTableDataPanel
 			);
 
 			await vscode.window.showInformationMessage(
-				`Deleted ${result.affectedRows} row from ${state.tableNode.schemaName}.${state.tableNode.tableName}.`
+				`已删除 ${result.affectedRows} 条记录。`
 			);
 			await this.renderTableData(state);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: 'Delete MySQL table row',
+				operation: '删除 MySQL 表记录',
 				error,
 			});
 		}
+	}
+
+	/**
+	 * 创建对齐旧 PPZ 的删除确认明细。
+	 *
+	 * @param primaryKeyColumns 当前表主键字段列表。
+	 * @param row 当前准备删除的记录。
+	 * @returns 展示给用户确认的删除风险说明。
+	 */
+	private createDeleteWarningMessage(
+		primaryKeyColumns: readonly MySqlTableColumnMetadata[],
+		row: Record<string, MySqlTableCellValue>
+	): string {
+		const warning = primaryKeyColumns
+			.map(
+				(column) =>
+					`${column.name} 为 ${this.formatCellValueForMessage(
+						row[column.name] ?? null
+					)}`
+			)
+			.join(' 且 ');
+
+		return `您正在删除 ${warning} 的记录，删除后不可恢复`;
+	}
+
+	/**
+	 * 将单元格值转换为确认弹窗中的短文本。
+	 *
+	 * @param value 单元格原始展示值。
+	 * @returns 可放入 VS Code 消息框的文本。
+	 */
+	private formatCellValueForMessage(value: MySqlTableCellValue): string {
+		if (value === null) {
+			return 'NULL';
+		}
+
+		return String(value);
 	}
 
 	/**
@@ -797,9 +953,9 @@ export class MySqlTableDataPanel
 		for (const column of editableColumns) {
 			const currentValue = row[column.name] ?? null;
 			const value = await vscode.window.showInputBox({
-				title: `Edit value for ${column.name}`,
+				title: `编辑 ${column.name}`,
 				value: currentValue === null ? '' : String(currentValue),
-				prompt: `${column.dataType}${column.nullable ? ', nullable' : ''}. Leave empty to keep current value; type NULL to set NULL.`,
+				prompt: `类型：${column.dataType}${column.nullable ? '，可为空' : ''}。留空保持原值；输入 NULL 设置为 NULL。`,
 				ignoreFocusOut: true,
 			});
 
@@ -833,11 +989,11 @@ export class MySqlTableDataPanel
 			{
 				modal: true,
 			},
-			'Save',
-			'Discard'
+			'保存',
+			'放弃'
 		);
 
-		return confirmation === 'Save';
+		return confirmation === '保存';
 	}
 
 	/**
@@ -846,7 +1002,7 @@ export class MySqlTableDataPanel
 	 * @param state 正在渲染的面板状态。
 	 */
 	private async renderTableData(state: MySqlTablePanelState): Promise<void> {
-		state.panel.title = `${state.tableNode.tableName} Data`;
+		state.panel.title = `${state.tableNode.tableName} 表数据`;
 		state.panel.webview.html = this.renderLoadingHtml(state.tableNode);
 
 		try {
@@ -878,7 +1034,7 @@ export class MySqlTableDataPanel
 			const message = error instanceof Error ? error.message : String(error);
 			state.panel.webview.html = this.renderErrorHtml(state.tableNode, message);
 			await showUserErrorMessage({
-				operation: 'Load MySQL table data',
+				operation: '加载 MySQL 表数据',
 				error,
 			});
 		}
@@ -894,11 +1050,13 @@ export class MySqlTableDataPanel
 		state: MySqlTablePanelState
 	): MySqlTableQueryOptions {
 		const filterKeyword = state.filterKeyword.trim();
+		const hasFilterConditions = state.filterConditions.length > 0;
 		return {
 			filter:
-				filterKeyword.length > 0
+				filterKeyword.length > 0 || hasFilterConditions
 					? {
 							keyword: filterKeyword,
+							conditions: state.filterConditions,
 						}
 					: undefined,
 			sort: state.sortColumnName
@@ -936,6 +1094,7 @@ export class MySqlTableDataPanel
 			pageIndex: state.pageIndex,
 			pageSize: state.pageSize,
 			filterKeyword: state.filterKeyword,
+			filterConditions: state.filterConditions,
 			sortColumnName: state.sortColumnName,
 			sortDirection: state.sortDirection,
 			hiddenColumnNames: Array.from(state.hiddenColumnNames),
@@ -954,7 +1113,7 @@ export class MySqlTableDataPanel
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>${this.escapeHtml(tableNode.tableName)} Data</title>
+	<title>${this.escapeHtml(tableNode.tableName)} 表数据</title>
 	<style>
 		body {
 			font-family: var(--vscode-font-family);
@@ -965,7 +1124,7 @@ export class MySqlTableDataPanel
 	</style>
 </head>
 <body>
-	<h2>Loading ${this.escapeHtml(tableNode.schemaName)}.${this.escapeHtml(tableNode.tableName)}...</h2>
+	<h2>正在加载 ${this.escapeHtml(tableNode.schemaName)}.${this.escapeHtml(tableNode.tableName)}...</h2>
 </body>
 </html>`;
 	}
@@ -986,7 +1145,7 @@ export class MySqlTableDataPanel
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>${this.escapeHtml(tableNode.tableName)} Data</title>
+	<title>${this.escapeHtml(tableNode.tableName)} 表数据</title>
 	<style>
 		body {
 			font-family: var(--vscode-font-family);
@@ -1006,7 +1165,7 @@ export class MySqlTableDataPanel
 <body>
 	<h2>${this.escapeHtml(tableNode.schemaName)}.${this.escapeHtml(tableNode.tableName)}</h2>
 	<p class="error">${this.escapeHtml(message)}</p>
-	<button onclick="acquireVsCodeApi().postMessage({ type: 'refresh' })">Retry</button>
+		<button onclick="acquireVsCodeApi().postMessage({ type: 'refresh' })">重试</button>
 </body>
 </html>`;
 	}
@@ -1023,7 +1182,7 @@ export class MySqlTableDataPanel
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>MySQL Table Data</title>
+	<title>MySQL 表数据</title>
 	<style>
 		body {
 			font-family: var(--vscode-font-family);
@@ -1037,7 +1196,7 @@ export class MySqlTableDataPanel
 	</style>
 </head>
 <body>
-	<h2>MySQL Table Data</h2>
+	<h2>MySQL 表数据</h2>
 	<p class="error">${this.escapeHtml(message)}</p>
 </body>
 </html>`;
@@ -1058,25 +1217,23 @@ export class MySqlTableDataPanel
 	): string {
 		const tableNode = state.tableNode;
 		const hasPrimaryKey = columns.some((column) => column.isPrimaryKey);
-		const dataColumns = columns.filter(
-			(column) => !state.hiddenColumnNames.has(column.name)
-		);
 		const columnHeaders =
-			dataColumns.length === 0
-				? '<th class="empty-header">No fields</th>'
-				: dataColumns
+			columns.length === 0
+				? '<th class="empty-header">无字段</th>'
+				: columns
 						.map((column) => {
 							const sortDirection =
 								state.sortColumnName === column.name
 									? state.sortDirection
 									: undefined;
+							const hidden = state.hiddenColumnNames.has(column.name);
 							const title = [
 								column.dataType,
 								column.isPrimaryKey ? 'PK' : undefined,
 							]
 								.filter((item): item is string => item !== undefined)
 								.join(' / ');
-							return `<th>
+							return `<th data-column-name="${this.escapeHtml(column.name)}"${hidden ? ' hidden' : ''}>
 				<div class="sort-field" data-sort-column="${this.escapeHtml(column.name)}" title="${this.escapeHtml(title)}">
 					<span>${this.escapeHtml(column.name)}</span>
 					<span class="sort-icons">
@@ -1090,20 +1247,21 @@ export class MySqlTableDataPanel
 
 		const rowsMarkup =
 			rowPage.rows.length === 0
-				? `<tr><td colspan="${Math.max(dataColumns.length, 1)}" class="empty-cell">No data</td></tr>`
+				? `<tr><td colspan="${Math.max(columns.length, 1)}" class="empty-cell">暂无数据</td></tr>`
 				: rowPage.rows
 						.map(
 							(row, rowIndex) =>
 								`<tr data-row-index="${rowIndex}">${
-									dataColumns.length === 0
-										? '<td class="empty-cell">No visible fields</td>'
-										: dataColumns
+									columns.length === 0
+										? '<td class="empty-cell">无字段</td>'
+										: columns
 												.map((column) =>
 													this.renderCell(
 														rowIndex,
 														column,
 														row[column.name] ?? null,
-														hasPrimaryKey
+														hasPrimaryKey,
+														state.hiddenColumnNames.has(column.name)
 													)
 												)
 												.join('')
@@ -1115,14 +1273,6 @@ export class MySqlTableDataPanel
 			1,
 			Math.ceil(rowPage.totalRowCount / rowPage.pageSize)
 		);
-		const sortOptions = [
-			`<option value=""${state.sortColumnName ? '' : ' selected'}>默认</option>`,
-			...columns.map((column) => {
-				const selected =
-					state.sortColumnName === column.name ? ' selected' : '';
-				return `<option value="${this.escapeHtml(column.name)}"${selected}>${this.escapeHtml(column.name)}</option>`;
-			}),
-		].join('');
 		const columnVisibilityControls = columns
 			.map((column) => {
 				const checked = state.hiddenColumnNames.has(column.name)
@@ -1134,18 +1284,27 @@ export class MySqlTableDataPanel
 				</label>`;
 				})
 				.join('');
-		const ascSelected = state.sortDirection === 'asc' ? ' selected' : '';
-		const descSelected = state.sortDirection === 'desc' ? ' selected' : '';
 		const serializedState = this.serializeScriptValue(
 			this.createSerializedState(state)
 		);
+		const paginatedSql = this.serializeScriptValue(rowPage.sql);
+		const sqlWithoutPagination = this.serializeScriptValue(
+			rowPage.sqlWithoutPagination
+		);
+		const filterConditions = this.serializeScriptValue(
+			state.filterConditions
+		);
+		const filterColumnNames = this.serializeScriptValue(
+			columns.map((column) => column.name)
+		);
+		const iconSprite = this.renderIconSprite();
 
 		return `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>${this.escapeHtml(tableNode.tableName)} Data</title>
+	<title>${this.escapeHtml(tableNode.tableName)} 表数据</title>
 	<style>
 		:root {
 			color-scheme: light dark;
@@ -1160,10 +1319,9 @@ export class MySqlTableDataPanel
 			font-size: var(--vscode-font-size);
 			background: var(--vscode-editor-background);
 			color: var(--vscode-editor-foreground);
+			line-height: 1;
 		}
 		header nav {
-			box-sizing: border-box;
-			height: 1.76rem;
 			padding: .38em var(--padding-h);
 			color: var(--vscode-descriptionForeground);
 			overflow: hidden;
@@ -1173,8 +1331,8 @@ export class MySqlTableDataPanel
 		header nav span {
 			font-size: .9em;
 		}
-		header nav .split {
-			padding: 0 .45em;
+		header nav svg {
+			margin: 0 .3em;
 			opacity: .72;
 		}
 		header nav .active {
@@ -1183,13 +1341,12 @@ export class MySqlTableDataPanel
 		.operations {
 			box-sizing: border-box;
 			display: flex;
-			justify-content: flex-start;
+			justify-content: space-between;
 			align-items: center;
-			min-height: 2rem;
+			height: 2em;
 			padding: 0 var(--padding-h);
 			background: var(--vscode-button-background);
 			color: var(--vscode-button-foreground);
-			overflow: hidden;
 			white-space: nowrap;
 		}
 		.btns,
@@ -1211,19 +1368,22 @@ export class MySqlTableDataPanel
 		}
 		.operations button {
 			box-sizing: border-box;
-			min-width: 1.68rem;
-			height: 2rem;
+			min-width: auto;
+			height: 2em;
 			border: 0;
-			border-radius: 0;
+			border-radius: 1px;
 			background: transparent;
 			color: inherit;
-			padding: 0 .46em;
-			line-height: 2rem;
+			padding: 0 .5em;
+			line-height: 2;
 			text-align: center;
+		}
+		.operations .btns > .icon-btn {
+			padding: 0 .58em;
 		}
 		.operations button:hover:not(:disabled),
 		.operations button:focus-visible {
-			background: rgba(255, 255, 255, .16);
+			background: var(--vscode-button-hoverBackground);
 			outline: none;
 		}
 		.operations button:disabled {
@@ -1235,11 +1395,10 @@ export class MySqlTableDataPanel
 			margin: 0 .2em;
 		}
 		.pagination button {
-			min-width: 1.42rem;
 			padding: 0 .28em;
 		}
-		.pagination button.big {
-			font-size: 1.12em;
+		.pagination button.big svg {
+			transform: scale(1.3);
 		}
 		.pagination .page-input {
 			box-sizing: border-box;
@@ -1256,144 +1415,11 @@ export class MySqlTableDataPanel
 			margin: 0 .3em;
 		}
 		.icon {
-			position: relative;
-			display: inline-block;
 			width: 1em;
 			height: 1em;
-			vertical-align: -.16em;
-		}
-		.icon-light::before {
-			content: "⚡";
-			position: absolute;
-			inset: -.12em 0 0 0;
-			font-size: .9em;
-			line-height: 1;
-		}
-		.icon-search {
-			border: .14em solid currentColor;
-			border-radius: 50%;
-			box-sizing: border-box;
-			width: .78em;
-			height: .78em;
-			margin-right: .14em;
-		}
-		.icon-search::after {
-			content: "";
-			position: absolute;
-			right: -.1em;
-			bottom: -.04em;
-			width: .42em;
-			height: .14em;
-			background: currentColor;
-			transform: rotate(45deg);
-			transform-origin: center;
-		}
-		.icon-filter::before {
-			content: "";
-			position: absolute;
-			left: .12em;
-			top: .16em;
-			width: .76em;
-			height: .22em;
-			background: currentColor;
-			clip-path: polygon(0 0, 100% 0, 64% 100%, 36% 100%);
-		}
-		.icon-filter::after {
-			content: "";
-			position: absolute;
-			left: .42em;
-			top: .36em;
-			width: .16em;
-			height: .46em;
-			background: currentColor;
-		}
-		.icon-copy::before,
-		.icon-copy::after {
-			content: "";
-			position: absolute;
-			box-sizing: border-box;
-			width: .56em;
-			height: .68em;
-			border: .12em solid currentColor;
-			border-radius: .06em;
-		}
-		.icon-copy::before {
-			left: .18em;
-			top: .22em;
-			opacity: .55;
-		}
-		.icon-copy::after {
-			left: .34em;
-			top: .08em;
-			background: var(--vscode-button-background);
-		}
-		.icon-save::before {
-			content: "";
-			position: absolute;
-			left: .16em;
-			top: .12em;
-			box-sizing: border-box;
-			width: .7em;
-			height: .76em;
-			border: .12em solid currentColor;
-			border-radius: .05em;
-		}
-		.icon-save::after {
-			content: "";
-			position: absolute;
-			left: .32em;
-			bottom: .16em;
-			width: .38em;
-			height: .2em;
-			background: currentColor;
-		}
-		.icon-undo::before {
-			content: "↶";
-			position: absolute;
-			inset: -.18em 0 0 -.05em;
-			font-size: 1.22em;
-			line-height: 1;
-		}
-		.icon-delete::before {
-			content: "";
-			position: absolute;
-			left: .26em;
-			top: .28em;
-			box-sizing: border-box;
-			width: .48em;
-			height: .56em;
-			border: .12em solid currentColor;
-			border-top: 0;
-		}
-		.icon-delete::after {
-			content: "";
-			position: absolute;
-			left: .22em;
-			top: .14em;
-			width: .56em;
-			height: .12em;
-			background: currentColor;
-			box-shadow: .16em -.1em 0 -.04em currentColor;
-		}
-		.icon-terminal::before {
-			content: "";
-			position: absolute;
-			left: .1em;
-			top: .18em;
-			box-sizing: border-box;
-			width: .82em;
-			height: .64em;
-			border: .12em solid currentColor;
-			border-radius: .04em;
-		}
-		.icon-terminal::after {
-			content: ">";
-			position: absolute;
-			left: .25em;
-			top: .08em;
-			font-size: .8em;
-			font-weight: 700;
-			line-height: 1;
+			vertical-align: -0.15em;
+			fill: currentColor;
+			overflow: hidden;
 		}
 		.table-wrapper {
 			height: calc(100vh - 3.76rem);
@@ -1508,7 +1534,7 @@ export class MySqlTableDataPanel
 			z-index: 10;
 			align-items: center;
 			justify-content: center;
-			background: rgba(0, 0, 0, .36);
+			background: rgba(var(--color0), .5);
 		}
 		body[data-dialog="search"] #searchDialog,
 		body[data-dialog="fields"] #fieldsDialog,
@@ -1517,27 +1543,32 @@ export class MySqlTableDataPanel
 		}
 		.dialog {
 			box-sizing: border-box;
-			width: min(34rem, calc(100vw - 2rem));
+			width: min(38em, calc(100vw - 2rem));
 			max-height: calc(100vh - 2rem);
 			overflow: auto;
-			border: 1px solid var(--vscode-panel-border);
-			background: var(--vscode-editor-background);
+			border: 1px solid rgba(var(--color1), .08);
+			border-radius: .8em;
+			background: rgba(var(--color0), .95);
 			color: var(--vscode-editor-foreground);
 			box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .28);
 		}
 		.dialog-title {
-			padding: .62rem .85rem;
-			border-bottom: 1px solid var(--vscode-panel-border);
-			font-weight: 600;
+			padding: .9em 1.8em .7em;
+			border-bottom: 1px solid rgba(var(--color1), .18);
+			font-size: .95em;
+			font-weight: bold;
+			opacity: .9;
+			text-align: center;
 		}
 		.dialog-body {
-			padding: .85rem;
+			min-height: 13em;
+			padding: .8em 1.8em;
 		}
 		.dialog-body label {
 			display: block;
 			margin-bottom: .62rem;
 		}
-		.dialog-body input,
+		.dialog-body input:not([type="checkbox"]):not([type="radio"]),
 		.dialog-body select {
 			box-sizing: border-box;
 			width: 100%;
@@ -1548,17 +1579,109 @@ export class MySqlTableDataPanel
 			color: var(--vscode-input-foreground);
 			padding: .28rem .45rem;
 		}
-		.column-grid {
+		.search-dialog .dialog-body {
+			min-height: 15em;
+			padding: 1.8em;
+		}
+		.search-condition-list {
 			display: grid;
-			grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-			gap: .42rem .75rem;
-			margin-bottom: .75rem;
+			gap: 1.2em;
+		}
+		.search-condition-row {
+			display: flex;
+			align-items: center;
+		}
+		.search-condition-row select,
+		.search-condition-row input,
+		.search-keyword input {
+			height: 2em;
+			color: inherit;
+			text-align: center;
+			border: 1px solid rgba(var(--color1), .3);
+			border-radius: 1em;
+			background-color: transparent;
+			appearance: none;
+			outline: none;
+		}
+		.search-condition-row select:focus,
+		.search-condition-row input:focus,
+		.search-keyword input:focus {
+			border-color: var(--vscode-focusBorder);
+		}
+		.search-condition-row select option {
+			color: initial;
+		}
+		.search-condition-row > .condition-column {
+			width: 12.31em;
+			margin-right: 1em;
+		}
+		.search-condition-row > .condition-operator {
+			width: 3.8em;
+			margin-right: 1em;
+		}
+		.search-condition-row > .condition-value,
+		.search-condition-row > .input-array {
+			width: 12em;
+			flex: 1;
+			margin-right: .5em;
+		}
+		.input-array-item {
+			display: flex;
+			margin-bottom: .8em;
+		}
+		.input-array-item input {
+			flex: 1;
+			margin-right: .5em;
+		}
+		.search-condition-row button,
+		.add-condition-button,
+		.add-array-item {
+			min-width: 2rem;
+			border: 0;
+			border-radius: 1em;
+			background: transparent;
+			color: inherit;
+			opacity: .5;
+			padding: .28rem .55rem;
+			transition: all .1s ease;
+		}
+		.search-condition-row button:hover:not(:disabled),
+		.add-condition-button:hover:not(:disabled),
+		.add-array-item:hover:not(:disabled) {
+			background: rgba(var(--color1), .1);
+			opacity: 1;
+		}
+		.add-condition-button {
+			display: block;
+			margin: 1.2em auto 0;
+		}
+		.search-condition-row[data-null-operator="true"] .condition-value {
+			visibility: hidden;
+		}
+		.search-keyword {
+			margin-top: 1.4em;
+			opacity: .82;
+		}
+		.search-keyword label {
+			display: grid;
+			gap: .45em;
+			margin: 0;
+		}
+		.column-grid {
+			display: flex;
+			flex-wrap: wrap;
+			padding: .7em .6em 0 .2em;
+		}
+		.field-dialog .dialog-body {
+			padding: 1.5em .6em .6em 2em;
 		}
 		.column-toggle {
 			display: flex;
 			align-items: center;
 			gap: .38rem;
 			min-width: 0;
+			margin-right: 2em;
+			margin-bottom: 1em;
 		}
 		.column-toggle input {
 			width: auto;
@@ -1571,78 +1694,111 @@ export class MySqlTableDataPanel
 			white-space: nowrap;
 		}
 		.dialog-actions {
-			justify-content: flex-end;
-			gap: .45rem;
-			padding: .72rem .85rem;
-			border-top: 1px solid var(--vscode-panel-border);
+			justify-content: center;
+			gap: .6em;
+			padding: .8em 1.8em 1em;
+			border-top: 1px solid rgba(var(--color1), .18);
 		}
 		.dialog-actions button {
-			min-width: 4.8rem;
-			border: 1px solid var(--vscode-button-border, transparent);
+			min-width: 6em;
+			height: 2em;
+			border: 0;
+			border-radius: 1px;
 			background: var(--vscode-button-background);
 			color: var(--vscode-button-foreground);
-			padding: .32rem .75rem;
+			padding: 0 1em;
 		}
 		.dialog-actions button.secondary {
-			background: var(--vscode-button-secondaryBackground);
-			color: var(--vscode-button-secondaryForeground);
+			background: var(--vscode-button-background);
+			color: var(--vscode-button-foreground);
 		}
 		pre.sql-view {
 			max-height: 18rem;
 			margin: 0;
+			flex: 1;
 			overflow: auto;
 			white-space: pre-wrap;
 			font-family: var(--vscode-editor-font-family, var(--vscode-font-family));
 			font-size: .9em;
 		}
+		.sql-dialog .dialog-body {
+			display: flex;
+			flex-direction: column;
+			padding: 1em 2em;
+			line-height: 2;
+		}
+		.sql-pagination-options {
+			display: flex;
+			gap: 1rem;
+			margin-top: .85rem;
+		}
+		.dialog-body .sql-pagination-options label {
+			display: inline-flex;
+			align-items: center;
+			gap: .32rem;
+			margin: 0;
+		}
+		.dialog-body .sql-pagination-options input {
+			width: auto;
+			min-height: auto;
+			margin: 0;
+		}
 		@media (max-width: 900px) {
-			.operations {
+			.search-condition-row {
 				align-items: stretch;
 				flex-direction: column;
-				padding: 0;
+				gap: .7em;
 			}
-			.btns,
-			.pagination {
-				padding: 0 var(--padding-h);
+			.search-condition-row > .condition-column,
+			.search-condition-row > .condition-operator,
+			.search-condition-row > .condition-value,
+			.search-condition-row > .input-array {
+				width: 100%;
+				margin-right: 0;
+			}
+			.search-condition-row[data-null-operator="true"] .condition-value,
+			.search-condition-row[data-null-operator="true"] .input-array {
+				display: none;
 			}
 		}
 	</style>
 </head>
 <body>
-	<header>
-		<nav title="${this.escapeHtml(tableNode.connection.name)} / ${this.escapeHtml(tableNode.schemaName)} / ${this.escapeHtml(tableNode.tableName)}">
-			<span>${this.escapeHtml(tableNode.connection.name)}</span>
-			<span class="split">›</span>
-			<span>${this.escapeHtml(tableNode.schemaName)}</span>
-			<span class="split">›</span>
-			<span class="active">${this.escapeHtml(tableNode.tableName)}</span>
-		</nav>
+	${iconSprite}
+		<header>
+			<nav title="${this.escapeHtml(tableNode.connection.name)} / ${this.escapeHtml(tableNode.schemaName)} / ${this.escapeHtml(tableNode.tableName)}">
+				<span>${this.escapeHtml(tableNode.connection.name)}</span>
+				${this.renderIcon('arrow-right')}
+				<span>${this.escapeHtml(tableNode.schemaName)}</span>
+				${this.renderIcon('arrow-right')}
+				<span class="active">${this.escapeHtml(tableNode.tableName)}</span>
+			</nav>
 		<div class="operations">
 			<div class="btns">
-				<button type="button" title="刷新" onclick="postAction('refresh')"><span class="icon icon-light" aria-hidden="true"></span></button>
-				<button type="button" title="搜索" onclick="showDialog('search')"><span class="icon icon-search" aria-hidden="true"></span></button>
-				<button type="button" title="字段" onclick="showDialog('fields')"><span class="icon icon-filter" aria-hidden="true"></span></button>
-				<button type="button" title="新增" onclick="postAction('insertRow')">+</button>
-				<button type="button" title="复制" id="copyButton" onclick="copyFocusedRow()" disabled><span class="icon icon-copy" aria-hidden="true"></span></button>
-				<button type="button" title="保存" id="saveButton" onclick="saveEditedRows()" disabled><span class="icon icon-save" aria-hidden="true"></span></button>
-				<button type="button" title="撤销" id="undoButton" onclick="undoEditedRows()" disabled><span class="icon icon-undo" aria-hidden="true"></span></button>
-				<button type="button" title="删除" id="deleteButton" onclick="deleteFocusedRow()" disabled><span class="icon icon-delete" aria-hidden="true"></span></button>
-				<button type="button" title="SQL" onclick="showDialog('sql')">SQL</button>
-				<button type="button" title="终端" onclick="postAction('openSqlTerminal')"><span class="icon icon-terminal" aria-hidden="true"></span></button>
+				<button type="button" class="icon-btn" title="刷新" onclick="postAction('refresh')">${this.renderIcon('light')}</button>
+				<button type="button" class="icon-btn" title="搜索" onclick="showDialog('search')">${this.renderIcon('search')}</button>
+				<button type="button" class="icon-btn" title="字段选择" onclick="showDialog('fields')">${this.renderIcon('filter')}</button>
+				<button type="button" class="icon-btn" title="插入" onclick="postAction('insertRow')">${this.renderIcon('add')}</button>
+				<button type="button" class="icon-btn" title="拷贝" id="copyButton" onclick="copyFocusedRow()" disabled>${this.renderIcon('copy')}</button>
+				<button type="button" class="icon-btn" title="保存" id="saveButton" onclick="saveEditedRows()" disabled>${this.renderIcon('save')}</button>
+				<button type="button" class="icon-btn" title="撤销全部" id="undoButton" onclick="undoEditedRows()" disabled>${this.renderIcon('undo')}</button>
+				<button type="button" class="icon-btn" title="删除" id="deleteButton" onclick="deleteFocusedRow()" disabled>${this.renderIcon('delete')}</button>
+				<button type="button" class="icon-btn" title="查看当前 sql" onclick="showDialog('sql')">${this.renderIcon('sql')}</button>
+				<button type="button" class="icon-btn" title="打开终端" onclick="postAction('openSqlTerminal')">${this.renderIcon('terminal')}</button>
 			</div>
 			<div class="pagination">
-				<button type="button" title="刷新" onclick="applyPagination()">&#8635;</button>
+				<button type="button" class="icon-btn" title="刷新" onclick="applyPagination()">${this.renderIcon('refresh')}</button>
 				<span class="txt">每页</span>
 				<input id="pageSizeInput" class="page-input page-size" value="${rowPage.pageSize}" inputmode="numeric" />
 				<span class="txt">条记录，共 </span>
 				<span>${rowPage.totalRowCount}</span>
 				<span class="txt"> 条、</span>
 				<span>${pageCount}</span><span class="txt"> 页</span>
-				<button type="button" class="big" title="第一页" onclick="goToPage(1)" ${pageNumber <= 1 ? 'disabled' : ''}>&lt;&lt;</button>
-				<button type="button" class="big" title="上一页" onclick="goToPage(${Math.max(1, pageNumber - 1)})" ${pageNumber <= 1 ? 'disabled' : ''}>&lt;</button>
+				<button type="button" class="icon-btn big" title="第一页" onclick="goToPage(1)" ${pageNumber <= 1 ? 'disabled' : ''}>${this.renderIcon('arrow-left2')}</button>
+				<button type="button" class="icon-btn big" title="上一页" onclick="goToPage(${Math.max(1, pageNumber - 1)})" ${pageNumber <= 1 ? 'disabled' : ''}>${this.renderIcon('arrow-left')}</button>
 				<input id="pageIndexInput" class="page-input" value="${pageNumber}" inputmode="numeric" />
-				<button type="button" class="big" title="下一页" onclick="goToPage(${Math.min(pageCount, pageNumber + 1)})" ${pageNumber >= pageCount ? 'disabled' : ''}>&gt;</button>
-				<button type="button" class="big" title="最后一页" onclick="goToPage(${pageCount})" ${pageNumber >= pageCount ? 'disabled' : ''}>&gt;&gt;</button>
+				<button type="button" class="icon-btn big" title="下一页" onclick="goToPage(${Math.min(pageCount, pageNumber + 1)})" ${pageNumber >= pageCount ? 'disabled' : ''}>${this.renderIcon('arrow-right')}</button>
+				<button type="button" class="icon-btn big" title="最后一页" onclick="goToPage(${pageCount})" ${pageNumber >= pageCount ? 'disabled' : ''}>${this.renderIcon('arrow-right2')}</button>
 			</div>
 		</div>
 	</header>
@@ -1657,34 +1813,27 @@ export class MySqlTableDataPanel
 		</table>
 	</div>
 	<div class="dialog-mask" id="searchDialog" role="dialog" aria-modal="true">
-		<div class="dialog">
+		<div class="dialog search-dialog">
 			<div class="dialog-title">搜索数据</div>
 			<div class="dialog-body">
-				<label>
-					关键字
-					<input id="filterKeyword" value="${this.escapeHtml(state.filterKeyword)}" />
-				</label>
-				<label>
-					排序字段
-					<select id="sortColumnName">${sortOptions}</select>
-				</label>
-				<label>
-					排序方向
-					<select id="sortDirection">
-						<option value="asc"${ascSelected}>ASC</option>
-						<option value="desc"${descSelected}>DESC</option>
-					</select>
-				</label>
+				<div id="filterConditions" class="search-condition-list"></div>
+				<button type="button" class="add-condition-button" onclick="addFilterCondition()">+</button>
+				<div class="search-keyword">
+					<label>
+						<span>关键字</span>
+						<input id="filterKeyword" value="${this.escapeHtml(state.filterKeyword)}" />
+					</label>
+				</div>
 			</div>
 			<div class="dialog-actions">
-				<button type="button" class="secondary" onclick="clearQueryOptions()">清空</button>
-				<button type="button" class="secondary" onclick="closeDialog()">关闭</button>
 				<button type="button" onclick="applyQueryOptions()">搜索</button>
+				<button type="button" onclick="emptySearch()">清空</button>
+				<button type="button" onclick="closeDialog()">关闭</button>
 			</div>
 		</div>
 	</div>
 	<div class="dialog-mask" id="fieldsDialog" role="dialog" aria-modal="true">
-		<div class="dialog">
+		<div class="dialog field-dialog">
 			<div class="dialog-title">字段选择</div>
 			<div class="dialog-body">
 				<div class="column-grid">
@@ -1692,39 +1841,56 @@ export class MySqlTableDataPanel
 				</div>
 			</div>
 			<div class="dialog-actions">
-				<button type="button" class="secondary" onclick="setAllColumns(true)">全选</button>
-				<button type="button" class="secondary" onclick="invertColumns()">反选</button>
-				<button type="button" class="secondary" onclick="setAllColumns(false)">全不选</button>
-				<button type="button" class="secondary" onclick="closeDialog()">关闭</button>
-				<button type="button" onclick="applyColumnVisibility()">确定</button>
+				<button type="button" onclick="setAllColumns(true)">全选</button>
+				<button type="button" onclick="invertColumns()">反选</button>
+				<button type="button" onclick="setAllColumns(false)">全不选</button>
+				<button type="button" onclick="closeDialog()">关闭</button>
 			</div>
 		</div>
 	</div>
 	<div class="dialog-mask" id="sqlDialog" role="dialog" aria-modal="true">
-		<div class="dialog">
+		<div class="dialog sql-dialog">
 			<div class="dialog-title">查看 SQL</div>
 			<div class="dialog-body">
-				<pre class="sql-view"><code>${this.escapeHtml(rowPage.sql)}</code></pre>
+				<pre class="sql-view"><code id="sqlViewerContent">${this.escapeHtml(rowPage.sqlWithoutPagination)}</code></pre>
+				<div class="sql-pagination-options">
+					<label>
+						<input type="radio" name="sqlPaginationMode" value="with" onchange="updateSqlViewer()" />
+						<span>带分页</span>
+					</label>
+					<label>
+						<input type="radio" name="sqlPaginationMode" value="without" onchange="updateSqlViewer()" checked />
+						<span>不带</span>
+					</label>
+				</div>
 			</div>
 			<div class="dialog-actions">
+				<button type="button" onclick="openCurrentSqlDocument()">在新文件中打开</button>
+				<button type="button" onclick="copyCurrentSql()">复制到剪切板</button>
+				<button type="button" onclick="openCurrentSqlInTerminal()">在终端中打开</button>
 				<button type="button" class="secondary" onclick="closeDialog()">关闭</button>
-				<button type="button" onclick="postAction('openSqlTerminal')">终端</button>
 			</div>
 		</div>
 	</div>
 	<script>
 		const vscode = acquireVsCodeApi();
 		const initialState = ${serializedState};
+		let currentState = { ...initialState };
+		const paginatedSql = ${paginatedSql};
+		const sqlWithoutPagination = ${sqlWithoutPagination};
+		const filterColumnNames = ${filterColumnNames};
+		let filterConditions = ${filterConditions};
 		const hasPrimaryKey = ${hasPrimaryKey ? 'true' : 'false'};
 		const totalRowCount = ${rowPage.totalRowCount};
 		let focusedRowIndex = undefined;
 		const editing = {};
-		vscode.setState(initialState);
+		vscode.setState(currentState);
 		function persistState(nextState) {
-			vscode.setState({
-				...initialState,
+			currentState = {
+				...currentState,
 				...nextState
-			});
+			};
+			vscode.setState(currentState);
 		}
 		function postAction(type) {
 			if ((type === 'refresh' || type === 'deleteRow') && hasPendingEdits()) {
@@ -1746,8 +1912,8 @@ export class MySqlTableDataPanel
 			const input = document.getElementById('pageSizeInput');
 			const parsedSize = Number.parseInt(input.value, 10);
 			if (!Number.isFinite(parsedSize) || parsedSize <= 0) {
-				input.value = String(initialState.pageSize);
-				return initialState.pageSize;
+				input.value = String(currentState.pageSize);
+				return currentState.pageSize;
 			}
 			return parsedSize;
 		}
@@ -1799,8 +1965,8 @@ export class MySqlTableDataPanel
 		function sortByColumn(columnName) {
 			let sortColumnName = columnName;
 			let sortDirection = 'asc';
-			if (initialState.sortColumnName === columnName) {
-				if (initialState.sortDirection === 'asc') {
+			if (currentState.sortColumnName === columnName) {
+				if (currentState.sortDirection === 'asc') {
 					sortDirection = 'desc';
 				} else {
 					sortColumnName = '';
@@ -1814,16 +1980,211 @@ export class MySqlTableDataPanel
 			});
 			vscode.postMessage({
 				type: 'applyQueryOptions',
-				filterKeyword: initialState.filterKeyword,
+				filterKeyword: currentState.filterKeyword,
+				filterConditions: currentState.filterConditions || [],
 				sortColumnName,
 				sortDirection
 			});
 		}
 		function showDialog(dialogName) {
 			document.body.dataset.dialog = dialogName;
+			if (dialogName === 'search') {
+				renderFilterConditions();
+			}
+			if (dialogName === 'sql') {
+				updateSqlViewer();
+			}
 		}
 		function closeDialog() {
 			document.body.removeAttribute('data-dialog');
+		}
+		function escapeClientHtml(value) {
+			return String(value)
+				.replaceAll('&', '&amp;')
+				.replaceAll('<', '&lt;')
+				.replaceAll('>', '&gt;')
+				.replaceAll('"', '&quot;')
+				.replaceAll("'", '&#39;');
+		}
+		function isNullFilterOperator(operator) {
+			return operator === 'null' || operator === 'not null';
+		}
+		function getConditionInputValue(condition) {
+			if (Array.isArray(condition.value)) {
+				return condition.value;
+			}
+			return condition.value || '';
+		}
+		function isArrayFilterOperator(operator) {
+			return operator === 'in' || operator === 'not in';
+		}
+		function renderConditionValueControl(condition) {
+			if (isNullFilterOperator(condition.operator)) {
+				return '<div class="condition-value filler"></div>';
+			}
+			if (!isArrayFilterOperator(condition.operator)) {
+				return '<input class="condition-value" value="' +
+					escapeClientHtml(getConditionInputValue(condition)) + '" />';
+			}
+			const values = Array.isArray(condition.value) && condition.value.length > 0
+				? condition.value
+				: [''];
+			const items = values.map((value) => [
+				'<div class="input-array-item">',
+				'<input class="condition-array-value" value="' + escapeClientHtml(value) + '" />',
+				'<button type="button" class="condition-array-remove" title="删除">×</button>',
+				'</div>'
+			].join('')).join('');
+			return [
+				'<div class="input-array">',
+				items,
+				'<button type="button" class="add-array-item" title="新增">+</button>',
+				'</div>'
+			].join('');
+		}
+		function renderFilterConditions() {
+			const container = document.getElementById('filterConditions');
+			if (!container) {
+				return;
+			}
+			const operators = ['=', '!=', '>', '>=', '<', '<=', 'like', 'in', 'not in', 'null', 'not null'];
+			container.innerHTML = filterConditions.map((condition, index) => {
+				const normalizedCondition = {
+					columnName: condition.columnName || filterColumnNames[0] || '',
+					operator: operators.includes(condition.operator) ? condition.operator : '=',
+					value: condition.value
+				};
+				const columnOptions = filterColumnNames.map((columnName) =>
+					'<option value="' + escapeClientHtml(columnName) + '"' +
+					(normalizedCondition.columnName === columnName ? ' selected' : '') +
+					'>' + escapeClientHtml(columnName) + '</option>'
+				).join('');
+				const operatorOptions = operators.map((operator) =>
+					'<option value="' + escapeClientHtml(operator) + '"' +
+					(normalizedCondition.operator === operator ? ' selected' : '') +
+					'>' + escapeClientHtml(operator) + '</option>'
+				).join('');
+				const isNullOperator = isNullFilterOperator(normalizedCondition.operator);
+				return [
+					'<div class="search-condition-row" data-null-operator="' + String(isNullOperator) + '">',
+					'<select class="condition-column">' + columnOptions + '</select>',
+					'<select class="condition-operator">' + operatorOptions + '</select>',
+					renderConditionValueControl(normalizedCondition),
+					'<button type="button" class="condition-remove" title="删除">×</button>',
+					'</div>'
+				].join('');
+			}).join('');
+			for (const [index, row] of Array.from(container.querySelectorAll('.search-condition-row')).entries()) {
+				row.querySelector('.condition-column')?.addEventListener('change', () => {
+					filterConditions = collectFilterConditions();
+				});
+				row.querySelector('.condition-value')?.addEventListener('input', () => {
+					filterConditions = collectFilterConditions();
+				});
+				for (const input of row.querySelectorAll('.condition-array-value')) {
+					input.addEventListener('input', () => {
+						filterConditions = collectFilterConditions();
+					});
+				}
+				row.querySelector('.condition-operator')?.addEventListener('change', (event) => {
+					filterConditions = collectFilterConditions();
+					const operator = event.target.value;
+					if (operator === 'like') {
+						const current = filterConditions[index];
+						if (current && !current.value) {
+							filterConditions[index] = { ...current, value: '%%' };
+						}
+					} else if (isArrayFilterOperator(operator)) {
+						const current = filterConditions[index];
+						if (current && !Array.isArray(current.value)) {
+							filterConditions[index] = { ...current, value: [''] };
+						}
+					}
+					renderFilterConditions();
+				});
+				row.querySelector('.add-array-item')?.addEventListener('click', () => {
+					filterConditions = collectFilterConditions();
+					const current = filterConditions[index];
+					if (current) {
+						const values = Array.isArray(current.value) ? [...current.value] : [];
+						values.push('');
+						filterConditions[index] = { ...current, value: values };
+					}
+					renderFilterConditions();
+				});
+				for (const [arrayIndex, button] of Array.from(row.querySelectorAll('.condition-array-remove')).entries()) {
+					button.addEventListener('click', () => {
+						filterConditions = collectFilterConditions();
+						const current = filterConditions[index];
+						if (current) {
+							const values = Array.isArray(current.value) ? [...current.value] : [];
+							values.splice(arrayIndex, 1);
+							filterConditions[index] = { ...current, value: values.length > 0 ? values : [''] };
+						}
+						renderFilterConditions();
+					});
+				}
+				row.querySelector('.condition-remove')?.addEventListener('click', () => {
+					filterConditions = collectFilterConditions();
+					filterConditions.splice(index, 1);
+					renderFilterConditions();
+				});
+			}
+		}
+		function collectFilterConditions() {
+			const rows = Array.from(document.querySelectorAll('#filterConditions .search-condition-row'));
+			return rows.map((row) => {
+				const columnName = row.querySelector('.condition-column')?.value || '';
+				const operator = row.querySelector('.condition-operator')?.value || '=';
+				const rawValue = row.querySelector('.condition-value')?.value || '';
+				const condition = {
+					columnName,
+					operator
+				};
+				if (!isNullFilterOperator(operator)) {
+					condition.value = isArrayFilterOperator(operator)
+						? Array.from(row.querySelectorAll('.condition-array-value')).map((item) => item.value)
+						: rawValue;
+				}
+				return condition;
+			}).filter((condition) => condition.columnName.length > 0);
+		}
+		function addFilterCondition() {
+			filterConditions = collectFilterConditions();
+			filterConditions.push({
+				columnName: filterColumnNames[0] || '',
+				operator: '=',
+				value: ''
+			});
+			renderFilterConditions();
+		}
+		function getCurrentSql() {
+			const selectedMode = document.querySelector('input[name="sqlPaginationMode"]:checked')?.value;
+			return selectedMode === 'with' ? paginatedSql : sqlWithoutPagination;
+		}
+		function updateSqlViewer() {
+			const viewer = document.getElementById('sqlViewerContent');
+			if (viewer) {
+				viewer.innerText = getCurrentSql();
+			}
+		}
+		function copyCurrentSql() {
+			vscode.postMessage({
+				type: 'copyCurrentSql',
+				sql: getCurrentSql()
+			});
+		}
+		function openCurrentSqlDocument() {
+			vscode.postMessage({
+				type: 'openCurrentSqlDocument',
+				sql: getCurrentSql()
+			});
+		}
+		function openCurrentSqlInTerminal() {
+			vscode.postMessage({
+				type: 'openSqlTerminal',
+				sql: getCurrentSql()
+			});
 		}
 		function editRow(rowIndex) {
 			vscode.postMessage({
@@ -1929,10 +2290,12 @@ export class MySqlTableDataPanel
 		}
 		function applyQueryOptions() {
 			const filterKeyword = document.getElementById('filterKeyword').value;
-			const sortColumnName = document.getElementById('sortColumnName').value;
-			const sortDirection = document.getElementById('sortDirection').value;
+			filterConditions = collectFilterConditions();
+			const sortColumnName = currentState.sortColumnName || '';
+			const sortDirection = currentState.sortDirection || 'asc';
 			persistState({
 				filterKeyword,
+				filterConditions,
 				sortColumnName,
 				sortDirection,
 				pageIndex: 0
@@ -1940,30 +2303,35 @@ export class MySqlTableDataPanel
 			vscode.postMessage({
 				type: 'applyQueryOptions',
 				filterKeyword,
+				filterConditions,
 				sortColumnName,
 				sortDirection
 			});
 		}
-		function clearQueryOptions() {
+		function emptySearch() {
+			filterConditions = [];
+			const filterKeyword = document.getElementById('filterKeyword');
+			if (filterKeyword) {
+				filterKeyword.value = '';
+			}
+			renderFilterConditions();
 			persistState({
 				filterKeyword: '',
-				sortColumnName: '',
-				sortDirection: 'asc',
-				pageIndex: 0
-			});
-			vscode.postMessage({
-				type: 'clearQueryOptions'
+				filterConditions: [],
+				pageIndex: currentState.pageIndex
 			});
 		}
 		function setAllColumns(checked) {
 			for (const checkbox of document.querySelectorAll('#fieldsDialog [data-column-name]')) {
 				checkbox.checked = checked;
 			}
+			applyColumnVisibility();
 		}
 		function invertColumns() {
 			for (const checkbox of document.querySelectorAll('#fieldsDialog [data-column-name]')) {
 				checkbox.checked = !checkbox.checked;
 			}
+			applyColumnVisibility();
 		}
 		function applyColumnVisibility() {
 			const hiddenColumnNames = [];
@@ -1972,11 +2340,18 @@ export class MySqlTableDataPanel
 					hiddenColumnNames.push(checkbox.dataset.columnName);
 				}
 			}
+			updateColumnVisibilityInDocument(hiddenColumnNames);
 			persistState({ hiddenColumnNames });
 			vscode.postMessage({
 				type: 'setVisibleColumns',
 				hiddenColumnNames
 			});
+		}
+		function updateColumnVisibilityInDocument(hiddenColumnNames) {
+			const hiddenColumnNameSet = new Set(hiddenColumnNames);
+			for (const cell of document.querySelectorAll('.pne [data-column-name]')) {
+				cell.hidden = hiddenColumnNameSet.has(cell.dataset.columnName);
+			}
 		}
 		document.addEventListener('keydown', (event) => {
 			if (event.key === 'Escape') {
@@ -1989,6 +2364,9 @@ export class MySqlTableDataPanel
 		for (const cell of document.querySelectorAll('.pne tbody td[data-column-name]')) {
 			cell.addEventListener('click', () => setFocusedCell(cell));
 			cell.addEventListener('input', () => recordCellEdit(cell));
+		}
+		for (const checkbox of document.querySelectorAll('#fieldsDialog [data-column-name]')) {
+			checkbox.addEventListener('change', () => applyColumnVisibility());
 		}
 		updateToolbarState();
 	</script>
@@ -2003,13 +2381,15 @@ export class MySqlTableDataPanel
 	 * @param column 当前单元格所属字段元数据。
 	 * @param value 待渲染的单元格值。
 	 * @param canEditRow 当前表是否允许通过主键编辑行。
+	 * @param hidden 当前字段是否初始隐藏。
 	 * @returns HTML 表格单元格标记。
 	 */
 	private renderCell(
 		rowIndex: number,
 		column: MySqlTableColumnMetadata,
 		value: string | number | boolean | null,
-		canEditRow: boolean
+		canEditRow: boolean,
+		hidden: boolean
 	): string {
 		const displayValue = value === null ? '' : String(value);
 		const editable =
@@ -2023,7 +2403,43 @@ export class MySqlTableDataPanel
 			data-original-value="${this.escapeHtml(displayValue)}"
 			title="${this.escapeHtml(`${column.name}: ${column.dataType}`)}"
 			${editable ? 'contenteditable="true"' : ''}
+			${hidden ? 'hidden' : ''}
 		>${this.escapeHtml(displayValue)}</td>`;
+	}
+
+	/**
+	 * 渲染旧 PPZ iconfont 的 SVG symbol 子集。
+	 *
+	 * @returns 当前表数据页工具栏所需的隐藏 SVG 符号。
+	 */
+	private renderIconSprite(): string {
+		return `<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+			<symbol id="icon-search" viewBox="0 0 1024 1024"><path d="M956.29141 864.626199 806.130436 705.068204c46.465265-72.432683 71.080895-160.022577 65.098647-252.750491-14.762215-229.339292-211.081463-403.244041-438.438611-388.447033C205.400578 78.668711 33.067628 276.605805 47.83189 505.930771c14.797008 229.405807 211.054857 403.307486 438.47238 388.512525 94.259804-6.135744 179.073468-43.763736 245.01532-102.06149l145.643078 154.744363c25.171286 20.206204 63.346747 18.111496 85.221964-4.709255C984.122269 919.6637 981.461673 884.818077 956.29141 864.626199zM477.945905 760.445442c-157.312862 10.117428-293.166993-109.276822-303.415404-266.750343-10.282181-157.375284 108.952434-293.200762 266.266319-303.31819 157.313885-10.123568 293.235554 109.304452 303.484989 266.663362C754.55785 614.530165 635.25979 750.322897 477.945905 760.445442z"></path></symbol>
+			<symbol id="icon-terminal" viewBox="0 0 1024 1024"><path d="M128 128h768a42.666667 42.666667 0 0 1 42.666667 42.666667v682.666666a42.666667 42.666667 0 0 1-42.666667 42.666667H128a42.666667 42.666667 0 0 1-42.666667-42.666667V170.666667a42.666667 42.666667 0 0 1 42.666667-42.666667z m384 512v85.333333h256v-85.333333h-256z m-153.002667-128l-120.661333 120.661333L298.666667 693.034667 479.701333 512 298.666667 330.965333 238.336 391.338667 358.997333 512z"></path></symbol>
+			<symbol id="icon-undo" viewBox="0 0 1024 1024"><path d="M884.451 455.595c-18.251-42.96-44.333-81.57-77.521-114.758s-71.797-59.269-114.758-77.521c-44.598-18.947-91.854-28.553-140.456-28.553H373.73c-0.93 0-1.852 0.031-2.772 0.07V86.666c0-17.787-21.505-26.695-34.083-14.117L116.843 292.581c-7.797 7.797-7.797 20.438 0 28.235l220.032 220.032c12.577 12.577 34.083 3.67 34.083-14.117V362.693c0.92 0.039 1.842 0.07 2.772 0.07h177.986c128.636 0 233.288 104.652 233.288 233.288 0 128.636-104.652 233.288-233.288 233.288H373.73c-35.346 0-64 28.653-64 64s28.654 64 64 64h177.986c48.603 0 95.858-9.606 140.456-28.554 42.961-18.251 81.57-44.333 114.758-77.521s59.27-71.797 77.521-114.758c18.947-44.598 28.554-91.854 28.554-140.456s-9.607-95.857-28.554-140.455z"></path></symbol>
+			<symbol id="icon-save" viewBox="0 0 1024 1024"><path d="M725.333333 128H213.333333c-46.933333 0-85.333333 38.4-85.333333 85.333333v597.333334c0 46.933333 38.4 85.333333 85.333333 85.333333h597.333334c46.933333 0 85.333333-38.4 85.333333-85.333333V298.666667l-170.666667-170.666667z m-213.333333 682.666667c-72.533333 0-128-55.466667-128-128s55.466667-128 128-128 128 55.466667 128 128-55.466667 128-128 128z m128-426.666667H213.333333V213.333333h426.666667v170.666667z"></path></symbol>
+			<symbol id="icon-sql" viewBox="0 0 1024 1024"><path d="M271.1 327.5 208.6 382.7c-22-30.6-44.3-45.8-67.1-45.8-11.1 0-20.1 3-27.2 8.9-7 5.9-10.6 12.6-10.6 20.1 0 7.4 2.5 14.5 7.6 21.1 6.8 8.9 27.5 27.9 61.9 57 32.2 26.9 51.8 43.9 58.6 51 17.1 17.3 29.3 33.8 36.4 49.6 7.1 15.8 10.7 33 10.7 51.7 0 36.4-12.6 66.5-37.7 90.2-25.2 23.7-58 35.6-98.4 35.6-31.6 0-59.1-7.7-82.6-23.2-23.4-15.5-43.5-39.8-60.2-73l71-42.8c21.3 39.2 45.9 58.8 73.7 58.8 14.5 0 26.7-4.2 36.6-12.7 9.9-8.4 14.8-18.2 14.8-29.3 0-10.1-3.7-20.1-11.2-30.2-7.5-10.1-23.9-25.4-49.2-46.1-48.3-39.4-79.6-69.8-93.7-91.2-14.1-21.4-21.1-42.8-21.1-64.1 0-30.8 11.7-57.2 35.2-79.2 23.4-22 52.4-33 86.8-33 22.1 0 43.2 5.1 63.3 15.4C226.1 281.6 247.8 300.3 271.1 327.5z"></path><path d="M709.2 646l77.2 99.8-100 0-39.2-50.5c-32.4 17.8-68.6 26.6-108.4 26.6-66.6 0-122-23-166.1-68.9-44.1-45.9-66.1-100.7-66.1-164.2 0-42.4 10.3-81.4 30.8-116.9 20.5-35.5 48.7-63.7 84.7-84.6 35.9-20.9 74.5-31.4 115.7-31.4 63 0 117 22.7 162.2 68.2 45.2 45.4 67.8 100.8 67.8 166.2C767.8 550.5 748.2 602.3 709.2 646zM656.5 577.8c17.9-26.5 26.8-55.9 26.8-88.1 0-42-14.2-77.7-42.6-107.1-28.4-29.3-62.7-44-103-44-41.5 0-76.2 14.3-104.2 42.8-28 28.6-42 64.8-42 108.9 0 49.1 17.6 87.9 52.9 116.4 27.6 22.3 58.9 33.5 94 33.5 20.1 0 39.1-3.9 56.8-11.8l-79.4-102.2 100.7 0L656.5 577.8z"></path><path d="M816.5 267.1l84.4 0 0 363.1L1024 630.2l0 80.5L816.5 710.7 816.5 267.1z"></path></symbol>
+			<symbol id="icon-copy" viewBox="0 0 1024 1024"><path d="M808.768 197.312c10.432 0 17.408 6.912 17.408 17.344l0 485.568c0 10.368-6.976 17.344-17.408 17.344l-87.296 0c-19.136 0-34.944 15.552-34.944 34.624 0 19.136 15.808 34.688 34.944 34.688l104.768 0c38.464 0 69.824-31.168 69.824-69.312l0-520.32C896 159.168 864.64 128 826.176 128l-384 0c-38.4 0-69.824 31.232-69.824 69.312l0 34.688c0 19.072 15.68 34.688 34.88 34.688 19.2 0 34.88-15.616 34.88-34.688L442.112 214.656c0-10.432 6.976-17.344 17.408-17.344L808.768 197.312z"></path><path d="M128 363.968l0 469.376C128 867.84 160.32 896 199.808 896l394.944 0c39.488 0 71.872-28.16 71.872-62.656L666.624 363.968c0-34.432-32.384-62.592-71.872-62.592L199.808 301.376C160.32 301.376 128 329.536 128 363.968z"></path></symbol>
+			<symbol id="icon-arrow-right2" viewBox="0 0 1024 1024"><path d="M265.386667 292.266667l30.293333-29.866667a21.333333 21.333333 0 0 1 30.293333 0l219.306667 218.88a32 32 0 0 1 9.386667 22.613333v16.213334a32.853333 32.853333 0 0 1-9.386667 22.613333l-219.306667 218.88a21.333333 21.333333 0 0 1-30.293333 0l-30.293333-30.293333a20.906667 20.906667 0 0 1 0-29.866667L455.253333 512 265.386667 322.56a21.333333 21.333333 0 0 1 0-30.293333zM661.333333 768h42.666667a21.333333 21.333333 0 0 0 21.333333-21.333333v-469.333334a21.333333 21.333333 0 0 0-21.333333-21.333333h-42.666667a21.333333 21.333333 0 0 0-21.333333 21.333333v469.333334a21.333333 21.333333 0 0 0 21.333333 21.333333z"></path></symbol>
+			<symbol id="icon-arrow-left" viewBox="0 0 1024 1024"><path d="M350.72 542.72a32 32 0 0 1-9.386667-22.613333v-16.213334a32.853333 32.853333 0 0 1 9.386667-22.613333l219.306667-218.88a21.333333 21.333333 0 0 1 30.293333 0l30.293333 30.293333a20.906667 20.906667 0 0 1 0 29.866667L440.746667 512l189.866666 189.44a21.333333 21.333333 0 0 1 0 30.293333l-30.293333 29.866667a21.333333 21.333333 0 0 1-30.293333 0z"></path></symbol>
+			<symbol id="icon-arrow-right" viewBox="0 0 1024 1024"><path d="M673.28 481.28a32 32 0 0 1 9.386667 22.613333v16.213334a32.853333 32.853333 0 0 1-9.386667 22.613333l-219.306667 218.88a21.333333 21.333333 0 0 1-30.293333 0l-30.293333-30.293333a20.906667 20.906667 0 0 1 0-29.866667L583.253333 512 393.386667 322.56a21.333333 21.333333 0 0 1 0-30.293333l30.293333-29.866667a21.333333 21.333333 0 0 1 30.293333 0z"></path></symbol>
+			<symbol id="icon-arrow-left2" viewBox="0 0 1024 1024"><path d="M758.613333 731.733333l-30.293333 29.866667a21.333333 21.333333 0 0 1-30.293333 0l-219.306667-218.88a32 32 0 0 1-9.386667-22.613333v-16.213334a32.853333 32.853333 0 0 1 9.386667-22.613333l219.306667-218.88a21.333333 21.333333 0 0 1 30.293333 0l30.293333 30.293333a20.906667 20.906667 0 0 1 0 29.866667L568.746667 512l189.866666 189.44a21.333333 21.333333 0 0 1 0 30.293333zM362.666667 256h-42.666667a21.333333 21.333333 0 0 0-21.333333 21.333333v469.333334a21.333333 21.333333 0 0 0 21.333333 21.333333h42.666667a21.333333 21.333333 0 0 0 21.333333-21.333333v-469.333334a21.333333 21.333333 0 0 0-21.333333-21.333333z"></path></symbol>
+			<symbol id="icon-refresh" viewBox="0 0 1024 1024"><path d="M149.824 640h-60.096l128-128 128 128h-55.552a256.192 256.192 0 0 0 443.648 0h140.352A384.128 384.128 0 0 1 149.76 640zM874.24 384h56.128l-128 128-128-128h59.52a256.192 256.192 0 0 0-443.648 0H149.824A384.128 384.128 0 0 1 874.24 384z"></path></symbol>
+			<symbol id="icon-add" viewBox="0 0 1024 1024"><path d="M876.089 439.182h-291.271v-291.271c0-40.268-32.549-72.818-72.818-72.818s-72.818 32.549-72.818 72.818v291.271h-291.271c-40.268 0-72.818 32.549-72.818 72.818s32.549 72.818 72.818 72.818h291.271v291.271c0 40.268 32.549 72.818 72.818 72.818s72.818-32.549 72.818-72.818v-291.271h291.271c40.268 0 72.818-32.549 72.818-72.818s-32.549-72.818-72.818-72.818z"></path></symbol>
+			<symbol id="icon-delete" viewBox="0 0 1024 1024"><path d="M896 196.923077H649.846154V118.153846c0-43.323077-35.446154-78.769231-78.769231-78.769231h-118.153846c-43.323077 0-78.769231 35.446154-78.769231 78.769231v78.769231H128c-15.753846 0-29.538462 13.784615-29.538462 29.538461v59.076924c0 15.753846 13.784615 29.538462 29.538462 29.538461h768c15.753846 0 29.538462-13.784615 29.538462-29.538461v-59.076924c0-15.753846-13.784615-29.538462-29.538462-29.538461zM452.923077 137.846154c0-11.815385 7.876923-19.692308 19.692308-19.692308h78.76923c11.815385 0 19.692308 7.876923 19.692308 19.692308v59.076923h-118.153846V137.846154z m364.307692 256h-610.461538c-15.753846 0-29.538462 13.784615-29.538462 29.538461V886.153846c0 55.138462 43.323077 98.461538 98.461539 98.461539h472.615384c55.138462 0 98.461538-43.323077 98.461539-98.461539V423.384615c0-15.753846-13.784615-29.538462-29.538462-29.538461zM452.923077 827.076923c0 11.815385-7.876923 19.692308-19.692308 19.692308h-39.384615c-11.815385 0-19.692308-7.876923-19.692308-19.692308V551.384615c0-11.815385 7.876923-19.692308 19.692308-19.692307h39.384615c11.815385 0 19.692308 7.876923 19.692308 19.692307v275.692308z m196.923077 0c0 11.815385-7.876923 19.692308-19.692308 19.692308h-39.384615c-11.815385 0-19.692308-7.876923-19.692308-19.692308V551.384615c0-11.815385 7.876923-19.692308 19.692308-19.692307h39.384615c11.815385 0 19.692308 7.876923 19.692308 19.692307v275.692308z"></path></symbol>
+			<symbol id="icon-filter" viewBox="0 0 1024 1024"><path d="M825.6 117.333333H198.4C157.866667 117.333333 123.733333 151.466667 123.733333 192v4.266667c0 14.933333 6.4 32 17.066667 42.666666l256 302.933334v251.733333c0 12.8 6.4 23.466667 17.066667 27.733333l162.133333 81.066667 2.133333 2.133333c21.333333 8.533333 42.666667-6.4 42.666667-29.866666V541.866667l256-302.933334c27.733333-32 23.466667-78.933333-8.533333-104.533333-8.533333-10.666667-25.6-17.066667-42.666667-17.066667z"></path></symbol>
+			<symbol id="icon-light" viewBox="0 0 1024 1024"><path d="M893.6 371.68C888.672 359.744 876.96 352 864.032 352l-248.096 0 55.328-249.12c3.072-13.888-3.36-28.16-15.84-35.008s-27.968-4.704-38.016 5.408l-480 480c-9.152 9.152-11.904 22.976-6.944 34.944S147.104 608 160.032 608l242.304 0-112.384 308.992c-5.12 14.08 0.224 29.856 12.896 37.92 5.28 3.328 11.264 4.96 17.184 4.96 8.256 0 16.48-3.2 22.656-9.376l544-543.968C895.808 397.376 898.56 383.648 893.6 371.68z"></path></symbol>
+		</svg>`;
+	}
+
+	/**
+	 * 渲染旧 PPZ iconfont 图标引用。
+	 *
+	 * @param iconId 旧 PPZ iconfont 中的图标标识。
+	 * @returns SVG 图标引用。
+	 */
+	private renderIcon(iconId: string): string {
+		return `<svg class="icon" aria-hidden="true"><use href="#icon-${this.escapeHtml(iconId)}"></use></svg>`;
 	}
 
 	/**

@@ -12,7 +12,7 @@ import { SqlExecutionResultRenderer } from './SqlExecutionResultRenderer';
 import type { MySqlSqlTerminalWebviewMessage } from './MySqlSqlTerminalWebviewMessage';
 
 /**
- * 保存 MySQL SQL Terminal 面板的可变状态。
+ * 保存 MySQL SQL 终端面板的可变状态。
  */
 interface MySqlSqlTerminalPanelState {
 	readonly panel: vscode.WebviewPanel;
@@ -22,7 +22,7 @@ interface MySqlSqlTerminalPanelState {
 }
 
 /**
- * 保存 MySQL SQL Terminal 可由 VS Code 恢复的轻量状态。
+ * 保存 MySQL SQL 终端可由 VS Code 恢复的轻量状态。
  */
 interface MySqlSqlTerminalSerializedState {
 	readonly selectedConnectionId?: string;
@@ -30,13 +30,13 @@ interface MySqlSqlTerminalSerializedState {
 }
 
 /**
- * 管理 MySQL SQL Terminal 面板。
+ * 管理 MySQL SQL 终端面板。
  */
 export class MySqlSqlTerminalPanel
 	implements ExtensionActivationParticipant, vscode.WebviewPanelSerializer
 {
 	/**
-	 * 保存 SQL Terminal Webview 的 VS Code viewType。
+	 * 保存 SQL 终端 Webview 的 VS Code viewType。
 	 */
 	private static readonly viewType = 'ppzPlus.mysqlSqlTerminal';
 
@@ -46,12 +46,12 @@ export class MySqlSqlTerminalPanel
 	private readonly resultRenderer = new SqlExecutionResultRenderer();
 
 	/**
-	 * 保存当前已打开的 SQL Terminal 面板。
+	 * 保存当前已打开的 SQL 终端面板。
 	 */
 	private panelState?: MySqlSqlTerminalPanelState;
 
 	/**
-	 * 创建 MySQL SQL Terminal 面板管理器。
+	 * 创建 MySQL SQL 终端面板管理器。
 	 *
 	 * @param listStoredConnectionsUseCase 用于列出已保存连接的用例。
 	 * @param executeMySqlSqlUseCase 用于执行 MySQL SQL 的用例。
@@ -62,7 +62,7 @@ export class MySqlSqlTerminalPanel
 	) {}
 
 	/**
-	 * 注册 SQL Terminal Webview 恢复器。
+	 * 注册 SQL 终端 Webview 恢复器。
 	 *
 	 * @param context VS Code 扩展生命周期上下文。
 	 */
@@ -76,7 +76,7 @@ export class MySqlSqlTerminalPanel
 	}
 
 	/**
-	 * 从 VS Code 保存的 Webview 状态恢复 SQL Terminal 面板。
+	 * 从 VS Code 保存的 Webview 状态恢复 SQL 终端面板。
 	 *
 	 * @param panel VS Code 恢复出来的 Webview 面板。
 	 * @param serializedState Webview 前端保存的轻量状态。
@@ -101,7 +101,7 @@ export class MySqlSqlTerminalPanel
 	}
 
 	/**
-	 * 打开或显示 MySQL SQL Terminal。
+	 * 打开或显示 MySQL SQL 终端。
 	 *
 	 * @param initialConnection 可选的初始选中连接。
 	 * @param initialSql 可选的初始 SQL 文本。
@@ -125,7 +125,7 @@ export class MySqlSqlTerminalPanel
 
 		const panel = vscode.window.createWebviewPanel(
 			MySqlSqlTerminalPanel.viewType,
-			'MySQL SQL Terminal',
+			'MySQL SQL 终端',
 			vscode.ViewColumn.Active,
 			{
 				enableScripts: true,
@@ -145,7 +145,7 @@ export class MySqlSqlTerminalPanel
 	}
 
 	/**
-	 * 为 SQL Terminal 面板注册生命周期和消息处理。
+	 * 为 SQL 终端面板注册生命周期和消息处理。
 	 *
 	 * @param state 当前面板状态。
 	 */
@@ -163,7 +163,7 @@ export class MySqlSqlTerminalPanel
 	}
 
 	/**
-	 * 处理 SQL Terminal Webview 动作。
+	 * 处理 SQL 终端 Webview 动作。
 	 *
 	 * @param state 当前面板状态。
 	 * @param message Webview 发出的消息。
@@ -195,7 +195,7 @@ export class MySqlSqlTerminalPanel
 				rows: [],
 				affectedRows: null,
 				durationMs: 0,
-				errorMessage: 'Selected MySQL connection was not found.',
+				errorMessage: '未找到已选择的 MySQL 连接。',
 			};
 			await this.render(state);
 			return;
@@ -209,17 +209,17 @@ export class MySqlSqlTerminalPanel
 	}
 
 	/**
-	 * 渲染当前 SQL Terminal 面板。
+	 * 渲染当前 SQL 终端面板。
 	 *
 	 * @param state 当前面板状态。
 	 */
 	private async render(state: MySqlSqlTerminalPanelState): Promise<void> {
-		state.panel.title = 'MySQL SQL Terminal';
+		state.panel.title = 'MySQL SQL 终端';
 		state.panel.webview.html = await this.renderHtml(state, false);
 	}
 
 	/**
-	 * 创建 SQL Terminal Webview HTML。
+	 * 创建 SQL 终端 Webview HTML。
 	 *
 	 * @param state 当前面板状态。
 	 * @param isExecuting 是否正在执行 SQL。
@@ -245,7 +245,7 @@ export class MySqlSqlTerminalPanel
 			.join('');
 		const resultMarkup = state.result
 			? this.resultRenderer.render(state.result)
-			: '<div class="empty-result">No SQL has been executed yet.</div>';
+			: '<div class="empty-result">尚未执行 SQL。</div>';
 		const disabled = connections.length === 0 || isExecuting ? ' disabled' : '';
 		const serializedState = this.serializeScriptValue({
 			selectedConnectionId,
@@ -253,11 +253,11 @@ export class MySqlSqlTerminalPanel
 		} satisfies MySqlSqlTerminalSerializedState);
 
 		return `<!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>MySQL SQL Terminal</title>
+	<title>MySQL SQL 终端</title>
 	<style>
 		:root {
 			color-scheme: light dark;
@@ -269,7 +269,7 @@ export class MySqlSqlTerminalPanel
 			color: var(--vscode-editor-foreground);
 		}
 		.page {
-			padding: 20px 24px 28px;
+			padding: 1em;
 		}
 		.header {
 			display: flex;
@@ -290,7 +290,6 @@ export class MySqlSqlTerminalPanel
 		.form {
 			display: grid;
 			gap: 12px;
-			margin-bottom: 18px;
 		}
 		label {
 			display: grid;
@@ -311,13 +310,22 @@ export class MySqlSqlTerminalPanel
 			padding: 4px 8px;
 		}
 		textarea {
-			min-height: 180px;
+			height: 8em;
+			min-height: 8em;
 			resize: vertical;
-			padding: 10px 12px;
-			line-height: 1.5;
+			padding: .5em 1.1em;
+			line-height: 1.5em;
+			background: transparent;
+			border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+			outline: none;
+		}
+		textarea:hover {
+			border-color: var(--vscode-focusBorder);
+		}
+		textarea:focus {
+			border-color: var(--vscode-focusBorder);
 		}
 		button {
-			justify-self: start;
 			border: 1px solid var(--vscode-button-border, transparent);
 			background: var(--vscode-button-background);
 			color: var(--vscode-button-foreground);
@@ -327,6 +335,18 @@ export class MySqlSqlTerminalPanel
 		button:disabled {
 			opacity: 0.5;
 			cursor: default;
+		}
+		.options {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			gap: 1rem;
+			margin: 1em 0;
+		}
+		.tttips {
+			color: var(--vscode-descriptionForeground);
+			font-size: .68rem;
+			line-height: 1.5;
 		}
 		.result-header {
 			display: flex;
@@ -383,16 +403,16 @@ export class MySqlSqlTerminalPanel
 	<div class="page">
 		<div class="header">
 			<div>
-				<h1>MySQL SQL Terminal</h1>
+				<h1>MySQL SQL 终端</h1>
 				<div class="subtitle">${this.escapeHtml(
 					this.describeSelectedConnection(connections, selectedConnectionId)
 				)}</div>
 			</div>
-			<div class="meta">${isExecuting ? 'Executing...' : 'Ready'}</div>
+			<div class="meta">${isExecuting ? '执行中...' : '就绪'}</div>
 		</div>
 		<div class="form">
 			<label>
-				Connection
+				连接
 				<select id="connection" ${connections.length === 0 ? 'disabled' : ''}>
 					${connectionOptions}
 				</select>
@@ -401,9 +421,14 @@ export class MySqlSqlTerminalPanel
 				SQL
 				<textarea id="sql" spellcheck="false">${this.escapeHtml(state.sql)}</textarea>
 			</label>
-			<button id="execute" onclick="executeSql()"${disabled}>Execute</button>
+			<div class="options">
+				<div class="tttips">* CTRL + Enter 直接运行 sql</div>
+				<span>
+					<button id="execute" onclick="executeSql()"${disabled}>执行</button>
+				</span>
+			</div>
 		</div>
-		${connections.length === 0 ? '<p class="error">No saved MySQL connections.</p>' : ''}
+		${connections.length === 0 ? '<p class="error">暂无已保存的 MySQL 连接。</p>' : ''}
 		<section>
 			${resultMarkup}
 		</section>
@@ -421,6 +446,10 @@ export class MySqlSqlTerminalPanel
 			});
 		}
 		function executeSql() {
+			const executeButton = document.getElementById('execute');
+			if (executeButton?.disabled) {
+				return;
+			}
 			const connection = document.getElementById('connection');
 			const sql = document.getElementById('sql');
 			persistState();
@@ -432,16 +461,22 @@ export class MySqlSqlTerminalPanel
 		}
 		document.getElementById('connection')?.addEventListener('change', persistState);
 		document.getElementById('sql')?.addEventListener('input', persistState);
+		document.getElementById('sql')?.addEventListener('keydown', (event) => {
+			if (event.ctrlKey && event.key === 'Enter') {
+				event.preventDefault();
+				executeSql();
+			}
+		});
 	</script>
 </body>
 </html>`;
 	}
 
 	/**
-	 * 解析 VS Code 保存的 SQL Terminal Webview 状态。
+	 * 解析 VS Code 保存的 SQL 终端 Webview 状态。
 	 *
 	 * @param value 原始恢复状态。
-	 * @returns 可用于重新渲染的 SQL Terminal 状态。
+	 * @returns 可用于重新渲染的 SQL 终端状态。
 	 */
 	private parseSerializedState(
 		value: unknown
@@ -521,7 +556,7 @@ export class MySqlSqlTerminalPanel
 
 		return selectedConnection
 			? this.describeConnection(selectedConnection)
-			: 'No MySQL connection selected.';
+			: '未选择 MySQL 连接。';
 	}
 
 	/**

@@ -34,7 +34,7 @@ export function formatSqlExportCapabilityMessage(
 	const exportKindLabel = EXPORT_KIND_LABELS[capabilityCheck.kind];
 
 	if (!capabilityCheck.declarationFound) {
-		return `${engineLabel} export capability is not declared yet. PPZ Plus will not start ${exportKindLabel} export.`;
+		return `${engineLabel} 导出能力尚未声明，PPZ Plus 不会开始 ${exportKindLabel} 导出。`;
 	}
 
 	const unsupportedRequirements = capabilityCheck.requirements.filter(
@@ -44,7 +44,7 @@ export function formatSqlExportCapabilityMessage(
 		.map(formatSqlExportCapabilityRequirement)
 		.join(', ');
 
-	return `${engineLabel} ${exportKindLabel} export is not available yet: ${requirementSummary}. PPZ Plus will not start the export.`;
+	return `${engineLabel} ${exportKindLabel} 导出暂不可用：${requirementSummary}。PPZ Plus 不会开始导出。`;
 }
 
 /**
@@ -56,7 +56,29 @@ export function formatSqlExportCapabilityMessage(
 function formatSqlExportCapabilityRequirement(
 	requirement: SqlExportCapabilityRequirement
 ): string {
-	return `${formatCapabilityKey(requirement.key)} is ${requirement.support}`;
+	return `${formatCapabilityKey(requirement.key)} 为 ${formatCapabilitySupport(
+		requirement.support
+	)}`;
+}
+
+/**
+ * 格式化 SQL 导出能力支持状态。
+ *
+ * @param support 原始能力支持状态。
+ * @returns 面向用户展示的支持状态。
+ */
+function formatCapabilitySupport(
+	support: SqlExportCapabilityRequirement['support']
+): string {
+	if (support === 'supported') {
+		return '已支持';
+	}
+
+	if (support === 'unsupported') {
+		return '未支持';
+	}
+
+	return '计划支持';
 }
 
 /**
@@ -67,11 +89,11 @@ function formatSqlExportCapabilityRequirement(
  */
 function formatCapabilityKey(key: DatabaseCapabilityKey): string {
 	if (key === 'exportDdl') {
-		return 'DDL export';
+		return 'DDL 导出';
 	}
 
 	if (key === 'exportDml') {
-		return 'DML export';
+		return 'DML 导出';
 	}
 
 	return key;

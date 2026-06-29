@@ -64,14 +64,14 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 
 				const action = await vscode.window.showQuickPick(
 					[
-						{ label: 'View Details', value: 'details' as const },
-						{ label: 'Test Connection', value: 'test' as const },
-						{ label: 'Edit Connection', value: 'edit' as const },
-						{ label: 'Delete Connection', value: 'delete' as const },
+						{ label: '查看详情', value: 'details' as const },
+						{ label: '测试连接', value: 'test' as const },
+						{ label: '编辑连接', value: 'edit' as const },
+						{ label: '删除连接', value: 'delete' as const },
 					],
 					{
 						title: `PPZ Plus: ${selectedConnection.name}`,
-						placeHolder: 'Choose an action',
+						placeHolder: '选择要执行的操作',
 					}
 				);
 				if (!action) {
@@ -105,7 +105,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		const connections = await this.listStoredConnectionsUseCase.execute();
 		if (connections.length === 0) {
 			await vscode.window.showInformationMessage(
-				'No MySQL connections are stored yet. Use "PPZ Plus: Add MySQL Connection" first.'
+				'暂无已保存的 MySQL 连接，请先使用“PPZ Plus: 新增 MySQL 连接”创建连接。'
 			);
 			return undefined;
 		}
@@ -120,8 +120,8 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 				connection,
 			})),
 			{
-				title: 'PPZ Plus: Manage MySQL Connections',
-				placeHolder: 'Choose a stored MySQL connection',
+				title: 'PPZ Plus: 管理 MySQL 连接',
+				placeHolder: '选择一个已保存的 MySQL 连接',
 			}
 		);
 
@@ -142,16 +142,16 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		const message =
 			connection.mode === 'parameters'
 				? [
-						`Name: ${connection.name}`,
-						`Mode: parameters`,
-						`Host: ${connection.host}`,
-						`Port: ${connection.port}`,
-						`Username: ${connection.username}`,
-						`Database: ${connection.database ?? '(none)'}`,
+						`名称：${connection.name}`,
+						`模式：字段`,
+						`Host：${connection.host}`,
+						`Port：${connection.port}`,
+						`User：${connection.username}`,
+						`Database：${connection.database ?? '（无）'}`,
 					].join('\n')
 				: [
-						`Name: ${connection.name}`,
-						`Mode: url`,
+						`名称：${connection.name}`,
+						`模式：URL`,
 						`URL: ${connection.url}`,
 					].join('\n');
 
@@ -169,11 +169,11 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 				this.testConnectionUseCase.execute(connection)
 			);
 			await vscode.window.showInformationMessage(
-				`Successfully reached "${connection.name}" over TCP.`
+				`已通过 TCP 连接到“${connection.name}”。`
 			);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: 'Manage MySQL connections',
+				operation: '测试 MySQL 连接',
 				error,
 			});
 		}
@@ -201,7 +201,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		await this.saveConnectionConfigUseCase.execute(updatedConnection);
 		this.treeDataProvider.refresh();
 		await vscode.window.showInformationMessage(
-			`Updated MySQL connection "${updatedConnection.name}".`
+			`已更新 MySQL 连接“${updatedConnection.name}”。`
 		);
 	}
 
@@ -214,18 +214,18 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		connection: MysqlConnectionConfig
 	): Promise<void> {
 		const confirmation = await vscode.window.showWarningMessage(
-			`Delete MySQL connection "${connection.name}"?`,
+			`确定删除 MySQL 连接“${connection.name}”？`,
 			{ modal: true },
-			'Delete'
+			'删除'
 		);
-		if (confirmation !== 'Delete') {
+		if (confirmation !== '删除') {
 			return;
 		}
 
 		await this.deleteStoredConnectionUseCase.execute(connection.id);
 		this.treeDataProvider.refresh();
 		await vscode.window.showInformationMessage(
-			`Deleted MySQL connection "${connection.name}".`
+			`已删除 MySQL 连接“${connection.name}”。`
 		);
 	}
 
@@ -241,20 +241,20 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		const modeChoice = await vscode.window.showQuickPick(
 			[
 				{
-					label: 'Parameter Fields',
+					label: '字段',
 					description:
-						currentMode === 'parameters' ? 'Current mode' : undefined,
+						currentMode === 'parameters' ? '当前模式' : undefined,
 					value: 'parameters' as const,
 				},
 				{
-					label: 'Connection URL',
-					description: currentMode === 'url' ? 'Current mode' : undefined,
+					label: '连接 URL',
+					description: currentMode === 'url' ? '当前模式' : undefined,
 					value: 'url' as const,
 				},
 			],
 			{
-				title: 'PPZ Plus: Edit MySQL Connection',
-				placeHolder: 'Choose the input mode to edit',
+				title: 'PPZ Plus: 编辑 MySQL 连接',
+				placeHolder: '选择要编辑的连接方式',
 			}
 		);
 

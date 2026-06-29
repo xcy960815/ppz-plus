@@ -120,7 +120,7 @@ export class ImportMySqlJsonFileUseCase {
 				success: false,
 				durationMs: 0,
 				insertedRows: 0,
-				errorMessage: 'Schema name is required for MySQL JSON import.',
+				errorMessage: 'MySQL JSON 导入需要提供 schema 名称。',
 			};
 		}
 
@@ -129,7 +129,7 @@ export class ImportMySqlJsonFileUseCase {
 				success: false,
 				durationMs: 0,
 				insertedRows: 0,
-				errorMessage: 'Table name is required for MySQL JSON import.',
+				errorMessage: 'MySQL JSON 导入需要提供表名。',
 			};
 		}
 
@@ -138,7 +138,7 @@ export class ImportMySqlJsonFileUseCase {
 				success: false,
 				durationMs: 0,
 				insertedRows: 0,
-				errorMessage: 'JSON file path is required.',
+				errorMessage: 'JSON 文件路径不能为空。',
 			};
 		}
 

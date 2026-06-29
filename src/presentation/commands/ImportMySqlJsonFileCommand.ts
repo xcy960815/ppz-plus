@@ -76,7 +76,7 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 
 				const filePath = await this.pickJsonFilePath();
 				if (!filePath) {
-					await vscode.window.showInformationMessage('No JSON file selected.');
+					await vscode.window.showInformationMessage('未选择 JSON 文件。');
 					return;
 				}
 
@@ -176,7 +176,7 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 		const connections = await this.listStoredConnectionsUseCase.execute();
 		if (connections.length === 0) {
 			await vscode.window.showInformationMessage(
-				'No MySQL connections are stored yet. Use "PPZ Plus: Add MySQL Connection" first.'
+				'暂无已保存的 MySQL 连接，请先使用“PPZ Plus: 新增 MySQL 连接”创建连接。'
 			);
 			return undefined;
 		}
@@ -191,13 +191,13 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 				connection,
 			})),
 			{
-				title: 'PPZ Plus: Import MySQL JSON File',
-				placeHolder: 'Choose a stored MySQL connection to import into',
+				title: 'PPZ Plus: 导入 MySQL JSON 文件',
+				placeHolder: '选择要导入到的已保存 MySQL 连接',
 			}
 		);
 
 		if (!selectedConnection) {
-			await vscode.window.showInformationMessage('No MySQL connection selected.');
+			await vscode.window.showInformationMessage('未选择 MySQL 连接。');
 			return undefined;
 		}
 
@@ -217,7 +217,7 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 			const schemas = await this.listMySqlSchemasUseCase.execute(connection);
 			if (schemas.length === 0) {
 				await vscode.window.showInformationMessage(
-					`No schemas were found for "${connection.name}".`
+					`连接“${connection.name}”下未找到 schema。`
 				);
 				return undefined;
 			}
@@ -228,20 +228,20 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 					schemaName: schema.name,
 				})),
 				{
-					title: 'PPZ Plus: Choose MySQL Schema',
-					placeHolder: 'Choose a target schema for JSON import',
+					title: 'PPZ Plus: 选择 MySQL Schema',
+					placeHolder: '选择 JSON 导入目标 schema',
 				}
 			);
 
 			if (!selectedSchema) {
-				await vscode.window.showInformationMessage('No MySQL schema selected.');
+				await vscode.window.showInformationMessage('未选择 MySQL schema。');
 				return undefined;
 			}
 
 			return selectedSchema.schemaName;
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: 'Load MySQL schemas for JSON import',
+				operation: '加载 JSON 导入的 MySQL schema',
 				error,
 			});
 			return undefined;
@@ -266,7 +266,7 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 			);
 			if (tables.length === 0) {
 				await vscode.window.showInformationMessage(
-					`No tables were found in "${schemaName}".`
+					`schema“${schemaName}”中未找到表。`
 				);
 				return undefined;
 			}
@@ -277,20 +277,20 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 					tableName: table.name,
 				})),
 				{
-					title: 'PPZ Plus: Choose MySQL Table',
-					placeHolder: 'Choose a target table for JSON import',
+					title: 'PPZ Plus: 选择 MySQL 表',
+					placeHolder: '选择 JSON 导入目标表',
 				}
 			);
 
 			if (!selectedTable) {
-				await vscode.window.showInformationMessage('No MySQL table selected.');
+				await vscode.window.showInformationMessage('未选择 MySQL 表。');
 				return undefined;
 			}
 
 			return selectedTable.tableName;
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: 'Load MySQL tables for JSON import',
+				operation: '加载 JSON 导入的 MySQL 表',
 				error,
 			});
 			return undefined;
@@ -308,9 +308,9 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 			canSelectFolders: false,
 			canSelectMany: false,
 			filters: {
-				'JSON files': ['json'],
+				JSON文件: ['json'],
 			},
-			title: 'PPZ Plus: Choose JSON File to Import',
+			title: 'PPZ Plus: 选择要导入的 JSON 文件',
 		});
 
 		return selectedFiles?.[0]?.fsPath;
@@ -338,10 +338,10 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 				{
 					cancellable: true,
 					location: vscode.ProgressLocation.Notification,
-					title: `Importing JSON "${fileName}" into "${targetName}"`,
+					title: `正在导入 JSON“${fileName}”到“${targetName}”`,
 				},
 				async (progress, token) => {
-					progress.report({ message: 'Preparing import...' });
+					progress.report({ message: '正在准备导入...' });
 
 					return this.importMySqlJsonFileUseCase.execute(
 						connection,
@@ -355,12 +355,12 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 			);
 		} catch (error) {
 			if (isOperationCanceledError(error)) {
-				await showTaskCanceledMessage('JSON import');
+				await showTaskCanceledMessage('JSON 导入');
 				return;
 			}
 
 			await showUserErrorMessage({
-				operation: 'Import JSON file',
+				operation: '导入 JSON 文件',
 				error,
 			});
 			return;
@@ -372,7 +372,7 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 
 		if (result.success) {
 			await vscode.window.showInformationMessage(
-				`Imported ${result.insertedRows} row(s) from "${fileName}" into "${targetName}" in ${result.durationMs} ms.`
+				`已从“${fileName}”导入 ${result.insertedRows} 行到“${targetName}”，耗时 ${result.durationMs} ms。`
 			);
 			return;
 		}
@@ -382,7 +382,7 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
 			fileName,
 			targetName,
 			stage: 'execution',
-			errorMessage: result.errorMessage ?? 'Unknown error.',
+			errorMessage: result.errorMessage ?? '未知错误。',
 			mappings,
 		});
 	}

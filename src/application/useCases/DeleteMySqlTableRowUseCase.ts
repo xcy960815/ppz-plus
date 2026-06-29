@@ -34,15 +34,15 @@ export class DeleteMySqlTableRowUseCase {
 		identityValues: MySqlTableRowIdentityValues
 	): Promise<MySqlTableDeleteResult> {
 		if (schemaName.trim().length === 0) {
-			throw new Error('Schema name is required for MySQL row delete.');
+			throw new Error('删除 MySQL 记录需要提供 schema 名称。');
 		}
 
 		if (tableName.trim().length === 0) {
-			throw new Error('Table name is required for MySQL row delete.');
+			throw new Error('删除 MySQL 记录需要提供表名。');
 		}
 
 		if (Object.keys(identityValues).length === 0) {
-			throw new Error('Primary key values are required for MySQL row delete.');
+			throw new Error('删除 MySQL 记录需要提供主键值。');
 		}
 
 		return this.mySqlTableDataProvider.deleteRow(

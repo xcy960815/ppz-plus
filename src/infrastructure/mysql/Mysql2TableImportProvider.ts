@@ -67,7 +67,7 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 					success: false,
 					durationMs: 0,
 					insertedRows: 0,
-					errorMessage: 'Import file does not contain data rows.',
+					errorMessage: '导入文件不包含数据行。',
 				};
 			}
 
@@ -165,7 +165,7 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 			completedRows,
 			totalRows,
 			percentage,
-			message: `Imported ${completedRows}/${totalRows} row(s).`,
+			message: `已导入 ${completedRows}/${totalRows} 行。`,
 		});
 	}
 
@@ -182,7 +182,7 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 	): string {
 		const columns = Object.keys(rows[0] ?? {});
 		if (columns.length === 0) {
-			throw new Error('Import header row is required.');
+			throw new Error('导入需要表头行。');
 		}
 
 		const tableSql = this.escapeQualifiedTableName(
