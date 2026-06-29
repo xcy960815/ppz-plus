@@ -2,14 +2,17 @@ import * as vscode from 'vscode';
 
 import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
 import type { TestConnectionUseCase } from '../../application/useCases/TestConnectionUseCase';
-import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
+import type { ConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type { ExtensionCommand } from './ExtensionCommand';
-import { withMySqlConnectionTestProgress } from './MySqlConnectionProgressPresenter';
+import {
+	describeConnectionEngine,
+	withConnectionTestProgress,
+} from './MySqlConnectionProgressPresenter';
 import { showUserErrorMessage } from './UserErrorPresenter';
 import type { MySqlConnectionTreeNode } from '../explorer/MySqlConnectionsTreeNode';
 
 /**
- * 测试从资源树或选择器中选中的 MySQL 连接。
+ * 测试从资源树或选择器中选中的数据库连接。
  */
 export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 	/**
@@ -52,7 +55,7 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 				}
 
 				try {
-					await withMySqlConnectionTestProgress(connection, () =>
+					await withConnectionTestProgress(connection, () =>
 						this.testConnectionUseCase.execute(connection)
 					);
 					await vscode.window.showInformationMessage(
@@ -60,7 +63,7 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 					);
 				} catch (error) {
 					await showUserErrorMessage({
-						operation: '测试 MySQL 连接',
+						operation: `测试 ${describeConnectionEngine(connection)} 连接`,
 						error,
 					});
 				}
@@ -73,11 +76,11 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 	 *
 	 * @returns 用户选择的连接；未选择时为空。
 	 */
-	private async pickConnection(): Promise<MysqlConnectionConfig | undefined> {
+	private async pickConnection(): Promise<ConnectionConfig | undefined> {
 		const connections = await this.listStoredConnectionsUseCase.execute();
 		if (connections.length === 0) {
 			await vscode.window.showInformationMessage(
-				'暂无已保存的 MySQL 连接，请先使用“PPZ Plus: 新增 MySQL 连接”创建连接。'
+				'暂无已保存的数据库连接，请先使用“PPZ Plus: 新增数据库连接”创建连接。'
 			);
 			return undefined;
 		}
@@ -85,6 +88,7 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 		const selectedConnection = await vscode.window.showQuickPick(
 			connections.map((connection) => ({
 				label: connection.name,
+				detail: describeConnectionEngine(connection),
 				description:
 					connection.mode === 'parameters'
 						? `${connection.host}:${connection.port}`
@@ -92,8 +96,8 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 				connection,
 			})),
 			{
-				title: 'PPZ Plus: 测试 MySQL 连接',
-				placeHolder: '选择要测试的已保存 MySQL 连接',
+				title: 'PPZ Plus: 测试数据库连接',
+				placeHolder: '选择要测试的已保存数据库连接',
 			}
 		);
 

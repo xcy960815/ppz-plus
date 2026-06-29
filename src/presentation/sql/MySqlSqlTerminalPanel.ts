@@ -195,6 +195,7 @@ export class MySqlSqlTerminalPanel
 				rows: [],
 				affectedRows: null,
 				durationMs: 0,
+				resultSets: [],
 				errorMessage: '未找到已选择的 MySQL 连接。',
 			};
 			await this.render(state);
@@ -348,45 +349,65 @@ export class MySqlSqlTerminalPanel
 			font-size: .68rem;
 			line-height: 1.5;
 		}
-		.result-header {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 12px;
-			margin-bottom: 12px;
-		}
-		.result-header strong {
+		.result-view p {
+			margin: .8em 0;
 			color: var(--vscode-editor-foreground);
+		}
+		.result-view .error-view {
+			color: var(--vscode-errorForeground);
+		}
+		.result-view summary {
+			line-height: 2.5em;
+			padding: 0 .8em;
+			background: var(--vscode-list-hoverBackground, var(--vscode-editorGroupHeader-tabsBackground));
+			cursor: pointer;
+		}
+		.result-view summary:hover {
+			background: var(--vscode-list-activeSelectionBackground, var(--vscode-list-hoverBackground));
+		}
+		.result-view summary span {
+			margin-left: .6em;
+		}
+		.result-view details {
+			margin: .35em 0;
 		}
 		.error {
 			color: var(--vscode-errorForeground);
 			white-space: pre-wrap;
 		}
 		.table-wrapper {
-			border: 1px solid var(--vscode-panel-border);
 			overflow: auto;
 		}
-		table {
-			width: 100%;
+		table.ppz {
+			border: 1px solid var(--vscode-panel-border);
+			border-top: none;
 			border-collapse: collapse;
-			min-width: 720px;
 		}
-		th,
-		td {
-			border-bottom: 1px solid var(--vscode-panel-border);
-			padding: 10px 12px;
-			text-align: left;
-			vertical-align: top;
-		}
-		th {
-			position: sticky;
-			top: 0;
+		table.ppz thead tr {
 			background: var(--vscode-editorGroupHeader-tabsBackground, var(--vscode-editor-background));
-			z-index: 1;
 		}
-		td code {
-			font-family: var(--vscode-editor-font-family, var(--vscode-font-family));
-			white-space: pre-wrap;
-			word-break: break-word;
+		table.ppz tr:nth-child(2n) {
+			background: var(--vscode-list-hoverBackground, transparent);
+		}
+		table.ppz th,
+		table.ppz td {
+			padding: .3em .6em;
+			line-height: 1.5em;
+			text-align: left;
+			max-width: 10em;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		table.ppz tbody th:hover,
+		table.ppz tbody td:hover,
+		table.ppz tbody th:focus,
+		table.ppz tbody td:focus {
+			background-color: var(--vscode-list-hoverBackground);
+			white-space: initial;
+		}
+		table.ppz.kv-table {
+			margin-top: .5em;
 		}
 		.null-cell {
 			color: var(--vscode-descriptionForeground);

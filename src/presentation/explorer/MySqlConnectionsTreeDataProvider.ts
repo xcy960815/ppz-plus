@@ -3,13 +3,19 @@ import * as vscode from 'vscode';
 import type { ListMySqlSchemasUseCase } from '../../application/useCases/ListMySqlSchemasUseCase';
 import { OpenMySqlTableDataCommand } from '../commands/OpenMySqlTableDataCommand';
 import type { ListMySqlTablesUseCase } from '../../application/useCases/ListMySqlTablesUseCase';
+import type { ListPostgreSqlDatabasesUseCase } from '../../application/useCases/ListPostgreSqlDatabasesUseCase';
+import type { ListPostgreSqlSchemasUseCase } from '../../application/useCases/ListPostgreSqlSchemasUseCase';
+import type { ListPostgreSqlTablesUseCase } from '../../application/useCases/ListPostgreSqlTablesUseCase';
 import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
-import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
+import type { ConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type {
 	MySqlConnectionTreeNode,
 	MySqlConnectionsTreeNode,
 	MySqlSchemaTreeNode,
 	MySqlTableTreeNode,
+	PostgreSqlDatabaseTreeNode,
+	PostgreSqlSchemaTreeNode,
+	PostgreSqlTableTreeNode,
 } from './MySqlConnectionsTreeNode';
 import { showUserErrorMessage } from '../commands/UserErrorPresenter';
 
@@ -40,6 +46,30 @@ export class MySqlConnectionsTreeDataProvider
 	public static readonly tableContextValue = 'ppzPlus.mysqlTable';
 
 	/**
+	 * 保存 Tree 菜单使用的 PostgreSQL 连接节点上下文值。
+	 */
+	public static readonly postgreSqlConnectionContextValue =
+		'ppzPlus.postgresqlConnection';
+
+	/**
+	 * 保存 Tree 菜单使用的 PostgreSQL database 节点上下文值。
+	 */
+	public static readonly postgreSqlDatabaseContextValue =
+		'ppzPlus.postgresqlDatabase';
+
+	/**
+	 * 保存 Tree 菜单使用的 PostgreSQL schema 节点上下文值。
+	 */
+	public static readonly postgreSqlSchemaContextValue =
+		'ppzPlus.postgresqlSchema';
+
+	/**
+	 * 保存 Tree 菜单使用的 PostgreSQL 表节点上下文值。
+	 */
+	public static readonly postgreSqlTableContextValue =
+		'ppzPlus.postgresqlTable';
+
+	/**
 	 * 为资源视图发出 Tree 刷新事件。
 	 */
 	private readonly onDidChangeTreeDataEmitter =
@@ -57,11 +87,17 @@ export class MySqlConnectionsTreeDataProvider
 	 * @param listStoredConnectionsUseCase 用于加载已保存连接的用例。
 	 * @param listMySqlSchemasUseCase 用于加载 MySQL schema 的用例。
 	 * @param listMySqlTablesUseCase 用于加载 MySQL 表的用例。
+	 * @param listPostgreSqlDatabasesUseCase 用于加载 PostgreSQL database 的用例。
+	 * @param listPostgreSqlSchemasUseCase 用于加载 PostgreSQL schema 的用例。
+	 * @param listPostgreSqlTablesUseCase 用于加载 PostgreSQL 表的用例。
 	 */
 	public constructor(
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
 		private readonly listMySqlSchemasUseCase: ListMySqlSchemasUseCase,
-		private readonly listMySqlTablesUseCase: ListMySqlTablesUseCase
+		private readonly listMySqlTablesUseCase: ListMySqlTablesUseCase,
+		private readonly listPostgreSqlDatabasesUseCase: ListPostgreSqlDatabasesUseCase,
+		private readonly listPostgreSqlSchemasUseCase: ListPostgreSqlSchemasUseCase,
+		private readonly listPostgreSqlTablesUseCase: ListPostgreSqlTablesUseCase
 	) {}
 
 	/**
@@ -88,7 +124,19 @@ export class MySqlConnectionsTreeDataProvider
 			return this.createSchemaTreeItem(element);
 		}
 
-		return this.createTableTreeItem(element);
+		if (element.kind === 'table') {
+			return this.createTableTreeItem(element);
+		}
+
+		if (element.kind === 'postgresqlDatabase') {
+			return this.createPostgreSqlDatabaseTreeItem(element);
+		}
+
+		if (element.kind === 'postgresqlSchema') {
+			return this.createPostgreSqlSchemaTreeItem(element);
+		}
+
+		return this.createPostgreSqlTableTreeItem(element);
 	}
 
 	/**
@@ -110,12 +158,28 @@ export class MySqlConnectionsTreeDataProvider
 			}
 
 			if (element.kind === 'connection') {
+				const connection = element.connection;
+				if (connection.engine === 'postgresql') {
+					const databases =
+						await this.listPostgreSqlDatabasesUseCase.execute(
+							connection
+						);
+					return databases.map((database) => ({
+						kind: 'postgresqlDatabase',
+						connection,
+						databaseName: database.name,
+						isDefault:
+							connection.mode === 'parameters' &&
+							connection.database === database.name,
+					}));
+				}
+
 				const schemas = await this.listMySqlSchemasUseCase.execute(
-					element.connection
+					connection
 				);
 				return schemas.map((schema) => ({
 					kind: 'schema',
-					connection: element.connection,
+					connection,
 					schemaName: schema.name,
 				}));
 			}
@@ -133,10 +197,38 @@ export class MySqlConnectionsTreeDataProvider
 				}));
 			}
 
+			if (element.kind === 'postgresqlDatabase') {
+				const schemas = await this.listPostgreSqlSchemasUseCase.execute(
+					element.connection,
+					element.databaseName
+				);
+				return schemas.map((schema) => ({
+					kind: 'postgresqlSchema',
+					connection: element.connection,
+					databaseName: element.databaseName,
+					schemaName: schema.name,
+				}));
+			}
+
+			if (element.kind === 'postgresqlSchema') {
+				const tables = await this.listPostgreSqlTablesUseCase.execute(
+					element.connection,
+					element.databaseName,
+					element.schemaName
+				);
+				return tables.map((table) => ({
+					kind: 'postgresqlTable',
+					connection: element.connection,
+					databaseName: element.databaseName,
+					schemaName: element.schemaName,
+					tableName: table.name,
+				}));
+			}
+
 			return [];
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: '加载 MySQL 资源',
+				operation: '加载数据库资源',
 				error,
 			});
 			return [];
@@ -161,7 +253,9 @@ export class MySqlConnectionsTreeDataProvider
 			vscode.TreeItemCollapsibleState.Collapsed
 		);
 		treeItem.contextValue =
-			MySqlConnectionsTreeDataProvider.connectionContextValue;
+			element.connection.engine === 'postgresql'
+				? MySqlConnectionsTreeDataProvider.postgreSqlConnectionContextValue
+				: MySqlConnectionsTreeDataProvider.connectionContextValue;
 		treeItem.description = description;
 		treeItem.iconPath = new vscode.ThemeIcon('database');
 		return treeItem;
@@ -183,6 +277,74 @@ export class MySqlConnectionsTreeDataProvider
 		treeItem.contextValue = MySqlConnectionsTreeDataProvider.schemaContextValue;
 		treeItem.id = `${element.connection.id}.${element.schemaName}`;
 		treeItem.iconPath = new vscode.ThemeIcon('folder-library');
+		return treeItem;
+	}
+
+	/**
+	 * 创建 PostgreSQL database 节点的可视化表示。
+	 *
+	 * @param element PostgreSQL database Tree 节点。
+	 * @returns PostgreSQL database 节点对应的 TreeItem。
+	 */
+	private createPostgreSqlDatabaseTreeItem(
+		element: PostgreSqlDatabaseTreeNode
+	): vscode.TreeItem {
+		const treeItem = new vscode.TreeItem(
+			element.databaseName,
+			vscode.TreeItemCollapsibleState.Collapsed
+		);
+		treeItem.contextValue =
+			MySqlConnectionsTreeDataProvider.postgreSqlDatabaseContextValue;
+		treeItem.id = `${element.connection.id}.${element.databaseName}`;
+		treeItem.description = element.isDefault ? '默认' : undefined;
+		treeItem.iconPath = new vscode.ThemeIcon('database');
+		return treeItem;
+	}
+
+	/**
+	 * 创建 PostgreSQL schema 节点的可视化表示。
+	 *
+	 * @param element PostgreSQL schema Tree 节点。
+	 * @returns PostgreSQL schema 节点对应的 TreeItem。
+	 */
+	private createPostgreSqlSchemaTreeItem(
+		element: PostgreSqlSchemaTreeNode
+	): vscode.TreeItem {
+		const treeItem = new vscode.TreeItem(
+			element.schemaName,
+			vscode.TreeItemCollapsibleState.Collapsed
+		);
+		treeItem.contextValue =
+			MySqlConnectionsTreeDataProvider.postgreSqlSchemaContextValue;
+		treeItem.id = `${element.connection.id}.${element.databaseName}.${element.schemaName}`;
+		treeItem.description = element.databaseName;
+		treeItem.iconPath = new vscode.ThemeIcon('folder-library');
+		return treeItem;
+	}
+
+	/**
+	 * 创建 PostgreSQL 表节点的可视化表示。
+	 *
+	 * @param element PostgreSQL 表 Tree 节点。
+	 * @returns PostgreSQL 表节点对应的 TreeItem。
+	 */
+	private createPostgreSqlTableTreeItem(
+		element: PostgreSqlTableTreeNode
+	): vscode.TreeItem {
+		const treeItem = new vscode.TreeItem(
+			element.tableName,
+			vscode.TreeItemCollapsibleState.None
+		);
+		treeItem.contextValue =
+			MySqlConnectionsTreeDataProvider.postgreSqlTableContextValue;
+		treeItem.id = `${element.connection.id}.${element.databaseName}.${element.schemaName}.${element.tableName}`;
+		treeItem.description = element.schemaName;
+		treeItem.iconPath = new vscode.ThemeIcon('table');
+		treeItem.command = {
+			command: OpenMySqlTableDataCommand.id,
+			title: '打开表数据',
+			arguments: [element],
+		};
 		return treeItem;
 	}
 
@@ -217,7 +379,7 @@ export class MySqlConnectionsTreeDataProvider
 	 * @param connection 待描述的连接配置。
 	 * @returns 用户可读的连接描述。
 	 */
-	private describeConnection(connection: MysqlConnectionConfig): string {
+	private describeConnection(connection: ConnectionConfig): string {
 		if (connection.mode === 'parameters') {
 			return `${connection.host}:${connection.port}`;
 		}

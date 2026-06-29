@@ -6,10 +6,15 @@ import type { SaveConnectionConfigUseCase } from '../../application/useCases/Sav
 import type { TestConnectionUseCase } from '../../application/useCases/TestConnectionUseCase';
 import type {
 	ConnectionInputMode,
+	ConnectionConfig,
 	MysqlConnectionConfig,
+	PostgreSqlConnectionConfig,
 } from '../../domain/connections/ConnectionConfig';
 import type { ExtensionCommand } from './ExtensionCommand';
-import { withMySqlConnectionTestProgress } from './MySqlConnectionProgressPresenter';
+import {
+	describeConnectionEngine,
+	withConnectionTestProgress,
+} from './MySqlConnectionProgressPresenter';
 import {
 	extractUserErrorMessage,
 	showUserErrorMessage,
@@ -28,6 +33,7 @@ interface MySqlConnectionFormSaveMessage {
  * 描述连接表单 Webview 发回的原始字段。
  */
 interface MySqlConnectionFormPayload {
+	readonly engine: 'mysql' | 'postgresql';
 	readonly name: string;
 	readonly mode: ConnectionInputMode;
 	readonly host: string;
@@ -122,7 +128,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			await this.saveConnectionConfigUseCase.execute(config.value);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: '保存 MySQL 连接',
+				operation: `保存 ${describeConnectionEngine(config.value)} 连接`,
 				error,
 			});
 			return;
@@ -132,11 +138,11 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 
 		if (message.type === 'saveAndTest') {
 			try {
-				await withMySqlConnectionTestProgress(config.value, () =>
+				await withConnectionTestProgress(config.value, () =>
 					this.testConnectionUseCase.execute(config.value)
 				);
 				await vscode.window.showInformationMessage(
-					`已保存并连接到 MySQL 连接“${config.value.name}”。`
+					`已保存并连接到 ${describeConnectionEngine(config.value)} 连接“${config.value.name}”。`
 				);
 				panel.dispose();
 			} catch (error) {
@@ -148,7 +154,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		}
 
 		await vscode.window.showInformationMessage(
-			`已保存 MySQL 连接“${config.value.name}”。`
+			`已保存 ${describeConnectionEngine(config.value)} 连接“${config.value.name}”。`
 		);
 		panel.dispose();
 	}
@@ -162,7 +168,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	private createConfigFromFormPayload(payload: MySqlConnectionFormPayload):
 		| {
 				readonly success: true;
-				readonly value: MysqlConnectionConfig;
+				readonly value: ConnectionConfig;
 		  }
 		| {
 				readonly success: false;
@@ -177,13 +183,27 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		}
 
 		if (payload.mode === 'url') {
-			const urlValidation = AddMySqlConnectionCommand.validateMysqlUrl(
-				payload.url
-			);
+			const urlValidation =
+				payload.engine === 'postgresql'
+					? AddMySqlConnectionCommand.validatePostgreSqlUrl(payload.url)
+					: AddMySqlConnectionCommand.validateMysqlUrl(payload.url);
 			if (urlValidation) {
 				return {
 					success: false,
 					errorMessage: urlValidation,
+				};
+			}
+
+			if (payload.engine === 'postgresql') {
+				return {
+					success: true,
+					value: {
+						id: randomUUID(),
+						engine: 'postgresql',
+						mode: 'url',
+						name,
+						url: payload.url.trim(),
+					},
 				};
 			}
 
@@ -220,6 +240,23 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			return {
 				success: false,
 				errorMessage: '请输入 user。',
+			};
+		}
+
+		if (payload.engine === 'postgresql') {
+			return {
+				success: true,
+				value: {
+					id: randomUUID(),
+					engine: 'postgresql',
+					mode: 'parameters',
+					name,
+					host,
+					port,
+					username,
+					password: payload.password || undefined,
+					database: payload.database.trim() || undefined,
+				},
 			};
 		}
 
@@ -365,6 +402,136 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			name: name.trim(),
 			host: host.trim(),
 			port: AddMySqlConnectionCommand.parsePort(portInput) ?? 3306,
+			username: username.trim(),
+			password: password || undefined,
+			database: database.trim() || undefined,
+		};
+	}
+
+	/**
+	 * 提示用户填写 PostgreSQL 连接详情。
+	 *
+	 * @param mode 用户选择的连接输入模式。
+	 * @param existingConfig 编辑时已有的连接配置。
+	 * @returns 最终得到的 PostgreSQL 连接配置。
+	 */
+	public static async collectPostgreSqlConfig(
+		mode: ConnectionInputMode,
+		existingConfig?: PostgreSqlConnectionConfig
+	): Promise<PostgreSqlConnectionConfig | undefined> {
+		const name = await vscode.window.showInputBox({
+			title: 'PPZ Plus: PostgreSQL 连接名称',
+			prompt: '输入连接显示名称',
+			value: existingConfig?.name ?? 'PostgreSQL 连接',
+			validateInput: (value) =>
+				value.trim().length > 0 ? undefined : '请输入连接名称。',
+		});
+		if (!name) {
+			return undefined;
+		}
+
+		const connectionId = existingConfig?.id ?? randomUUID();
+
+		if (mode === 'url') {
+			const url = await vscode.window.showInputBox({
+				title: 'PPZ Plus: PostgreSQL 连接 URL',
+				prompt: '输入 postgresql:// 或 postgres:// 连接 URL',
+				value:
+					existingConfig?.mode === 'url'
+						? existingConfig.url
+						: 'postgresql://postgres:password@127.0.0.1:5432/postgres',
+				validateInput: (value) =>
+					AddMySqlConnectionCommand.validatePostgreSqlUrl(value),
+			});
+			if (!url) {
+				return undefined;
+			}
+
+			return {
+				id: connectionId,
+				engine: 'postgresql',
+				mode: 'url',
+				name: name.trim(),
+				url,
+			};
+		}
+
+		const host = await vscode.window.showInputBox({
+			title: 'PPZ Plus: PostgreSQL Host',
+			prompt: '输入 PostgreSQL 服务 host',
+			value:
+				existingConfig?.mode === 'parameters'
+					? existingConfig.host
+					: '127.0.0.1',
+			validateInput: (value) =>
+				value.trim().length > 0 ? undefined : '请输入 host。',
+		});
+		if (!host) {
+			return undefined;
+		}
+
+		const portInput = await vscode.window.showInputBox({
+			title: 'PPZ Plus: PostgreSQL Port',
+			prompt: '输入 PostgreSQL 服务端口',
+			value:
+				existingConfig?.mode === 'parameters'
+					? String(existingConfig.port)
+					: '5432',
+			validateInput: (value) =>
+				AddMySqlConnectionCommand.parsePort(value) === undefined
+					? 'port 必须是正整数。'
+					: undefined,
+		});
+		if (!portInput) {
+			return undefined;
+		}
+
+		const username = await vscode.window.showInputBox({
+			title: 'PPZ Plus: PostgreSQL User',
+			prompt: '输入 PostgreSQL 用户名',
+			value:
+				existingConfig?.mode === 'parameters'
+					? existingConfig.username
+					: 'postgres',
+			validateInput: (value) =>
+				value.trim().length > 0 ? undefined : '请输入 user。',
+		});
+		if (!username) {
+			return undefined;
+		}
+
+		const password = await vscode.window.showInputBox({
+			title: 'PPZ Plus: PostgreSQL Password',
+			prompt: '输入 PostgreSQL 密码（可选）',
+			password: true,
+			value:
+				existingConfig?.mode === 'parameters'
+					? existingConfig.password ?? ''
+					: '',
+		});
+		if (password === undefined) {
+			return undefined;
+		}
+
+		const database = await vscode.window.showInputBox({
+			title: 'PPZ Plus: 默认 Database',
+			prompt: '输入默认 database（可选）',
+			value:
+				existingConfig?.mode === 'parameters'
+					? existingConfig.database ?? 'postgres'
+					: 'postgres',
+		});
+		if (database === undefined) {
+			return undefined;
+		}
+
+		return {
+			id: connectionId,
+			engine: 'postgresql',
+			mode: 'parameters',
+			name: name.trim(),
+			host: host.trim(),
+			port: AddMySqlConnectionCommand.parsePort(portInput) ?? 5432,
 			username: username.trim(),
 			password: password || undefined,
 			database: database.trim() || undefined,
@@ -569,9 +736,9 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 					<div class="label">
 						<span>连接类型</span>
 						<div class="ppz-radio-group">
-							<label><input type="radio" checked /> MySQL</label>
+							<label><input name="engine" type="radio" value="mysql" checked onchange="syncEngine()" /> MySQL</label>
 							<label><input type="radio" disabled /> SQL Server</label>
-							<label><input type="radio" disabled /> PostgreSQL</label>
+							<label><input name="engine" type="radio" value="postgresql" onchange="syncEngine()" /> PostgreSQL</label>
 							<label><input type="radio" disabled /> Sqlite3</label>
 							<label><input type="radio" disabled /> CockroachDB</label>
 						</div>
@@ -637,8 +804,49 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	<script>
 		const vscode = acquireVsCodeApi();
 
+		function selectedEngine() {
+			return document.querySelector('input[name="engine"]:checked').value;
+		}
+
 		function selectedMode() {
 			return document.querySelector('input[name="mode"]:checked').value;
+		}
+
+		function syncEngine() {
+			const engine = selectedEngine();
+			const port = document.getElementById('port');
+			const username = document.getElementById('username');
+			const database = document.getElementById('database');
+			const url = document.getElementById('url');
+
+			if (engine === 'postgresql') {
+				if (port.value === '3306') {
+					port.value = '5432';
+				}
+				if (username.value === 'root') {
+					username.value = 'postgres';
+				}
+				if (!database.value) {
+					database.value = 'postgres';
+				}
+				if (url.value.startsWith('mysql://')) {
+					url.value = 'postgresql://postgres:password@127.0.0.1:5432/postgres';
+				}
+			} else {
+				if (port.value === '5432') {
+					port.value = '3306';
+				}
+				if (username.value === 'postgres') {
+					username.value = 'root';
+				}
+				if (database.value === 'postgres') {
+					database.value = '';
+				}
+				if (url.value.startsWith('postgresql://') || url.value.startsWith('postgres://')) {
+					url.value = 'mysql://root:password@127.0.0.1:3306/mysql';
+				}
+			}
+			document.getElementById('error').textContent = '';
 		}
 
 		function syncMode() {
@@ -664,6 +872,13 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 				return '请输入连接名称。';
 			}
 			if (payload.mode === 'url') {
+				if (payload.engine === 'postgresql') {
+					const url = payload.url.trim();
+					if (!url.startsWith('postgresql://') && !url.startsWith('postgres://')) {
+						return 'URL 必须以 postgresql:// 或 postgres:// 开头。';
+					}
+					return '';
+				}
 				if (!payload.url.trim().startsWith('mysql://')) {
 					return 'URL 必须以 mysql:// 开头。';
 				}
@@ -683,6 +898,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 
 		function submitForm(type) {
 			const payload = {
+				engine: selectedEngine(),
 				name: readValue('name'),
 				mode: selectedMode(),
 				host: readValue('host'),
@@ -700,6 +916,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			vscode.postMessage({ type, payload });
 		}
 
+		syncEngine();
 		syncMode();
 	</script>
 </body>
@@ -720,6 +937,24 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 				: 'URL 必须以 mysql:// 开头。';
 		} catch {
 			return '请输入有效的 mysql:// URL。';
+		}
+	}
+
+	/**
+	 * 校验 PostgreSQL 连接 URL。
+	 *
+	 * @param value 原始 URL 字符串。
+	 * @returns 无效时返回的校验提示。
+	 */
+	private static validatePostgreSqlUrl(value: string): string | undefined {
+		try {
+			const parsedUrl = new URL(value.trim());
+			return parsedUrl.protocol === 'postgresql:' ||
+				parsedUrl.protocol === 'postgres:'
+				? undefined
+				: 'URL 必须以 postgresql:// 或 postgres:// 开头。';
+		} catch {
+			return '请输入有效的 postgresql:// 或 postgres:// URL。';
 		}
 	}
 

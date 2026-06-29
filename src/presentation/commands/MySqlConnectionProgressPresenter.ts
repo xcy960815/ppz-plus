@@ -1,21 +1,36 @@
 import * as vscode from 'vscode';
 
-import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
+import type { ConnectionConfig } from '../../domain/connections/ConnectionConfig';
 
 /**
- * 带 VS Code 进度提示执行 MySQL 连接测试任务。
+ * 返回连接配置对应的用户可读数据库名称。
  *
- * @param connection 需要测试的 MySQL 连接配置。
+ * @param connection 需要展示的连接配置。
+ * @returns 数据库引擎展示名称。
+ */
+export function describeConnectionEngine(connection: ConnectionConfig): string {
+	if (connection.engine === 'postgresql') {
+		return 'PostgreSQL';
+	}
+
+	return 'MySQL';
+}
+
+/**
+ * 带 VS Code 进度提示执行连接测试任务。
+ *
+ * @param connection 需要测试的连接配置。
  * @param task 实际执行连接测试的异步任务。
  */
-export async function withMySqlConnectionTestProgress(
-	connection: MysqlConnectionConfig,
+export async function withConnectionTestProgress(
+	connection: ConnectionConfig,
 	task: () => Promise<void>
 ): Promise<void> {
+	const engineName = describeConnectionEngine(connection);
 	await vscode.window.withProgress(
 		{
 			location: vscode.ProgressLocation.Notification,
-			title: `PPZ Plus: 测试 MySQL 连接“${connection.name}”`,
+			title: `PPZ Plus: 测试 ${engineName} 连接“${connection.name}”`,
 		},
 		async (progress) => {
 			progress.report({

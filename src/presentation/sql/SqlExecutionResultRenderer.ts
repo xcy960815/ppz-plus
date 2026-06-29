@@ -1,6 +1,9 @@
 import type {
 	SqlExecutionCellValue,
+	SqlExecutionField,
 	SqlExecutionResult,
+	SqlExecutionResultMetadataEntry,
+	SqlExecutionResultSet,
 } from '../../domain/query/SqlExecutionResult';
 
 /**
@@ -14,39 +17,112 @@ export class SqlExecutionResultRenderer {
 	 * @returns 结果区域 HTML。
 	 */
 	public render(result: SqlExecutionResult): string {
-		const status = result.success ? '成功' : '失败';
-		const affectedRows =
-			result.affectedRows === null ? '-' : String(result.affectedRows);
-		const resultHeader = `<div class="result-header">
-			<span><strong>${status}</strong></span>
-			<span><strong>${result.isQuery ? '查询' : '语句'}</strong></span>
-			<span>耗时 <strong>${result.durationMs}</strong> ms</span>
-			<span>受影响行数 <strong>${affectedRows}</strong></span>
-			<span>结果 <strong>${result.rows.length}</strong> 条</span>
-		</div>`;
-
 		if (!result.success) {
-			return `${resultHeader}<pre class="error">${this.escapeHtml(
-				result.errorMessage ?? '未知 SQL 执行错误。'
-			)}</pre>`;
+			return `<div class="result-view">
+				<div class="error-view">
+					<p>${this.escapeHtml(result.errorMessage ?? '未知 SQL 执行错误。')}</p>
+				</div>
+			</div>`;
 		}
 
-		if (!result.isQuery) {
-			return `${resultHeader}<div class="empty-result">语句已执行。</div>`;
+		const resultSets = this.resolveResultSets(result);
+		const firstResultSet = resultSets[0];
+		const resultCountText =
+			resultSets.length === 1 && firstResultSet?.isQuery
+				? `<span>, 共 ${firstResultSet.rows.length} 条结果</span>`
+				: '';
+		const body =
+			resultSets.length > 1
+				? this.renderMultipleResultSets(resultSets)
+				: this.renderResultSet(firstResultSet);
+
+		return `<div class="result-view">
+			<p>
+				<span>已执行, 耗时 ${result.durationMs} ms</span>
+				${resultCountText}
+			</p>
+			${body}
+		</div>`;
+	}
+
+	/**
+	 * 解析结果中可渲染的结果集列表。
+	 *
+	 * @param result SQL 执行结果。
+	 * @returns 结果集列表。
+	 */
+	private resolveResultSets(
+		result: SqlExecutionResult
+	): readonly SqlExecutionResultSet[] {
+		if (result.resultSets.length > 0) {
+			return result.resultSets;
 		}
 
-		return `${resultHeader}${this.renderResultTable(result)}`;
+		return [
+			{
+				isQuery: result.isQuery,
+				fields: result.fields,
+				rows: result.rows,
+				affectedRows: result.affectedRows,
+				metadata: [],
+			},
+		];
+	}
+
+	/**
+	 * 渲染多个 SQL 结果集。
+	 *
+	 * @param resultSets SQL 结果集列表。
+	 * @returns 多结果 HTML。
+	 */
+	private renderMultipleResultSets(
+		resultSets: readonly SqlExecutionResultSet[]
+	): string {
+		return resultSets
+			.map((resultSet, index) => {
+				const countText = resultSet.isQuery
+					? `<span>共 ${resultSet.rows.length} 条结果</span>`
+					: '';
+				return `<details>
+					<summary>
+						<span>No.${index + 1}</span>
+						${countText}
+					</summary>
+					${this.renderResultSet(resultSet)}
+				</details>`;
+			})
+			.join('');
+	}
+
+	/**
+	 * 渲染单个 SQL 结果集。
+	 *
+	 * @param resultSet SQL 结果集。
+	 * @returns 单结果 HTML。
+	 */
+	private renderResultSet(resultSet: SqlExecutionResultSet | undefined): string {
+		if (!resultSet) {
+			return '<div class="empty-result">语句已执行。</div>';
+		}
+
+		if (resultSet.isQuery) {
+			return this.renderDataTable(resultSet.fields, resultSet.rows);
+		}
+
+		return this.renderKeyValueTable(resultSet.metadata);
 	}
 
 	/**
 	 * 渲染查询结果表格。
 	 *
-	 * @param result SQL 查询结果。
+	 * @param fields 查询字段。
+	 * @param rows 查询记录。
 	 * @returns 表格 HTML。
 	 */
-	private renderResultTable(result: SqlExecutionResult): string {
-		const fields = result.fields;
-
+	private renderDataTable(
+		fields: readonly SqlExecutionField[],
+		rows: readonly Record<string, SqlExecutionCellValue>[]
+	): string {
 		if (fields.length === 0) {
 			return '<div class="empty-result">未返回字段。</div>';
 		}
@@ -54,10 +130,10 @@ export class SqlExecutionResultRenderer {
 		const headers = fields
 			.map((field) => `<th>${this.escapeHtml(field.name)}</th>`)
 			.join('');
-		const rows =
-			result.rows.length === 0
+		const rowMarkup =
+			rows.length === 0
 				? `<tr><td colspan="${fields.length}" class="empty-cell">未返回记录。</td></tr>`
-				: result.rows
+				: rows
 						.map(
 							(row) =>
 								`<tr>${fields
@@ -67,11 +143,44 @@ export class SqlExecutionResultRenderer {
 						.join('');
 
 		return `<div class="table-wrapper">
-			<table>
+			<table class="ppz">
 				<thead><tr>${headers}</tr></thead>
-				<tbody>${rows}</tbody>
+				<tbody>${rowMarkup}</tbody>
 			</table>
 		</div>`;
+	}
+
+	/**
+	 * 渲染非查询语句的 key/value 摘要表。
+	 *
+	 * @param metadata 非查询执行摘要。
+	 * @returns key/value 表格 HTML。
+	 */
+	private renderKeyValueTable(
+		metadata: readonly SqlExecutionResultMetadataEntry[]
+	): string {
+		if (metadata.length === 0) {
+			return '<div class="empty-result">语句已执行。</div>';
+		}
+
+		const rows = metadata
+			.map(
+				(entry) => `<tr>
+					<td tabindex="-1">${this.escapeHtml(entry.key)}</td>
+					${this.renderCell(entry.value)}
+				</tr>`
+			)
+			.join('');
+
+		return `<table class="ppz kv-table">
+			<thead>
+				<tr>
+					<th>KEY</th>
+					<th>VALUE</th>
+				</tr>
+			</thead>
+			<tbody>${rows}</tbody>
+		</table>`;
 	}
 
 	/**
@@ -82,10 +191,10 @@ export class SqlExecutionResultRenderer {
 	 */
 	private renderCell(value: SqlExecutionCellValue): string {
 		if (value === null) {
-			return '<td><span class="null-cell">NULL</span></td>';
+			return '<td tabindex="-1"><span class="null-cell">NULL</span></td>';
 		}
 
-		return `<td><code>${this.escapeHtml(String(value))}</code></td>`;
+		return `<td tabindex="-1">${this.escapeHtml(String(value))}</td>`;
 	}
 
 	/**

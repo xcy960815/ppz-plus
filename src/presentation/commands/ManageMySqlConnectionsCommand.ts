@@ -4,11 +4,16 @@ import type { DeleteStoredConnectionUseCase } from '../../application/useCases/D
 import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
 import type { SaveConnectionConfigUseCase } from '../../application/useCases/SaveConnectionConfigUseCase';
 import type { TestConnectionUseCase } from '../../application/useCases/TestConnectionUseCase';
-import { withMySqlConnectionTestProgress } from './MySqlConnectionProgressPresenter';
+import {
+	describeConnectionEngine,
+	withConnectionTestProgress,
+} from './MySqlConnectionProgressPresenter';
 import { showUserErrorMessage } from './UserErrorPresenter';
 import type {
 	ConnectionInputMode,
+	ConnectionConfig,
 	MysqlConnectionConfig,
+	PostgreSqlConnectionConfig,
 } from '../../domain/connections/ConnectionConfig';
 import type { ExtensionCommand } from './ExtensionCommand';
 import { AddMySqlConnectionCommand } from './AddMySqlConnectionCommand';
@@ -16,7 +21,7 @@ import type { MySqlConnectionTreeNode } from '../explorer/MySqlConnectionsTreeNo
 import { MySqlConnectionsTreeDataProvider } from '../explorer/MySqlConnectionsTreeDataProvider';
 
 /**
- * 通过操作选择器管理已保存的 MySQL 连接。
+ * 通过操作选择器管理已保存的数据库连接。
  */
 export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	/**
@@ -101,11 +106,11 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	 *
 	 * @returns 用户选择的连接；未选择时为空。
 	 */
-	private async pickConnection(): Promise<MysqlConnectionConfig | undefined> {
+	private async pickConnection(): Promise<ConnectionConfig | undefined> {
 		const connections = await this.listStoredConnectionsUseCase.execute();
 		if (connections.length === 0) {
 			await vscode.window.showInformationMessage(
-				'暂无已保存的 MySQL 连接，请先使用“PPZ Plus: 新增 MySQL 连接”创建连接。'
+				'暂无已保存的数据库连接，请先使用“PPZ Plus: 新增数据库连接”创建连接。'
 			);
 			return undefined;
 		}
@@ -113,6 +118,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		const selectedConnection = await vscode.window.showQuickPick(
 			connections.map((connection) => ({
 				label: connection.name,
+				detail: describeConnectionEngine(connection),
 				description:
 					connection.mode === 'parameters'
 						? `${connection.host}:${connection.port}`
@@ -120,8 +126,8 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 				connection,
 			})),
 			{
-				title: 'PPZ Plus: 管理 MySQL 连接',
-				placeHolder: '选择一个已保存的 MySQL 连接',
+				title: 'PPZ Plus: 管理数据库连接',
+				placeHolder: '选择一个已保存的数据库连接',
 			}
 		);
 
@@ -134,7 +140,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	 * @param connection 当前选中的连接。
 	 */
 	private async showConnectionDetails(
-		connection: MysqlConnectionConfig
+		connection: ConnectionConfig
 	): Promise<void> {
 		/**
 		 * 构建当前选中连接的可读摘要。
@@ -143,6 +149,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 			connection.mode === 'parameters'
 				? [
 						`名称：${connection.name}`,
+						`类型：${describeConnectionEngine(connection)}`,
 						`模式：字段`,
 						`Host：${connection.host}`,
 						`Port：${connection.port}`,
@@ -151,6 +158,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 					].join('\n')
 				: [
 						`名称：${connection.name}`,
+						`类型：${describeConnectionEngine(connection)}`,
 						`模式：URL`,
 						`URL: ${connection.url}`,
 					].join('\n');
@@ -163,9 +171,9 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	 *
 	 * @param connection 当前选中的连接。
 	 */
-	private async testConnection(connection: MysqlConnectionConfig): Promise<void> {
+	private async testConnection(connection: ConnectionConfig): Promise<void> {
 		try {
-			await withMySqlConnectionTestProgress(connection, () =>
+			await withConnectionTestProgress(connection, () =>
 				this.testConnectionUseCase.execute(connection)
 			);
 			await vscode.window.showInformationMessage(
@@ -173,7 +181,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 			);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: '测试 MySQL 连接',
+				operation: `测试 ${describeConnectionEngine(connection)} 连接`,
 				error,
 			});
 		}
@@ -184,16 +192,22 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	 *
 	 * @param connection 当前选中的连接。
 	 */
-	private async editConnection(connection: MysqlConnectionConfig): Promise<void> {
+	private async editConnection(connection: ConnectionConfig): Promise<void> {
 		const mode = await this.promptForMode(connection.mode);
 		if (!mode) {
 			return;
 		}
 
-		const updatedConnection = await AddMySqlConnectionCommand.collectMySqlConfig(
-			mode,
-			connection
-		);
+		const updatedConnection =
+			connection.engine === 'postgresql'
+				? await AddMySqlConnectionCommand.collectPostgreSqlConfig(
+						mode,
+						connection as PostgreSqlConnectionConfig
+					)
+				: await AddMySqlConnectionCommand.collectMySqlConfig(
+						mode,
+						connection as MysqlConnectionConfig
+					);
 		if (!updatedConnection) {
 			return;
 		}
@@ -201,7 +215,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		await this.saveConnectionConfigUseCase.execute(updatedConnection);
 		this.treeDataProvider.refresh();
 		await vscode.window.showInformationMessage(
-			`已更新 MySQL 连接“${updatedConnection.name}”。`
+			`已更新 ${describeConnectionEngine(updatedConnection)} 连接“${updatedConnection.name}”。`
 		);
 	}
 
@@ -211,10 +225,10 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	 * @param connection 当前选中的连接。
 	 */
 	private async deleteConnection(
-		connection: MysqlConnectionConfig
+		connection: ConnectionConfig
 	): Promise<void> {
 		const confirmation = await vscode.window.showWarningMessage(
-			`确定删除 MySQL 连接“${connection.name}”？`,
+			`确定删除 ${describeConnectionEngine(connection)} 连接“${connection.name}”？`,
 			{ modal: true },
 			'删除'
 		);
@@ -225,7 +239,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		await this.deleteStoredConnectionUseCase.execute(connection.id);
 		this.treeDataProvider.refresh();
 		await vscode.window.showInformationMessage(
-			`已删除 MySQL 连接“${connection.name}”。`
+			`已删除 ${describeConnectionEngine(connection)} 连接“${connection.name}”。`
 		);
 	}
 
@@ -253,7 +267,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 				},
 			],
 			{
-				title: 'PPZ Plus: 编辑 MySQL 连接',
+				title: 'PPZ Plus: 编辑数据库连接',
 				placeHolder: '选择要编辑的连接方式',
 			}
 		);

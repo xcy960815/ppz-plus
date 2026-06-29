@@ -1,4 +1,8 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import typescriptEslint from "typescript-eslint";
+
+const tsconfigRootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default [{
     files: ["**/*.ts"],
@@ -11,6 +15,10 @@ export default [{
         parser: typescriptEslint.parser,
         ecmaVersion: 2022,
         sourceType: "module",
+        parserOptions: {
+            projectService: true,
+            tsconfigRootDir,
+        },
     },
 
     rules: {
@@ -18,6 +26,16 @@ export default [{
             selector: "import",
             format: ["camelCase", "PascalCase"],
         }],
+        "@typescript-eslint/no-explicit-any": ["error", {
+            fixToUnknown: true,
+            ignoreRestArgs: false,
+        }],
+        "@typescript-eslint/no-unsafe-argument": "warn",
+        "@typescript-eslint/no-unsafe-assignment": "warn",
+        "@typescript-eslint/no-unsafe-call": "warn",
+        "@typescript-eslint/no-unsafe-member-access": "warn",
+        "@typescript-eslint/no-unsafe-return": "warn",
+        "@typescript-eslint/use-unknown-in-catch-callback-variable": "error",
 
         curly: "warn",
         eqeqeq: "warn",

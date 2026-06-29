@@ -15,7 +15,8 @@
     "onWebviewPanel:ppzPlus.mysqlTableData"
   ],
   "dependencies": {
-    "mysql2": "^3.11.3"
+    "mysql2": "^3.11.3",
+    "pg": "^8.22.0"
   },
   "main": "./out/extension.js",
   "contributes": {
@@ -32,29 +33,29 @@
       "ppzPlus": [
         {
           "id": "ppzPlus.mysqlConnections",
-          "name": "MySQL 连接"
+          "name": "数据库连接"
         }
       ]
     },
     "commands": [
       {
         "command": "ppz-plus.addMySqlConnection",
-        "title": "PPZ Plus: 新增 MySQL 连接",
+        "title": "PPZ Plus: 新增数据库连接",
         "icon": "$(add)"
       },
       {
         "command": "ppz-plus.manageMySqlConnections",
-        "title": "PPZ Plus: 管理 MySQL 连接",
+        "title": "PPZ Plus: 管理数据库连接",
         "icon": "$(settings-gear)"
       },
       {
         "command": "ppz-plus.refreshMySqlConnectionsTree",
-        "title": "PPZ Plus: 刷新 MySQL 连接",
+        "title": "PPZ Plus: 刷新数据库连接",
         "icon": "$(refresh)"
       },
       {
         "command": "ppz-plus.testStoredMySqlConnection",
-        "title": "PPZ Plus: 测试已保存的 MySQL 连接",
+        "title": "PPZ Plus: 测试已保存的数据库连接",
         "icon": "$(beaker)"
       },
       {
@@ -154,17 +155,17 @@
       "view/item/context": [
         {
           "command": "ppz-plus.manageMySqlConnections",
-          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
+          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection)",
           "group": "inline@1"
         },
         {
           "command": "ppz-plus.testStoredMySqlConnection",
-          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
+          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection)",
           "group": "inline@2"
         },
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
-          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
+          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection)",
           "group": "inline@3"
         },
         {
@@ -186,6 +187,26 @@
           "command": "ppz-plus.importMySqlJsonFile",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
           "group": "import@3"
+        },
+        {
+          "command": "ppz-plus.refreshMySqlConnectionsTree",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlDatabase",
+          "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.refreshMySqlConnectionsTree",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlSchema",
+          "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.refreshMySqlConnectionsTree",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlTable",
+          "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.openMySqlTableData",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlTable",
+          "group": "inline@2"
         },
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",

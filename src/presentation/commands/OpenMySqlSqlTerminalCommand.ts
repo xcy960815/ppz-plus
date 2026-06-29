@@ -58,6 +58,6 @@ export class OpenMySqlSqlTerminalCommand implements ExtensionCommand {
 			return undefined;
 		}
 
-		return node.connection;
+		return node.connection.engine === 'mysql' ? node.connection : undefined;
 	}
 }
