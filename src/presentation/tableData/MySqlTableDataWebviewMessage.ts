@@ -13,6 +13,15 @@ export interface MySqlTableDataNextPageMessage {
 }
 
 /**
+ * 请求跳转到指定分页状态。
+ */
+export interface MySqlTableDataGoToPageMessage {
+	readonly type: 'goToPage';
+	readonly pageIndex: number;
+	readonly pageSize: number;
+}
+
+/**
  * 请求重新加载当前表面板页。
  */
 export interface MySqlTableDataRefreshMessage {
@@ -59,6 +68,14 @@ export interface MySqlTableDataInsertRowMessage {
 }
 
 /**
+ * 请求以当前页中的一条表记录作为默认值新增记录。
+ */
+export interface MySqlTableDataCopyRowMessage {
+	readonly type: 'copyRow';
+	readonly rowIndex: number;
+}
+
+/**
  * 请求编辑当前页中的一条表记录。
  */
 export interface MySqlTableDataEditRowMessage {
@@ -75,16 +92,30 @@ export interface MySqlTableDataDeleteRowMessage {
 }
 
 /**
+ * 请求保存当前页面上的内联单元格编辑。
+ */
+export interface MySqlTableDataSaveEditedRowsMessage {
+	readonly type: 'saveEditedRows';
+	readonly edits: readonly {
+		readonly rowIndex: number;
+		readonly values: Record<string, string | number | boolean | null>;
+	}[];
+}
+
+/**
  * 描述 MySQL 表数据 Webview 可接收的消息。
  */
 export type MySqlTableDataWebviewMessage =
 	| MySqlTableDataPreviousPageMessage
 	| MySqlTableDataNextPageMessage
+	| MySqlTableDataGoToPageMessage
 	| MySqlTableDataRefreshMessage
 	| MySqlTableDataApplyQueryOptionsMessage
 	| MySqlTableDataClearQueryOptionsMessage
 	| MySqlTableDataSetVisibleColumnsMessage
 	| MySqlTableDataOpenSqlTerminalMessage
 	| MySqlTableDataInsertRowMessage
+	| MySqlTableDataCopyRowMessage
 	| MySqlTableDataEditRowMessage
-	| MySqlTableDataDeleteRowMessage;
+	| MySqlTableDataDeleteRowMessage
+	| MySqlTableDataSaveEditedRowsMessage;

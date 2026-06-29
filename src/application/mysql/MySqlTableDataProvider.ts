@@ -76,6 +76,10 @@ export interface MySqlTableQueryOptions {
 export interface MySqlTableRowPage {
 	readonly pageIndex: number;
 	readonly pageSize: number;
+	/**
+	 * 当前查询条件下的总行数。
+	 */
+	readonly totalRowCount: number;
 	readonly hasNextPage: boolean;
 	readonly sql: string;
 	readonly rows: readonly Record<string, MySqlTableCellValue>[];

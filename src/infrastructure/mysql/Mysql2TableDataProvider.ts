@@ -97,15 +97,23 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 				pageSize,
 				options
 			);
-			const [rows] = await runtimeConnection.query(
-				rowPageQuery.sql,
-				rowPageQuery.values
+			const rowCountQuery = this.createRowCountQuery(
+				schemaName,
+				tableName,
+				columns,
+				options
 			);
+			const [[rows], [countRows]] = await Promise.all([
+				runtimeConnection.query(rowPageQuery.sql, rowPageQuery.values),
+				runtimeConnection.query(rowCountQuery.sql, rowCountQuery.values),
+			]);
+			const totalRowCount = this.readTotalRowCount(countRows);
 
 			return this.normalizeRowPage(
 				rows,
 				normalizedPageIndex,
 				pageSize,
+				totalRowCount,
 				rowPageQuery.displaySql
 			);
 		} finally {
@@ -324,12 +332,14 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 		rows: unknown,
 		pageIndex: number,
 		pageSize: number,
+		totalRowCount: number,
 		sql: string
 	): MySqlTableRowPage {
 		if (!Array.isArray(rows)) {
 			return {
 				pageIndex,
 				pageSize,
+				totalRowCount,
 				hasNextPage: false,
 				sql,
 				rows: [],
@@ -347,9 +357,41 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 		return {
 			pageIndex,
 			pageSize,
+			totalRowCount,
 			hasNextPage: rows.length > pageSize,
 			sql,
 			rows: normalizedRows,
+		};
+	}
+
+	/**
+	 * 创建表数据总数查询。
+	 *
+	 * @param schemaName 表所属的 schema。
+	 * @param tableName 需要统计的表。
+	 * @param columns 当前表字段元数据。
+	 * @param options 过滤查询选项。
+	 * @returns 可执行 SQL 和参数。
+	 */
+	private createRowCountQuery(
+		schemaName: string,
+		tableName: string,
+		columns: readonly MySqlTableColumnMetadata[],
+		options?: MySqlTableQueryOptions
+	): {
+		readonly sql: string;
+		readonly values: readonly unknown[];
+	} {
+		const tableSql = this.escapeQualifiedTableName(schemaName, tableName);
+		const filterClause = this.createFilterClause(columns, options);
+		const executableParts = [
+			`SELECT COUNT(*) AS totalRowCount FROM ${tableSql}`,
+			filterClause.sql,
+		].filter((part) => part.length > 0);
+
+		return {
+			sql: executableParts.join(' '),
+			values: filterClause.values,
 		};
 	}
 
@@ -718,6 +760,39 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 
 		const value = Reflect.get(result, propertyName);
 		return typeof value === 'number' ? value : 0;
+	}
+
+	/**
+	 * 从 COUNT 查询结果中读取总行数。
+	 *
+	 * @param rows mysql2 返回的 COUNT 查询行。
+	 * @returns 当前查询条件下的总行数。
+	 */
+	private readTotalRowCount(rows: unknown): number {
+		if (!Array.isArray(rows) || rows.length === 0) {
+			return 0;
+		}
+
+		const firstRow = rows[0];
+		if (!firstRow || typeof firstRow !== 'object') {
+			return 0;
+		}
+
+		const value = Reflect.get(firstRow, 'totalRowCount');
+		if (typeof value === 'number') {
+			return value;
+		}
+
+		if (typeof value === 'bigint') {
+			return Number(value);
+		}
+
+		if (typeof value === 'string') {
+			const parsedValue = Number(value);
+			return Number.isFinite(parsedValue) ? parsedValue : 0;
+		}
+
+		return 0;
 	}
 
 	/**

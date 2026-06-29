@@ -10,7 +10,7 @@ import type { ImportMySqlCsvFileUseCase } from '../../application/useCases/Impor
 import type { PrepareMySqlCsvImportMappingUseCase } from '../../application/useCases/PrepareMySqlCsvImportMappingUseCase';
 import type { PreviewMySqlCsvFileImportUseCase } from '../../application/useCases/PreviewMySqlCsvFileImportUseCase';
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
-import type { CsvTableImportTarget } from '../../domain/import/CsvFileImportResult';
+import type { CsvFileImportResult, CsvTableImportTarget } from '../../domain/import/CsvFileImportResult';
 import type { ImportColumnMapping } from '../../domain/import/ImportColumnMapping';
 import { isOperationCanceledError } from '../../domain/tasks/CancellationSignal';
 import type { ExtensionCommand } from './ExtensionCommand';

@@ -33,6 +33,7 @@ interface MySqlTablePanelState {
 	readonly panel: vscode.WebviewPanel;
 	readonly tableNode: MySqlTableTreeNode;
 	pageIndex: number;
+	pageSize: number;
 	filterKeyword: string;
 	sortColumnName?: string;
 	sortDirection: MySqlTableSortDirection;
@@ -50,6 +51,7 @@ interface MySqlTablePanelSerializedState {
 	readonly schemaName: string;
 	readonly tableName: string;
 	readonly pageIndex: number;
+	readonly pageSize: number;
 	readonly filterKeyword: string;
 	readonly sortColumnName?: string;
 	readonly sortDirection: MySqlTableSortDirection;
@@ -70,7 +72,7 @@ export class MySqlTableDataPanel
 	/**
 	 * 保存表数据页使用的分页大小。
 	 */
-	private static readonly pageSize = 50;
+	private static readonly defaultPageSize = 30;
 
 	/**
 	 * 按完整表键保存已打开的表数据面板。
@@ -153,6 +155,7 @@ export class MySqlTableDataPanel
 			panel,
 			tableNode,
 			pageIndex: restoredState.pageIndex,
+			pageSize: restoredState.pageSize,
 			filterKeyword: restoredState.filterKeyword,
 			sortColumnName: restoredState.sortColumnName,
 			sortDirection: restoredState.sortDirection,
@@ -196,6 +199,7 @@ export class MySqlTableDataPanel
 			panel,
 			tableNode,
 			pageIndex: 0,
+			pageSize: MySqlTableDataPanel.defaultPageSize,
 			filterKeyword: '',
 			sortDirection: 'asc',
 			hiddenColumnNames: new Set<string>(),
@@ -255,6 +259,7 @@ export class MySqlTableDataPanel
 		}
 
 		const pageIndex = Reflect.get(value, 'pageIndex');
+		const pageSize = Reflect.get(value, 'pageSize');
 		const filterKeyword = Reflect.get(value, 'filterKeyword');
 		const sortColumnName = Reflect.get(value, 'sortColumnName');
 		const sortDirection = Reflect.get(value, 'sortDirection');
@@ -268,6 +273,10 @@ export class MySqlTableDataPanel
 				typeof pageIndex === 'number' && Number.isFinite(pageIndex)
 					? Math.max(0, Math.floor(pageIndex))
 					: 0,
+			pageSize:
+				typeof pageSize === 'number' && Number.isFinite(pageSize)
+					? Math.max(1, Math.floor(pageSize))
+					: MySqlTableDataPanel.defaultPageSize,
 			filterKeyword: typeof filterKeyword === 'string' ? filterKeyword : '',
 			sortColumnName:
 				typeof sortColumnName === 'string' && sortColumnName.length > 0
@@ -333,6 +342,11 @@ export class MySqlTableDataPanel
 				state.pageIndex += 1;
 				await this.renderTableData(state);
 				return;
+			case 'goToPage':
+				state.pageSize = Math.max(1, Math.floor(message.pageSize));
+				state.pageIndex = Math.max(0, Math.floor(message.pageIndex));
+				await this.renderTableData(state);
+				return;
 			case 'refresh':
 				await this.renderTableData(state);
 				return;
@@ -368,11 +382,17 @@ export class MySqlTableDataPanel
 			case 'insertRow':
 				await this.insertRow(state);
 				return;
+			case 'copyRow':
+				await this.copyRow(state, message.rowIndex);
+				return;
 			case 'editRow':
 				await this.editRow(state, message.rowIndex);
 				return;
 			case 'deleteRow':
 				await this.deleteRow(state, message.rowIndex);
+				return;
+			case 'saveEditedRows':
+				await this.saveEditedRows(state, message.edits);
 				return;
 		}
 	}
@@ -382,14 +402,17 @@ export class MySqlTableDataPanel
 	 *
 	 * @param state 当前表数据面板状态。
 	 */
-	private async insertRow(state: MySqlTablePanelState): Promise<void> {
+	private async insertRow(
+		state: MySqlTablePanelState,
+		sourceRow?: Record<string, MySqlTableCellValue>
+	): Promise<void> {
 		try {
 			const columns = await this.listMySqlTableColumnsUseCase.execute(
 				state.tableNode.connection,
 				state.tableNode.schemaName,
 				state.tableNode.tableName
 			);
-			const values = await this.promptInsertValues(columns);
+			const values = await this.promptInsertValues(columns, sourceRow);
 
 			if (values === undefined) {
 				return;
@@ -424,13 +447,37 @@ export class MySqlTableDataPanel
 	}
 
 	/**
+	 * 以当前聚焦行作为默认值新增一条表记录。
+	 *
+	 * @param state 当前表数据面板状态。
+	 * @param rowIndex 当前页行索引。
+	 */
+	private async copyRow(
+		state: MySqlTablePanelState,
+		rowIndex: number
+	): Promise<void> {
+		const row = state.latestRows[rowIndex];
+
+		if (!row) {
+			await vscode.window.showWarningMessage(
+				'Selected row is no longer available.'
+			);
+			return;
+		}
+
+		await this.insertRow(state, row);
+	}
+
+	/**
 	 * 通过 VS Code 输入框收集单条新增记录的字段值。
 	 *
 	 * @param columns 当前表字段元数据。
+	 * @param sourceRow 作为新增默认值的来源行。
 	 * @returns 用户提交的字段值；取消时返回 undefined。
 	 */
 	private async promptInsertValues(
-		columns: readonly MySqlTableColumnMetadata[]
+		columns: readonly MySqlTableColumnMetadata[],
+		sourceRow?: Record<string, MySqlTableCellValue>
 	): Promise<MySqlTableInsertValues | undefined> {
 		const values: Record<string, string | number | boolean | null> = {};
 		const writableColumns = columns.filter(
@@ -438,8 +485,10 @@ export class MySqlTableDataPanel
 		);
 
 		for (const column of writableColumns) {
+			const sourceValue = sourceRow?.[column.name] ?? null;
 			const value = await vscode.window.showInputBox({
 				title: `Insert value for ${column.name}`,
+				value: sourceValue === null ? '' : String(sourceValue),
 				prompt: `${column.dataType}${column.nullable ? ', nullable' : ''}. Leave empty to use DEFAULT; type NULL to insert NULL.`,
 				ignoreFocusOut: true,
 			});
@@ -526,6 +575,128 @@ export class MySqlTableDataPanel
 				error,
 			});
 		}
+	}
+
+	/**
+	 * 保存 Webview 表格中的内联编辑。
+	 *
+	 * @param state 当前表数据面板状态。
+	 * @param edits 前端收集的逐行字段修改。
+	 */
+	private async saveEditedRows(
+		state: MySqlTablePanelState,
+		edits: readonly {
+			readonly rowIndex: number;
+			readonly values: Record<string, string | number | boolean | null>;
+		}[]
+	): Promise<void> {
+		try {
+			const primaryKeyColumns = state.latestColumns.filter(
+				(column) => column.isPrimaryKey
+			);
+
+			if (primaryKeyColumns.length === 0) {
+				await vscode.window.showWarningMessage(
+					'Editing rows currently requires a primary key.'
+				);
+				return;
+			}
+
+			const normalizedEdits = edits
+				.map((edit) => {
+					const row = state.latestRows[edit.rowIndex];
+					if (!row) {
+						return undefined;
+					}
+
+					const values = this.normalizeInlineEditValues(
+						state.latestColumns,
+						edit.values
+					);
+					if (Object.keys(values).length === 0) {
+						return undefined;
+					}
+
+					return {
+						row,
+						values,
+					};
+				})
+				.filter(
+					(
+						edit
+					): edit is {
+						readonly row: Record<string, MySqlTableCellValue>;
+						readonly values: MySqlTableUpdateValues;
+					} => edit !== undefined
+				);
+
+			if (normalizedEdits.length === 0) {
+				await vscode.window.showInformationMessage('No row changes to apply.');
+				return;
+			}
+
+			const shouldSave = await this.confirmPendingChange(
+				`Save ${normalizedEdits.length} row change(s) to ${state.tableNode.schemaName}.${state.tableNode.tableName}?`
+			);
+
+			if (!shouldSave) {
+				return;
+			}
+
+			let affectedRows = 0;
+			for (const edit of normalizedEdits) {
+				const result = await this.updateMySqlTableRowUseCase.execute(
+					state.tableNode.connection,
+					state.tableNode.schemaName,
+					state.tableNode.tableName,
+					this.createIdentityValues(primaryKeyColumns, edit.row),
+					edit.values
+				);
+				affectedRows += result.affectedRows;
+			}
+
+			await vscode.window.showInformationMessage(
+				`Updated ${affectedRows} row(s) in ${state.tableNode.schemaName}.${state.tableNode.tableName}.`
+			);
+			await this.renderTableData(state);
+		} catch (error) {
+			await showUserErrorMessage({
+				operation: 'Save MySQL table row edits',
+				error,
+			});
+		}
+	}
+
+	/**
+	 * 归一化 Webview 内联编辑提交的字段值。
+	 *
+	 * @param columns 当前表字段元数据。
+	 * @param values Webview 提交的原始字段值。
+	 * @returns 可传入更新用例的字段值。
+	 */
+	private normalizeInlineEditValues(
+		columns: readonly MySqlTableColumnMetadata[],
+		values: Record<string, string | number | boolean | null>
+	): MySqlTableUpdateValues {
+		const editableColumnNames = new Set(
+			columns
+				.filter(
+					(column) =>
+						!column.isPrimaryKey &&
+						!column.extra.toLowerCase().includes('auto_increment')
+				)
+				.map((column) => column.name)
+		);
+		const normalizedValues: Record<string, MySqlTableCellValue> = {};
+
+		for (const [columnName, value] of Object.entries(values)) {
+			if (editableColumnNames.has(columnName)) {
+				normalizedValues[columnName] = value;
+			}
+		}
+
+		return normalizedValues;
 	}
 
 	/**
@@ -690,7 +861,7 @@ export class MySqlTableDataPanel
 					state.tableNode.schemaName,
 					state.tableNode.tableName,
 					state.pageIndex,
-					MySqlTableDataPanel.pageSize,
+					state.pageSize,
 					this.createQueryOptions(state)
 				),
 			]);
@@ -763,6 +934,7 @@ export class MySqlTableDataPanel
 			schemaName: state.tableNode.schemaName,
 			tableName: state.tableNode.tableName,
 			pageIndex: state.pageIndex,
+			pageSize: state.pageSize,
 			filterKeyword: state.filterKeyword,
 			sortColumnName: state.sortColumnName,
 			sortDirection: state.sortDirection,
@@ -894,45 +1066,55 @@ export class MySqlTableDataPanel
 				? '<th class="empty-header">No fields</th>'
 				: dataColumns
 						.map((column) => {
-							const tags = [
+							const sortDirection =
+								state.sortColumnName === column.name
+									? state.sortDirection
+									: undefined;
+							const title = [
 								column.dataType,
-								column.nullable ? 'NULL' : 'NOT NULL',
 								column.isPrimaryKey ? 'PK' : undefined,
-								column.extra.length > 0 ? column.extra : undefined,
 							]
-								.filter((tag): tag is string => tag !== undefined)
+								.filter((item): item is string => item !== undefined)
 								.join(' / ');
-
 							return `<th>
-				<div class="field-name">${this.escapeHtml(column.name)}</div>
-				<div class="field-desc">${this.escapeHtml(tags)}</div>
+				<div class="sort-field" data-sort-column="${this.escapeHtml(column.name)}" title="${this.escapeHtml(title)}">
+					<span>${this.escapeHtml(column.name)}</span>
+					<span class="sort-icons">
+						<span class="sort-icon up${sortDirection === 'desc' ? ' selected' : ''}"></span>
+						<span class="sort-icon down${sortDirection === 'asc' ? ' selected' : ''}"></span>
+					</span>
+				</div>
 			</th>`;
 						})
 						.join('');
 
 		const rowsMarkup =
 			rowPage.rows.length === 0
-				? `<tr><td colspan="${Math.max(dataColumns.length, 1) + 1}" class="empty-cell">No data</td></tr>`
+				? `<tr><td colspan="${Math.max(dataColumns.length, 1)}" class="empty-cell">No data</td></tr>`
 				: rowPage.rows
 						.map(
 							(row, rowIndex) =>
-								`<tr><td class="action-cell">${this.renderRowActions(rowIndex, hasPrimaryKey)}</td>${
+								`<tr data-row-index="${rowIndex}">${
 									dataColumns.length === 0
 										? '<td class="empty-cell">No visible fields</td>'
 										: dataColumns
 												.map((column) =>
-													this.renderCell(row[column.name] ?? null)
+													this.renderCell(
+														rowIndex,
+														column,
+														row[column.name] ?? null,
+														hasPrimaryKey
+													)
 												)
 												.join('')
 								}</tr>`
 						)
 						.join('');
 		const pageNumber = rowPage.pageIndex + 1;
-		const pageStart =
-			rowPage.rows.length === 0
-				? 0
-				: rowPage.pageIndex * rowPage.pageSize + 1;
-		const pageEnd = rowPage.pageIndex * rowPage.pageSize + rowPage.rows.length;
+		const pageCount = Math.max(
+			1,
+			Math.ceil(rowPage.totalRowCount / rowPage.pageSize)
+		);
 		const sortOptions = [
 			`<option value=""${state.sortColumnName ? '' : ' selected'}>默认</option>`,
 			...columns.map((column) => {
@@ -970,6 +1152,8 @@ export class MySqlTableDataPanel
 		}
 		body {
 			--padding-h: .88em;
+			--color0: 0, 0, 0;
+			--color1: 255, 255, 255;
 			margin: 0;
 			padding: 0;
 			font-family: var(--vscode-font-family);
@@ -1008,7 +1192,6 @@ export class MySqlTableDataPanel
 		}
 		.btns,
 		.pagination,
-		.row-actions,
 		.dialog-actions {
 			display: flex;
 			align-items: center;
@@ -1045,10 +1228,29 @@ export class MySqlTableDataPanel
 			opacity: .38;
 			cursor: default;
 		}
-		.operations .page-state {
-			min-width: 6.8rem;
+		.pagination .txt {
+			font-size: .8em;
+			margin: 0 .2em;
+		}
+		.pagination button {
+			padding: 0 .28em;
+		}
+		.pagination button.big {
+			font-size: 1.12em;
+		}
+		.pagination .page-input {
+			box-sizing: border-box;
+			width: 2.2em;
+			height: 1.3em;
+			border: 0;
+			border-radius: 4px;
+			background: rgba(var(--color1), .1);
+			color: inherit;
+			padding: 0 .16em;
 			text-align: center;
-			white-space: nowrap;
+		}
+		.pagination .page-size {
+			margin: 0 .3em;
 		}
 		.table-wrapper {
 			height: calc(100vh - 3.76rem);
@@ -1062,11 +1264,10 @@ export class MySqlTableDataPanel
 		.pne th,
 		.pne td {
 			box-sizing: border-box;
-			max-width: 24rem;
+			max-width: 16em;
 			height: 2em;
-			padding: 0 .72em;
-			border: 1px solid var(--vscode-panel-border);
-			font-size: .9em;
+			padding: 0 .5em;
+			border: 0;
 			line-height: 2em;
 			text-align: left;
 			white-space: nowrap;
@@ -1076,62 +1277,70 @@ export class MySqlTableDataPanel
 		.pne thead th {
 			position: sticky;
 			top: 0;
-			height: 2.28rem;
-			background: var(--vscode-editor-background);
+			background: rgba(var(--color0), .68);
 			color: var(--vscode-editor-foreground);
 			z-index: 1;
 		}
+		.pne tr > *:first-child {
+			padding-left: 1em;
+		}
 		.pne tbody tr:nth-child(even) {
-			background: var(--vscode-list-hoverBackground);
+			background: rgba(var(--color1), .06);
 		}
 		.pne tbody tr:hover {
-			background: var(--vscode-list-activeSelectionBackground);
-			color: var(--vscode-list-activeSelectionForeground);
+			background: rgba(var(--color1), .1);
 		}
-		.field-name {
-			font-weight: 600;
-			line-height: 1.1rem;
+		.pne tr.highlight {
+			background: rgba(var(--color1), .1) !important;
 		}
-		.field-desc {
-			color: var(--vscode-descriptionForeground);
-			font-size: .78em;
-			font-weight: 400;
-			line-height: 1rem;
+		.pne th.highlight,
+		.pne td.highlight {
+			background: rgba(var(--color1), .1);
 		}
-		.pne td code {
-			font-family: var(--vscode-editor-font-family, var(--vscode-font-family));
-			font-size: inherit;
+		.sort-field {
+			display: flex;
+			align-items: center;
+			cursor: pointer;
+		}
+		.sort-field span:first-child {
+			overflow: hidden;
+			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
-		.null-cell {
-			color: var(--vscode-descriptionForeground);
-			font-style: italic;
+		.sort-icons {
+			display: inline-flex;
+			flex-direction: column;
+			margin-left: .5em;
+			cursor: pointer;
 		}
-		.action-cell,
-		.action-header {
-			width: 4.4rem;
-			max-width: 4.4rem;
-			text-align: center;
+		.sort-icon {
+			display: block;
+			width: 0;
+			height: 0;
+			opacity: .5;
+			border-left: .28em solid transparent;
+			border-right: .28em solid transparent;
 		}
-		.row-actions {
-			justify-content: center;
-			gap: .25rem;
+		.sort-icon.selected {
+			opacity: 1;
 		}
-		.row-action {
-			width: 1.38rem;
-			height: 1.38rem;
-			border: 0;
-			background: transparent;
-			color: inherit;
-			padding: 0;
-			line-height: 1.38rem;
+		.sort-icon.up {
+			border-bottom: .42em solid currentColor;
+			transform: translate(0, .16em);
 		}
-		.row-action:hover:not(:disabled) {
-			background: var(--vscode-toolbar-hoverBackground);
+		.sort-icon.down {
+			border-top: .42em solid currentColor;
+			transform: translate(0, -.16em);
 		}
-		.row-action:disabled {
-			opacity: .35;
-			cursor: default;
+		.pne td {
+			cursor: cell;
+			outline: none;
+		}
+		.pne td:hover {
+			background: rgba(var(--color1), .1);
+		}
+		.pne td:focus {
+			white-space: initial;
 		}
 		.empty-cell {
 			text-align: center;
@@ -1251,9 +1460,9 @@ export class MySqlTableDataPanel
 	<header>
 		<nav title="${this.escapeHtml(tableNode.connection.name)} / ${this.escapeHtml(tableNode.schemaName)} / ${this.escapeHtml(tableNode.tableName)}">
 			<span>${this.escapeHtml(tableNode.connection.name)}</span>
-			<span class="split">/</span>
+			<span class="split">›</span>
 			<span>${this.escapeHtml(tableNode.schemaName)}</span>
-			<span class="split">/</span>
+			<span class="split">›</span>
 			<span class="active">${this.escapeHtml(tableNode.tableName)}</span>
 		</nav>
 		<div class="operations">
@@ -1262,24 +1471,33 @@ export class MySqlTableDataPanel
 				<button type="button" title="搜索" onclick="showDialog('search')">&#8981;</button>
 				<button type="button" title="字段" onclick="showDialog('fields')">&#9638;</button>
 				<button type="button" title="新增" onclick="postAction('insertRow')">+</button>
-				<button type="button" title="复制" disabled>C</button>
-				<button type="button" title="保存" disabled>S</button>
-				<button type="button" title="撤销" disabled>U</button>
-				<button type="button" title="删除" disabled>-</button>
+				<button type="button" title="复制" id="copyButton" onclick="copyFocusedRow()" disabled>C</button>
+				<button type="button" title="保存" id="saveButton" onclick="saveEditedRows()" disabled>S</button>
+				<button type="button" title="撤销" id="undoButton" onclick="undoEditedRows()" disabled>U</button>
+				<button type="button" title="删除" id="deleteButton" onclick="deleteFocusedRow()" disabled>-</button>
 				<button type="button" title="SQL" onclick="showDialog('sql')">SQL</button>
 				<button type="button" title="终端" onclick="postAction('openSqlTerminal')">&gt;</button>
 			</div>
 			<div class="pagination">
-				<button type="button" title="上一页" onclick="postAction('previousPage')" ${rowPage.pageIndex === 0 ? 'disabled' : ''}>&lt;</button>
-				<span class="page-state">${pageStart}-${pageEnd} / Page ${pageNumber}</span>
-				<button type="button" title="下一页" onclick="postAction('nextPage')" ${rowPage.hasNextPage ? '' : 'disabled'}>&gt;</button>
+				<button type="button" title="刷新" onclick="applyPagination()">&#8635;</button>
+				<span class="txt">每页</span>
+				<input id="pageSizeInput" class="page-input page-size" value="${rowPage.pageSize}" inputmode="numeric" />
+				<span class="txt">条记录，共 </span>
+				<span>${rowPage.totalRowCount}</span>
+				<span class="txt"> 条、</span>
+				<span>${pageCount}</span><span class="txt"> 页</span>
+				<button type="button" class="big" title="第一页" onclick="goToPage(1)" ${pageNumber <= 1 ? 'disabled' : ''}>&lt;&lt;</button>
+				<button type="button" class="big" title="上一页" onclick="goToPage(${Math.max(1, pageNumber - 1)})" ${pageNumber <= 1 ? 'disabled' : ''}>&lt;</button>
+				<input id="pageIndexInput" class="page-input" value="${pageNumber}" inputmode="numeric" />
+				<button type="button" class="big" title="下一页" onclick="goToPage(${Math.min(pageCount, pageNumber + 1)})" ${pageNumber >= pageCount ? 'disabled' : ''}>&gt;</button>
+				<button type="button" class="big" title="最后一页" onclick="goToPage(${pageCount})" ${pageNumber >= pageCount ? 'disabled' : ''}>&gt;&gt;</button>
 			</div>
 		</div>
 	</header>
 	<div class="table-wrapper">
 		<table class="pne">
 			<thead>
-				<tr><th class="action-header"></th>${columnHeaders}</tr>
+				<tr>${columnHeaders}</tr>
 			</thead>
 			<tbody>
 				${rowsMarkup}
@@ -1288,7 +1506,7 @@ export class MySqlTableDataPanel
 	</div>
 	<div class="dialog-mask" id="searchDialog" role="dialog" aria-modal="true">
 		<div class="dialog">
-			<div class="dialog-title">搜索</div>
+			<div class="dialog-title">搜索数据</div>
 			<div class="dialog-body">
 				<label>
 					关键字
@@ -1308,30 +1526,31 @@ export class MySqlTableDataPanel
 			</div>
 			<div class="dialog-actions">
 				<button type="button" class="secondary" onclick="clearQueryOptions()">清空</button>
-				<button type="button" class="secondary" onclick="closeDialog()">取消</button>
-				<button type="button" onclick="applyQueryOptions()">确定</button>
+				<button type="button" class="secondary" onclick="closeDialog()">关闭</button>
+				<button type="button" onclick="applyQueryOptions()">搜索</button>
 			</div>
 		</div>
 	</div>
 	<div class="dialog-mask" id="fieldsDialog" role="dialog" aria-modal="true">
 		<div class="dialog">
-			<div class="dialog-title">字段</div>
+			<div class="dialog-title">字段选择</div>
 			<div class="dialog-body">
 				<div class="column-grid">
 					${columnVisibilityControls}
 				</div>
 			</div>
 			<div class="dialog-actions">
-				<button type="button" class="secondary" onclick="setAllColumns(true)">全部</button>
-				<button type="button" class="secondary" onclick="setAllColumns(false)">清空</button>
-				<button type="button" class="secondary" onclick="closeDialog()">取消</button>
+				<button type="button" class="secondary" onclick="setAllColumns(true)">全选</button>
+				<button type="button" class="secondary" onclick="invertColumns()">反选</button>
+				<button type="button" class="secondary" onclick="setAllColumns(false)">全不选</button>
+				<button type="button" class="secondary" onclick="closeDialog()">关闭</button>
 				<button type="button" onclick="applyColumnVisibility()">确定</button>
 			</div>
 		</div>
 	</div>
 	<div class="dialog-mask" id="sqlDialog" role="dialog" aria-modal="true">
 		<div class="dialog">
-			<div class="dialog-title">SQL</div>
+			<div class="dialog-title">查看 SQL</div>
 			<div class="dialog-body">
 				<pre class="sql-view"><code>${this.escapeHtml(rowPage.sql)}</code></pre>
 			</div>
@@ -1344,6 +1563,10 @@ export class MySqlTableDataPanel
 	<script>
 		const vscode = acquireVsCodeApi();
 		const initialState = ${serializedState};
+		const hasPrimaryKey = ${hasPrimaryKey ? 'true' : 'false'};
+		const totalRowCount = ${rowPage.totalRowCount};
+		let focusedRowIndex = undefined;
+		const editing = {};
 		vscode.setState(initialState);
 		function persistState(nextState) {
 			vscode.setState({
@@ -1352,7 +1575,97 @@ export class MySqlTableDataPanel
 			});
 		}
 		function postAction(type) {
+			if ((type === 'refresh' || type === 'deleteRow') && hasPendingEdits()) {
+				warnPendingEdits();
+				return;
+			}
 			vscode.postMessage({ type });
+		}
+		function hasPendingEdits() {
+			return Object.keys(editing).length > 0;
+		}
+		function warnPendingEdits() {
+			window.alert('请先保存或撤销修改');
+		}
+		function getPageCount(pageSize) {
+			return Math.max(1, Math.ceil(totalRowCount / pageSize));
+		}
+		function normalizePageSize() {
+			const input = document.getElementById('pageSizeInput');
+			const parsedSize = Number.parseInt(input.value, 10);
+			if (!Number.isFinite(parsedSize) || parsedSize <= 0) {
+				input.value = String(initialState.pageSize);
+				return initialState.pageSize;
+			}
+			return parsedSize;
+		}
+		function normalizePageIndex(pageSize) {
+			const input = document.getElementById('pageIndexInput');
+			const parsedIndex = Number.parseInt(input.value, 10);
+			const pageCount = getPageCount(pageSize);
+			if (!Number.isFinite(parsedIndex) || parsedIndex <= 0) {
+				input.value = '1';
+				return 1;
+			}
+			if (parsedIndex >= pageCount) {
+				input.value = String(pageCount);
+				return pageCount;
+			}
+			return parsedIndex;
+		}
+		function applyPagination() {
+			if (hasPendingEdits()) {
+				warnPendingEdits();
+				return;
+			}
+			const pageSize = normalizePageSize();
+			requestPage(normalizePageIndex(pageSize), pageSize);
+		}
+		function goToPage(pageNumber) {
+			if (hasPendingEdits()) {
+				warnPendingEdits();
+				return;
+			}
+			const pageSize = normalizePageSize();
+			const pageCount = getPageCount(pageSize);
+			const normalizedPageNumber = Math.min(Math.max(1, pageNumber), pageCount);
+			requestPage(normalizedPageNumber, pageSize);
+		}
+		function requestPage(pageNumber, pageSize) {
+			const nextPageIndex = Math.max(0, pageNumber - 1);
+			document.getElementById('pageIndexInput').value = String(pageNumber);
+			persistState({
+				pageIndex: nextPageIndex,
+				pageSize
+			});
+			vscode.postMessage({
+				type: 'goToPage',
+				pageIndex: nextPageIndex,
+				pageSize
+			});
+		}
+		function sortByColumn(columnName) {
+			let sortColumnName = columnName;
+			let sortDirection = 'asc';
+			if (initialState.sortColumnName === columnName) {
+				if (initialState.sortDirection === 'asc') {
+					sortDirection = 'desc';
+				} else {
+					sortColumnName = '';
+					sortDirection = 'asc';
+				}
+			}
+			persistState({
+				sortColumnName,
+				sortDirection,
+				pageIndex: 0
+			});
+			vscode.postMessage({
+				type: 'applyQueryOptions',
+				filterKeyword: initialState.filterKeyword,
+				sortColumnName,
+				sortDirection
+			});
 		}
 		function showDialog(dialogName) {
 			document.body.dataset.dialog = dialogName;
@@ -1367,10 +1680,100 @@ export class MySqlTableDataPanel
 			});
 		}
 		function deleteRow(rowIndex) {
+			if (hasPendingEdits()) {
+				warnPendingEdits();
+				return;
+			}
 			vscode.postMessage({
 				type: 'deleteRow',
 				rowIndex
 			});
+		}
+		function setFocusedCell(cell) {
+			const row = cell.closest('tr[data-row-index]');
+			if (!row) {
+				return;
+			}
+			focusedRowIndex = Number.parseInt(row.dataset.rowIndex, 10);
+			for (const item of document.querySelectorAll('.pne .highlight')) {
+				item.classList.remove('highlight');
+			}
+			row.classList.add('highlight');
+			const cellIndex = Array.from(row.children).indexOf(cell);
+			for (const headerCell of document.querySelectorAll('.pne thead th')) {
+				headerCell.classList.toggle(
+					'highlight',
+					Array.from(headerCell.parentElement.children).indexOf(headerCell) === cellIndex
+				);
+			}
+			cell.classList.add('highlight');
+			updateToolbarState();
+		}
+		function updateToolbarState() {
+			const hasFocus = focusedRowIndex !== undefined && Number.isFinite(focusedRowIndex);
+			const hasEditing = Object.keys(editing).length > 0;
+			document.getElementById('copyButton').disabled = !hasFocus;
+			document.getElementById('deleteButton').disabled = !hasPrimaryKey || !hasFocus;
+			document.getElementById('saveButton').disabled = !hasPrimaryKey || !hasEditing;
+			document.getElementById('undoButton').disabled = !hasPrimaryKey || !hasEditing;
+		}
+		function recordCellEdit(cell) {
+			const row = cell.closest('tr[data-row-index]');
+			if (!row) {
+				return;
+			}
+			const rowIndex = row.dataset.rowIndex;
+			const columnName = cell.dataset.columnName;
+			const originalValue = cell.dataset.originalValue;
+			const nextValue = cell.innerText;
+			if (!editing[rowIndex]) {
+				editing[rowIndex] = {};
+			}
+			if (nextValue === originalValue) {
+				delete editing[rowIndex][columnName];
+				if (Object.keys(editing[rowIndex]).length === 0) {
+					delete editing[rowIndex];
+				}
+			} else {
+				editing[rowIndex][columnName] =
+					nextValue.toUpperCase() === 'NULL' ? null : nextValue;
+			}
+			updateToolbarState();
+		}
+		function saveEditedRows() {
+			const edits = Object.entries(editing).map(([rowIndex, values]) => ({
+				rowIndex: Number.parseInt(rowIndex, 10),
+				values
+			}));
+			vscode.postMessage({
+				type: 'saveEditedRows',
+				edits
+			});
+		}
+		function undoEditedRows() {
+			if (!window.confirm('撤销全部？\\n您可以使用 ctrl-z(windows) 或 cmd-z(macos) 来撤销一小步')) {
+				return;
+			}
+			for (const cell of document.querySelectorAll('[data-original-value]')) {
+				cell.innerText = cell.dataset.originalValue;
+			}
+			for (const rowIndex of Object.keys(editing)) {
+				delete editing[rowIndex];
+			}
+			updateToolbarState();
+		}
+		function deleteFocusedRow() {
+			if (focusedRowIndex !== undefined) {
+				deleteRow(focusedRowIndex);
+			}
+		}
+		function copyFocusedRow() {
+			if (focusedRowIndex !== undefined) {
+				vscode.postMessage({
+					type: 'copyRow',
+					rowIndex: focusedRowIndex
+				});
+			}
 		}
 		function applyQueryOptions() {
 			const filterKeyword = document.getElementById('filterKeyword').value;
@@ -1401,13 +1804,18 @@ export class MySqlTableDataPanel
 			});
 		}
 		function setAllColumns(checked) {
-			for (const checkbox of document.querySelectorAll('[data-column-name]')) {
+			for (const checkbox of document.querySelectorAll('#fieldsDialog [data-column-name]')) {
 				checkbox.checked = checked;
+			}
+		}
+		function invertColumns() {
+			for (const checkbox of document.querySelectorAll('#fieldsDialog [data-column-name]')) {
+				checkbox.checked = !checkbox.checked;
 			}
 		}
 		function applyColumnVisibility() {
 			const hiddenColumnNames = [];
-			for (const checkbox of document.querySelectorAll('[data-column-name]')) {
+			for (const checkbox of document.querySelectorAll('#fieldsDialog [data-column-name]')) {
 				if (!checkbox.checked) {
 					hiddenColumnNames.push(checkbox.dataset.columnName);
 				}
@@ -1423,44 +1831,47 @@ export class MySqlTableDataPanel
 				closeDialog();
 			}
 		});
+		for (const header of document.querySelectorAll('[data-sort-column]')) {
+			header.addEventListener('click', () => sortByColumn(header.dataset.sortColumn));
+		}
+		for (const cell of document.querySelectorAll('.pne tbody td[data-column-name]')) {
+			cell.addEventListener('click', () => setFocusedCell(cell));
+			cell.addEventListener('input', () => recordCellEdit(cell));
+		}
+		updateToolbarState();
 	</script>
 </body>
 </html>`;
 	}
 
 	/**
-	 * 渲染单行写操作按钮。
+	 * 按旧 PPZ 表格结构渲染单个表格单元格。
 	 *
 	 * @param rowIndex 当前页行索引。
-	 * @param canMutateRow 当前表是否可以通过主键定位行。
-	 * @returns 行操作按钮 HTML。
-	 */
-	private renderRowActions(rowIndex: number, canMutateRow: boolean): string {
-		if (!canMutateRow) {
-			return `<div class="row-actions">
-				<button class="row-action" title="编辑" disabled>E</button>
-				<button class="row-action" title="删除" disabled>D</button>
-			</div>`;
-		}
-
-		return `<div class="row-actions">
-			<button class="row-action" title="编辑" onclick="editRow(${rowIndex})">E</button>
-			<button class="row-action" title="删除" onclick="deleteRow(${rowIndex})">D</button>
-		</div>`;
-	}
-
-	/**
-	 * 渲染单个表格单元格。
-	 *
+	 * @param column 当前单元格所属字段元数据。
 	 * @param value 待渲染的单元格值。
+	 * @param canEditRow 当前表是否允许通过主键编辑行。
 	 * @returns HTML 表格单元格标记。
 	 */
-	private renderCell(value: string | number | boolean | null): string {
-		if (value === null) {
-			return '<td><span class="null-cell">NULL</span></td>';
-		}
+	private renderCell(
+		rowIndex: number,
+		column: MySqlTableColumnMetadata,
+		value: string | number | boolean | null,
+		canEditRow: boolean
+	): string {
+		const displayValue = value === null ? '' : String(value);
+		const editable =
+			canEditRow &&
+			!column.isPrimaryKey &&
+			!column.extra.toLowerCase().includes('auto_increment');
 
-		return `<td><code>${this.escapeHtml(String(value))}</code></td>`;
+		return `<td
+			data-row-index="${rowIndex}"
+			data-column-name="${this.escapeHtml(column.name)}"
+			data-original-value="${this.escapeHtml(displayValue)}"
+			title="${this.escapeHtml(`${column.name}: ${column.dataType}`)}"
+			${editable ? 'contenteditable="true"' : ''}
+		>${this.escapeHtml(displayValue)}</td>`;
 	}
 
 	/**
