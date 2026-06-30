@@ -8,6 +8,7 @@ import type {
 	SqlExecutionResultSet,
 } from '../../domain/query/SqlExecutionResult';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
+import type { MySqlDriverOptions } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
 import type {
 	MySqlField,
@@ -96,7 +97,7 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	 */
 	private resolveSqlTerminalDriverOptions(
 		connection: MysqlConnectionConfig
-	): unknown {
+	): string | (MySqlDriverOptions & { readonly multipleStatements: true }) {
 		const driverOptions =
 			this.mySqlConnectionAdapter.resolveDriverOptions(connection);
 
@@ -267,16 +268,7 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 		rows: readonly MySqlQueryResultRow[]
 	): readonly SqlExecutionField[] {
 		if (Array.isArray(fields)) {
-			const fieldNames = (fields as readonly unknown[])
-				.map((field) => {
-					if (!field || typeof field !== 'object') {
-						return undefined;
-					}
-
-					const name = (field as { readonly name?: unknown }).name;
-					return typeof name === 'string' ? name : undefined;
-				})
-				.filter((name): name is string => name !== undefined);
+			const fieldNames = this.normalizeFieldNames(fields);
 
 			if (fieldNames.length > 0) {
 				return fieldNames.map((name) => ({ name }));
@@ -287,6 +279,16 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 		return firstRow
 			? Object.keys(firstRow).map((name) => ({ name }))
 			: [];
+	}
+
+	/**
+	 * 将 mysql2 字段数组归一化为字段名列表。
+	 *
+	 * @param fields mysql2 返回的字段元数据。
+	 * @returns 字段名列表。
+	 */
+	private normalizeFieldNames(fields: readonly MySqlField[]): readonly string[] {
+		return fields.map((field) => field.name);
 	}
 
 	/**

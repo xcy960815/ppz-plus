@@ -1,148 +1,36 @@
-# AGENTS Memory
+# AGENTS
 
-更新时间：2026-06-29
+更新时间：2026-06-30
 
-本文档用于记录 `ppz-plus` 的集体共识、长期约束和阶段性决策，避免后续实现时重新走回旧 PPZ 的高耦合路径。
+本文件是 `ppz-plus` 的 AI 协作入口。这里仅保留必须立即遵守的硬约束和文档索引；具体背景、架构、UI 迁移规则和进度记录放在 `.agents/` 目录下。
 
-## 项目定位
+## 必须遵守
 
-- `ppz-plus` 是基于标准 VS Code 插件框架长期演进的新项目。
-- 旧项目 `PPZ` 是功能需求来源和历史产品原型，不是代码复用基座。
-- 项目目标是“能力迁移式重写”，不是“原地补丁式续命”。
-
-## 已确认共识
-
-- 继承的是产品能力，不是旧实现。
-- 旧仓库当前 `main` 不能代表可继承的完整产品实现。
-- 历史能力判断以 `v0.5.1-beta` 为主要代码依据。
-- 本机旧 PPZ 仓库路径为 `/Users/opera/Documents/my-repositories/vscode`，后续迁移旧界面或旧能力时优先直接读取该仓库源码。
-- 第一阶段优先可维护性、模块边界和演进空间，不优先追平旧版覆盖面。
-
-## 功能取舍共识
-
-### 必须保留的产品能力
-
-- 连接管理
-- Tree View 浏览数据库资源
-- 表数据查看
-- SQL 终端
-- 导出能力
-
-### 第一阶段不强求
-
-- 真正的导入体系
-- 行级写操作
-- 全数据库同时支持
-- 历史菜单/命令完全兼容
-
-### 明确不沿用的旧实现思路
-
-- Tree 节点直接持有数据库连接
-- 连接服务直接刷新 Tree
-- 大而全的数据库连接基类
-- Webview/命令/数据层混写
-- 手工功能测试作为唯一质量保障
-
-## 数据库推进顺序
-
-1. MySQL
-2. PostgreSQL
-3. SQLite3
-4. MSSQL
-5. CockroachDB / MariaDB / 其他兼容型数据库
-
-## 第一阶段 MVP 范围
-
-- MySQL 连接管理
-- 连接测试
-- Tree View
-- schema/table 浏览
-- 表数据只读查看
-- 分页、排序、过滤
-- SQL 执行
-- DDL/DML 导出
-
-## 架构边界共识
-
-- `Presentation` 只负责 VS Code UI 入口，不直接做数据库逻辑。
-- `Application` 负责编排 use case。
-- `Domain` 不依赖 `vscode`。
-- `Infrastructure` 封装驱动、存储、文件、任务执行。
-- 导入导出必须是独立子系统，不挂在 UI 或单一连接对象上。
-
-## UI 迁移共识
-
-- 只要是页面类 UI（Webview 页面、表详情页、SQL 终端页、导入导出页面等），都必须使用 `ppz-plus` 自己的新架构代码实现，不允许直接复用旧 PPZ 页面运行时代码、Vue 组件、Webview 脚本或样式文件。
-- 页面类 UI 的功能和样式必须以旧 PPZ 源码为准做完整复刻：结构、布局密度、颜色、间距、图标语义、按钮文案、交互流程和状态提示都要尽量对齐旧 PPZ。
-- 迁移旧 PPZ 已有界面能力时，视觉样式、布局密度、字段排列、按钮文案和交互结构必须优先参考旧项目当前代码或 `v0.5.1-beta` 对应实现，目标是“按旧项目样式一模一样重建体验”。
-- 不允许在没有明确要求的情况下，为已存在的旧 PPZ 界面能力重新设计一套新的 ppz-plus 风格。
-- 允许为遵守 ppz-plus 新分层架构重写实现方式，但表现层最终效果要贴近旧 PPZ，而不是仅满足功能可用。
-- 如果旧界面包含多数据库选项，而 ppz-plus 当前阶段只支持 MySQL，可以保留旧界面的视觉占位，但不能提前打开未完成数据库能力。
-
-## 工作约束
-
-- 项目强制使用 `pnpm` 作为包管理器；安装依赖、执行脚本、编译或测试时都必须使用 `pnpm`，不要使用 `npm` / `yarn`。
-- 修改功能或修复 bug 之后，默认不要主动跑构建。
-- 是否执行构建、打包、完整验证，由后续明确需要时再单独决定。
-- 修 bug 时只修 ppz-plus 当前新架构中的真实问题，不为了旧 PPZ 的历史实现、旧返回结构或旧兼容路径额外增加兼容分支。
-- 用户明确厌恶兼容分支；遇到字段名、返回结构或历史行为不一致时，必须通过当前新架构的明确模型、SQL alias、类型定义或数据契约修正，不允许写 `a ?? b ?? legacyC` 这类多形态兼容兜底。
+- `ppz-plus` 是基于标准 VS Code 插件框架长期演进的新项目，继承旧 PPZ 的产品能力，不继承旧实现。
+- 旧 PPZ 仓库只作为需求来源和视觉/交互参考；页面类 UI 不允许直接复用旧 PPZ 的 Vue 组件、Webview 脚本、样式或运行时代码。
+- 本机旧 PPZ 仓库路径为 `/Users/opera/Documents/my-repositories/vscode`；迁移旧界面或旧能力时优先读取该仓库源码。
+- 项目强制使用 `pnpm`。安装依赖、执行脚本、编译或测试时不要使用 `npm` / `yarn`。
+- 修改功能或修复 bug 后，默认不要主动跑构建；是否构建、打包、完整验证由用户后续明确要求。
+- 修 bug 只修 ppz-plus 当前新架构中的真实问题，不为了旧 PPZ 的历史实现、旧返回结构或旧兼容路径增加兼容分支。
+- 遇到字段名、返回结构或历史行为不一致时，通过当前新架构的明确模型、SQL alias、类型定义或数据契约修正，不写 `a ?? b ?? legacyC` 这类多形态兼容兜底。
 - 新增或修改代码时，变量和方法默认补充标准 JSDoc 注释，描述文本使用中文。
-- 功能迁移和能力支持的进度统一维护在 `.agents/todolist.md`。
-- 任意一项完成后，要在对应条目后追加 `✅`，方便后续 AI 和协作者判断当前进度。
+- `Presentation` 只负责 VS Code UI 入口，不直接做数据库逻辑；`Domain` 不依赖 `vscode`。
+- 功能迁移和能力支持进度统一维护在 `.agents/todolist.md`；完成项在对应条目后追加 `✅`。
 
-## 高风险提醒
+## 文档地图
 
-- 不要为了兼容旧仓库而提前引入多数据库复杂度。
-- 不要把旧连接存储结构直接定义成新领域模型。
-- 不要把“数据库能连上”误判为“数据库已完成支持”。
-- 不要把 PostgreSQL/MSSQL 未完成的 DDL 导出问题继续隐藏在运行时。
+- [project-memory.md](.agents/project-memory.md)：项目定位、长期共识、阶段性决策和高风险提醒。
+- [architecture.md](.agents/architecture.md)：分层边界、目录职责、依赖方向和子系统划分。
+- [workflow.md](.agents/workflow.md)：包管理、验证策略、代码注释、兼容分支禁令和 todo 维护规则。
+- [ui-migration.md](.agents/ui-migration.md)：旧 PPZ 页面类 UI 复刻规则和视觉迁移约束。
+- [legacy-ppz-analysis.md](.agents/legacy-ppz-analysis.md)：旧 PPZ 能力审计与 ppz-plus 重写基线。
+- [todolist.md](.agents/todolist.md)：迁移清单、支持清单和完成状态。
+- [changelog-automation.md](.agents/changelog-automation.md)：changelog 与 release 自动化规则。
 
-## 当前参考文档
+## 推荐阅读顺序
 
-- [legacy-ppz-analysis.md](.agents/legacy-ppz-analysis.md)
-- [todolist.md](.agents/todolist.md)
-- [changelog-automation.md](.agents/changelog-automation.md)
-
-## 项目结构
-
-```
-ppz-plus/
-├── .agents/                    # AI 协作参考文档
-│   ├── legacy-ppz-analysis.md  # 旧 PPZ 能力审计
-│   ├── todolist.md             # 迁移清单与支持清单
-│   └── changelog-automation.md # Changelog 自动化方案
-├── src/
-│   ├── presentation/           # VS Code UI 入口（命令、Tree、Webview）
-│   ├── application/            # 用例编排层（use cases）
-│   │   ├── mysql/              # MySQL 用例接口
-│   │   ├── postgresql/         # PostgreSQL 用例接口
-│   │   └── shared/             # 共享数据类型（TableDataTypes 等）
-│   ├── domain/                 # 领域模型（不依赖 vscode）
-│   │   ├── connections/        # 连接配置模型
-│   │   ├── capabilities/       # 数据库能力声明
-│   │   ├── export/             # 导出文档模型
-│   │   └── query/              # SQL 执行结果模型
-│   ├── infrastructure/         # 驱动封装、存储、文件
-│   │   ├── mysql/              # mysql2 驱动适配
-│   │   ├── postgresql/         # pg 驱动适配
-│   │   └── shared/             # 共享工具（日期格式化等）
-│   └── test/                   # 单元测试
-│       └── domain/             # 领域层测试
-├── CHANGELOG.md                # 自动生成的变更日志
-├── package.json                # 项目配置与 pnpm 脚本
-└── pnpm-lock.yaml              # 依赖锁定文件
-```
-
-### 分层规则
-
-| 层 | 职责 | 依赖方向 |
-|----|------|---------|
-| Presentation | VS Code 命令、Tree View、Webview Panel | → Application |
-| Application | Use case 编排、接口定义 | → Domain |
-| Domain | 纯数据模型、类型定义 | 无外部依赖 |
-| Infrastructure | 驱动封装、存储实现 | → Domain（实现 Application 接口） |
-
-- `Domain` 不依赖 `vscode`
-- `Infrastructure` 不引用 Presentation
-- `Application` 定义接口，`Infrastructure` 实现接口
-- 导入导出是独立子系统，不挂在 UI 或单一连接对象上
+1. 先读本文件，确认硬约束。
+2. 涉及实现结构时读 `.agents/architecture.md`。
+3. 涉及旧 PPZ 能力或界面迁移时读 `.agents/legacy-ppz-analysis.md` 和 `.agents/ui-migration.md`。
+4. 涉及任务进度或新增能力时读并维护 `.agents/todolist.md`。
+5. 涉及发布或 changelog 时读 `.agents/changelog-automation.md`。

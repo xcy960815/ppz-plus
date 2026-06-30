@@ -11,6 +11,7 @@ import { stringifyObjectValue } from '../shared/stringifyObjectValue';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
 import type {
+	MySqlField,
 	MySqlQueryResultFields,
 	MySqlRuntimeClient,
 	MySqlQueryRows,
@@ -374,16 +375,20 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 			return [];
 		}
 
-		return (fields as readonly unknown[])
-			.map((field) => {
-				if (!field || Array.isArray(field) || typeof field !== 'object') {
-					return undefined;
-				}
+		const fieldItems = fields as readonly (
+			| MySqlField
+			| readonly MySqlField[]
+			| undefined
+		)[];
 
-				const name = (field as { readonly name?: unknown }).name;
-				return typeof name === 'string' ? name : undefined;
-			})
-			.filter((name): name is string => name !== undefined);
+		return fieldItems
+			// 多语句结果中的元素可能是嵌套字段数组；导出单表 DML 时只接收单语句字段。
+			.filter((field): field is MySqlField => (
+				Boolean(field) &&
+				!Array.isArray(field) &&
+				typeof field === 'object'
+			))
+			.map((field) => field.name);
 	}
 
 	/**

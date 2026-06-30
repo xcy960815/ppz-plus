@@ -2,7 +2,9 @@ import type { MySqlSqlFileImportProvider } from '../../application/mysql/MySqlSq
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type { SqlFileImportResult } from '../../domain/import/SqlFileImportResult';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
+import type { MySqlDriverOptions } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
+import type { MySqlRuntimeClient } from './MySqlRuntimeTypes';
 
 /**
  * 通过 mysql2 promise 驱动执行 MySQL SQL 文件导入。
@@ -34,12 +36,7 @@ export class Mysql2SqlFileImportProvider
 	): Promise<SqlFileImportResult> {
 		const startedAt = Date.now();
 		const normalizedSql = this.normalizeMySqlDumpText(sql);
-		let runtimeConnection:
-			| {
-					query(sql: string, values?: readonly unknown[]): Promise<[unknown, unknown]>;
-					end(): Promise<void>;
-			  }
-			| undefined;
+		let runtimeConnection: MySqlRuntimeClient | undefined;
 
 		try {
 			const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
@@ -137,7 +134,9 @@ export class Mysql2SqlFileImportProvider
 	 * @param connection MySQL 连接配置。
 	 * @returns mysql2 可接收的导入连接选项。
 	 */
-	private resolveImportDriverOptions(connection: MysqlConnectionConfig): unknown {
+	private resolveImportDriverOptions(
+		connection: MysqlConnectionConfig
+	): string | (MySqlDriverOptions & { readonly multipleStatements: true }) {
 		const driverOptions =
 			this.mySqlConnectionAdapter.resolveDriverOptions(connection);
 

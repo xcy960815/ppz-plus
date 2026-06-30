@@ -300,12 +300,13 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 					return undefined;
 				}
 
-				const name = Reflect.get(row, 'columnName');
-				const dataType = Reflect.get(row, 'dataType');
-				const dateTimePrecision = Reflect.get(row, 'dateTimePrecision');
-				const isNullable = Reflect.get(row, 'isNullable');
-				const columnKey = Reflect.get(row, 'columnKey');
-				const extra = Reflect.get(row, 'extra');
+				const rowRecord = row as Record<string, unknown>;
+				const name = rowRecord.columnName;
+				const dataType = rowRecord.dataType;
+				const dateTimePrecision = rowRecord.dateTimePrecision;
+				const isNullable = rowRecord.isNullable;
+				const columnKey = rowRecord.columnKey;
+				const extra = rowRecord.extra;
 
 				if (typeof name !== 'string' || typeof dataType !== 'string') {
 					return undefined;
