@@ -7,9 +7,10 @@ const tsconfigRootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default [
   {
-    files: ["**/*.ts"],
+    ignores: ["**/*.mjs", "**/*.cjs", "docs/**/*"],
   },
   {
+    files: ["**/*.ts"],
     plugins: {
       "@typescript-eslint": typescriptEslint.plugin,
     },

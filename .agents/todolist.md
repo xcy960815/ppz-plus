@@ -117,7 +117,7 @@ SQL 功能：
 
 文档与发布：
 
-- 参考 `/Users/opera/Documents/my-repositories/web-message` 的 VitePress 双语文档骨架建设 `ppz-plus` 文档站
+- 参考 `/Users/opera/Documents/my-repositories/web-message` 的 VitePress 双语文档骨架建设 `ppz-plus` 文档站 ✅
 
 ## 4. 数据库支持路线
 
