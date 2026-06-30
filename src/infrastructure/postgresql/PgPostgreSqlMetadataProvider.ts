@@ -69,9 +69,11 @@ export class PgPostgreSqlMetadataProvider
 		try {
 			const result = await client.query(
 				[
-					'SELECT schema_name AS name',
-					'FROM information_schema.schemata',
-					'ORDER BY schema_name',
+					'SELECT nspname AS name',
+					'FROM pg_catalog.pg_namespace',
+					"WHERE nspname NOT IN ('information_schema', 'pg_catalog')",
+					"AND nspname NOT LIKE 'pg_%'",
+					'ORDER BY nspname',
 				].join(' ')
 			);
 

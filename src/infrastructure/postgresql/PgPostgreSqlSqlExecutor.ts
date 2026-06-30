@@ -10,6 +10,8 @@ import type {
 import { PostgreSqlConnectionAdapter } from './PostgreSqlConnectionAdapter';
 import type { PgRuntimeClient, PgQueryResult } from './PgRuntimeTypes';
 import { PostgreSqlRuntimeLoader } from './PostgreSqlRuntimeLoader';
+import { formatDateCellValue } from '../shared/formatDateCellValue';
+import { stringifyObjectValue } from '../shared/stringifyObjectValue';
 
 /**
  * 通过 pg 驱动执行 PostgreSQL SQL。
@@ -52,7 +54,7 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 			);
 			await runtimeClient.connect();
 
-			const rawResult: PgQueryResult | readonly PgQueryResult[] = await runtimeClient.query(sql) as PgQueryResult | readonly PgQueryResult[];
+			const rawResult: unknown = await runtimeClient.query(sql);
 			const durationMs = Date.now() - startedAt;
 			const resultSets = this.normalizeResultSets(rawResult);
 			const primaryResultSet =
@@ -103,10 +105,12 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	 * @returns 可供 SQL 终端渲染的结果集列表。
 	 */
 	private normalizeResultSets(
-		rawResult: PgQueryResult | readonly PgQueryResult[]
+		rawResult: unknown
 	): readonly SqlExecutionResultSet[] {
 		if (Array.isArray(rawResult)) {
-			return rawResult.map((result) => this.normalizeResultSet(result));
+			return rawResult.map((result) => (
+				this.normalizeResultSet(result as PgQueryResult)
+			));
 		}
 
 		return [this.normalizeResultSet(rawResult as PgQueryResult)];
@@ -183,8 +187,15 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 		rows: readonly Record<string, unknown>[]
 	): readonly SqlExecutionField[] {
 		if (Array.isArray(rawFields)) {
-			const fieldNames = rawFields
-				.map((field) => (typeof field.name === 'string' ? field.name : undefined))
+			const fieldNames = (rawFields as readonly unknown[])
+				.map((field) => {
+					if (!field || typeof field !== 'object') {
+						return undefined;
+					}
+
+					const name = (field as { readonly name?: unknown }).name;
+					return typeof name === 'string' ? name : undefined;
+				})
 				.filter((name): name is string => name !== undefined);
 
 			if (fieldNames.length > 0) {
@@ -246,7 +257,7 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 		}
 
 		if (value instanceof Date) {
-			return this.formatDateCellValue(value);
+			return formatDateCellValue(value);
 		}
 
 		if (Buffer.isBuffer(value)) {
@@ -262,49 +273,10 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 		}
 
 		if (value && typeof value === 'object') {
-			try {
-				return JSON.stringify(value);
-			} catch {
-				return String(value);
-			}
+			return stringifyObjectValue(value);
 		}
 
 		return String(value);
-	}
-
-	/**
-	 * 按旧 PPZ 的本地时间展示规则格式化 SQL 执行结果中的 Date。
-	 *
-	 * @param value pg 返回的 Date 值。
-	 * @returns 面向 SQL 结果表展示的本地时间字符串。
-	 */
-	private formatDateCellValue(value: Date): string {
-		return [
-			this.padDatePart(value.getFullYear(), 4),
-			'-',
-			this.padDatePart(value.getMonth() + 1, 2),
-			'-',
-			this.padDatePart(value.getDate(), 2),
-			' ',
-			this.padDatePart(value.getHours(), 2),
-			':',
-			this.padDatePart(value.getMinutes(), 2),
-			':',
-			this.padDatePart(value.getSeconds(), 2),
-			'.',
-			this.padDatePart(value.getMilliseconds(), 3),
-		].join('');
-	}
-
-	/**
-	 * 将日期时间数字补齐到固定宽度。
-	 *
-	 * @param value 日期时间数字片段。
-	 * @param width 目标宽度。
-	 * @returns 补零后的数字片段。
-	 */
-	private padDatePart(value: number, width: number): string {
-		return String(value).padStart(width, '0');
 	}
 
 	/**

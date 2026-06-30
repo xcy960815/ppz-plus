@@ -1,8 +1,8 @@
 import type { PostgreSqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type {
-	MySqlTableQueryOptions,
-	MySqlTableRowPage,
-} from '../mysql/MySqlTableDataProvider';
+	TableQueryOptions,
+	TableRowPage,
+} from '../shared/TableDataTypes';
 import type { PostgreSqlTableDataProvider } from '../postgresql/PostgreSqlTableDataProvider';
 
 /**
@@ -37,8 +37,8 @@ export class ListPostgreSqlTableRowPageUseCase {
 		tableName: string,
 		pageIndex: number,
 		pageSize: number,
-		options?: MySqlTableQueryOptions
-	): Promise<MySqlTableRowPage> {
+		options?: TableQueryOptions
+	): Promise<TableRowPage> {
 		return this.postgreSqlTableDataProvider.listRowPage(
 			connection,
 			databaseName,

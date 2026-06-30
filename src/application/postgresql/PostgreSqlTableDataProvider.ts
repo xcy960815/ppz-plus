@@ -1,9 +1,9 @@
 import type { PostgreSqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type {
-	MySqlTableColumnMetadata,
-	MySqlTableQueryOptions,
-	MySqlTableRowPage,
-} from '../mysql/MySqlTableDataProvider';
+	TableColumnMetadata,
+	TableQueryOptions,
+	TableRowPage,
+} from '../shared/TableDataTypes';
 
 /**
  * 向应用层提供 PostgreSQL 表结构和只读行数据。
@@ -23,7 +23,7 @@ export interface PostgreSqlTableDataProvider {
 		databaseName: string,
 		schemaName: string,
 		tableName: string
-	): Promise<readonly MySqlTableColumnMetadata[]>;
+	): Promise<readonly TableColumnMetadata[]>;
 
 	/**
 	 * 列出选中 PostgreSQL 表的一页只读行数据。
@@ -44,6 +44,6 @@ export interface PostgreSqlTableDataProvider {
 		tableName: string,
 		pageIndex: number,
 		pageSize: number,
-		options?: MySqlTableQueryOptions
-	): Promise<MySqlTableRowPage>;
+		options?: TableQueryOptions
+	): Promise<TableRowPage>;
 }

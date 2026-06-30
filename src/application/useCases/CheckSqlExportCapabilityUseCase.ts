@@ -49,19 +49,13 @@ export class CheckSqlExportCapabilityUseCase {
 		engine: DatabaseEngine,
 		kind: SqlExportKind
 	): SqlExportCapabilityCheck {
-		/**
-		 * 获取当前导出类型要求的能力键。
-		 */
+		// 获取当前导出类型要求的能力键。
 		const requiredCapabilityKeys = this.resolveRequiredCapabilityKeys(kind);
 
-		/**
-		 * 读取目标数据库的能力声明。
-		 */
+		// 读取目标数据库的能力声明。
 		const declaration = this.capabilityCatalog.find(engine);
 
-		/**
-		 * 汇总每一项导出能力的支持状态。
-		 */
+		// 汇总每一项导出能力的支持状态。
 		const requirements = requiredCapabilityKeys.map((key) => ({
 			key,
 			support: declaration?.capabilities[key] ?? 'unsupported',

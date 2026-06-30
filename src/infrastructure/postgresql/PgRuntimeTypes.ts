@@ -11,7 +11,7 @@ export type PgQueryResultRow = Record<string, unknown>;
 /**
  * pg Client 查询的最小返回形状。
  */
-export type PgQueryResult = QueryResult;
+export type PgQueryResult = QueryResult<PgQueryResultRow>;
 
 /**
  * pg Client 的最小运行时接口。

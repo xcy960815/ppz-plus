@@ -7,9 +7,14 @@ import type {
 	SqlExportTableTarget,
 } from '../../domain/export/SqlExportDocument';
 import { SQL_EXPORT_FORMAT } from '../../domain/export/SqlExportFormat';
+import { stringifyObjectValue } from '../shared/stringifyObjectValue';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
-import type { MySqlRuntimeClient, MySqlField, MySqlQueryRows } from './MySqlRuntimeTypes';
+import type {
+	MySqlQueryResultFields,
+	MySqlRuntimeClient,
+	MySqlQueryRows,
+} from './MySqlRuntimeTypes';
 
 /**
  * 通过 mysql2 promise 驱动生成 MySQL 表级 DDL/DML。
@@ -311,7 +316,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 		const [rows, rawFields] = await runtimeConnection.query(
 			`SELECT * FROM ${this.escapeQualifiedTableName(target)}`
 		);
-		const columnNames = this.normalizeFieldNames(rawFields as readonly MySqlField[]);
+		const columnNames = this.normalizeFieldNames(rawFields);
 
 		if (columnNames.length === 0) {
 			return `-- ${target.schemaName}.${target.tableName} 未找到字段。`;
@@ -341,12 +346,14 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 			return undefined;
 		}
 
-		const firstRow = rows[0];
+		const firstRow: unknown = rows[0];
 		if (!firstRow || typeof firstRow !== 'object' || Array.isArray(firstRow)) {
 			return undefined;
 		}
 
-		const createTableEntry = Object.entries(firstRow).find(
+		const createTableEntry = Object.entries(
+			firstRow as Record<string, unknown>
+		).find(
 			([key]) => key.toLowerCase() === 'create table'
 		);
 		const createTableSql = createTableEntry?.[1];
@@ -361,11 +368,19 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	 * @returns 字段名列表。
 	 */
 	private normalizeFieldNames(
-		fields: readonly MySqlField[]
+		fields: MySqlQueryResultFields | undefined
 	): readonly string[] {
-		return fields
+		if (!Array.isArray(fields)) {
+			return [];
+		}
+
+		return (fields as readonly unknown[])
 			.map((field) => {
-				const name = field.name;
+				if (!field || Array.isArray(field) || typeof field !== 'object') {
+					return undefined;
+				}
+
+				const name = (field as { readonly name?: unknown }).name;
 				return typeof name === 'string' ? name : undefined;
 			})
 			.filter((name): name is string => name !== undefined);
@@ -436,24 +451,10 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 		}
 
 		if (typeof value === 'object') {
-			return `'${this.escapeSqlString(this.stringifyObjectValue(value))}'`;
+			return `'${this.escapeSqlString(stringifyObjectValue(value))}'`;
 		}
 
 		return `'${this.escapeSqlString(String(value))}'`;
-	}
-
-	/**
-	 * 将对象值转换为可导出的字符串。
-	 *
-	 * @param value 原始对象值。
-	 * @returns 可写入 SQL 字面量的字符串。
-	 */
-	private stringifyObjectValue(value: object): string {
-		try {
-			return JSON.stringify(value) ?? String(value);
-		} catch {
-			return String(value);
-		}
 	}
 
 	/**
