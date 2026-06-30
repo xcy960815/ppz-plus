@@ -84,6 +84,16 @@ export class GlobalStateConnectionRepository
 	}
 
 	/**
+	 * 清空所有已保存连接配置。
+	 */
+	public async clear(): Promise<void> {
+		await this.globalState.update(
+			GlobalStateConnectionRepository.storageKey,
+			[]
+		);
+	}
+
+	/**
 	 * 从 VS Code 全局状态读取已保存连接列表。
 	 *
 	 * @returns {ConnectionConfig[]} 已保存连接列表。

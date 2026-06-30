@@ -24,11 +24,6 @@ export class Sqlite3ConnectionsTreeDataProvider
 	implements vscode.TreeDataProvider<Sqlite3ConnectionsTreeNode>
 {
 	/**
-	 * 保存 SQLite3 资源树使用的 VS Code 视图标识。
-	 */
-	public static readonly viewId = 'ppzPlus.sqlite3Connections';
-
-	/**
 	 * 保存 Tree 菜单使用的 SQLite3 连接节点上下文值。
 	 */
 	public static readonly connectionContextValue = 'ppzPlus.sqlite3Connection';

@@ -17,4 +17,9 @@ export interface SqlExportTaskLogRepository {
 	 * @returns {Promise<readonly SqlExportTaskLogEntry[]>} 最近的 SQL 导出任务日志。
 	 */
 	listRecent(): Promise<readonly SqlExportTaskLogEntry[]>;
+
+	/**
+	 * 清空所有 SQL 导出任务日志。
+	 */
+	clear(): Promise<void>;
 }
