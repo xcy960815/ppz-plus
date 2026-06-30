@@ -26,7 +26,7 @@ export class GetBootstrapStatusUseCase {
 	/**
 	 * 生成表现层命令消费的启动状态数据。
 	 *
-	 * @returns 当前启动状态快照。
+	 * @returns {BootstrapStatus} 当前启动状态快照。
 	 */
 	public execute(): BootstrapStatus {
 		/**

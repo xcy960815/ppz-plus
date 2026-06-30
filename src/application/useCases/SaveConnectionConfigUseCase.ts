@@ -17,7 +17,7 @@ export class SaveConnectionConfigUseCase {
 	/**
 	 * 持久化连接配置。
 	 *
-	 * @param config 需要保存的连接配置。
+	 * @param {ConnectionConfig} config 需要保存的连接配置。
 	 */
 	public async execute(config: ConnectionConfig): Promise<void> {
 		await this.connectionRepository.save(config);

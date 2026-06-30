@@ -20,10 +20,10 @@ export class ListMySqlTableColumnsUseCase {
 	/**
 	 * 加载选中 MySQL 表的字段。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly MySqlTableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,

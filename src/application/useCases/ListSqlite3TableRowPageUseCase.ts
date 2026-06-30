@@ -21,12 +21,12 @@ export class ListSqlite3TableRowPageUseCase {
 	/**
 	 * 加载选中 SQLite3 表的一页行数据。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要加载行数据的表。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 每页请求的行数。
-	 * @param options 排序和过滤等查询选项。
-	 * @returns 分页行数据。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要加载行数据的表。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 每页请求的行数。
+	 * @param {Sqlite3TableQueryOptions} options 排序和过滤等查询选项。
+	 * @returns {Promise<Sqlite3TableRowPage>} 分页行数据。
 	 */
 	public async execute(
 		connection: Sqlite3ConnectionConfig,

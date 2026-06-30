@@ -71,8 +71,8 @@ export class Sqlite3ConnectionsTreeDataProvider
 	/**
 	 * 返回指定节点对应的 TreeItem 表现。
 	 *
-	 * @param element 正在渲染的 Tree 节点。
-	 * @returns 该节点对应的 VS Code TreeItem。
+	 * @param {Sqlite3ConnectionsTreeNode} element 正在渲染的 Tree 节点。
+	 * @returns {vscode.TreeItem} 该节点对应的 VS Code TreeItem。
 	 */
 	public getTreeItem(element: Sqlite3ConnectionsTreeNode): vscode.TreeItem {
 		if (element.kind === 'connection') {
@@ -110,8 +110,8 @@ export class Sqlite3ConnectionsTreeDataProvider
 	/**
 	 * 加载指定 Tree 节点的子节点。
 	 *
-	 * @param element 父级 Tree 节点；根层级时为空。
-	 * @returns 需要渲染的子节点。
+	 * @param {Sqlite3ConnectionsTreeNode} element 父级 Tree 节点；根层级时为空。
+	 * @returns {Promise<Sqlite3ConnectionsTreeNode[]>} 需要渲染的子节点。
 	 */
 	public async getChildren(
 		element?: Sqlite3ConnectionsTreeNode

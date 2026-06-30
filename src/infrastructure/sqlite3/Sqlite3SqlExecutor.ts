@@ -33,9 +33,9 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 执行 SQLite3 SQL 并返回统一结果模型。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param sql 用户输入的 SQL 文本。
-	 * @returns 统一 SQL 执行结果。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} sql 用户输入的 SQL 文本。
+	 * @returns {Promise<SqlExecutionResult>} 统一 SQL 执行结果。
 	 */
 	public async executeSql(
 		connection: Sqlite3ConnectionConfig,
@@ -127,8 +127,8 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 按分号拆分 SQL 文本，保留引号内的分号。
 	 *
-	 * @param sql 用户提交的 SQL 文本。
-	 * @returns 单条 SQL 语句列表。
+	 * @param {string} sql 用户提交的 SQL 文本。
+	 * @returns {readonly string[]} 单条 SQL 语句列表。
 	 */
 	private splitSqlStatements(sql: string): readonly string[] {
 		const statements: string[] = [];
@@ -191,8 +191,8 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 根据 SQL 文本推断是否为查询语句。
 	 *
-	 * @param sql SQL 文本。
-	 * @returns 是否应按查询语句执行。
+	 * @param {string} sql SQL 文本。
+	 * @returns {boolean} 是否应按查询语句执行。
 	 */
 	private inferQuerySql(sql: string): boolean {
 		return /^(select|with|pragma|explain)\b/i.test(sql.trim());
@@ -201,7 +201,7 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 创建空的非查询结果集兜底。
 	 *
-	 * @returns 空的非查询结果集。
+	 * @returns {SqlExecutionResultSet} 空的非查询结果集。
 	 */
 	private createEmptyStatementResultSet(): SqlExecutionResultSet {
 		return {
@@ -216,8 +216,8 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 从查询行集合中推断字段。
 	 *
-	 * @param rows SQLite3 返回的原始行集合。
-	 * @returns 字段列表。
+	 * @param {Sqlite3QueryRows} rows SQLite3 返回的原始行集合。
+	 * @returns {readonly SqlExecutionField[]} 字段列表。
 	 */
 	private normalizeFields(rows: Sqlite3QueryRows): readonly SqlExecutionField[] {
 		const firstRow = rows[0];
@@ -227,8 +227,8 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 将 SQLite3 行归一化为可渲染对象。
 	 *
-	 * @param row SQLite3 返回的原始行。
-	 * @returns 可序列化的 SQL 行数据。
+	 * @param {Record<string, unknown>} row SQLite3 返回的原始行。
+	 * @returns {Record<string, SqlExecutionCellValue>} 可序列化的 SQL 行数据。
 	 */
 	private normalizeRow(
 		row: Record<string, unknown>
@@ -244,8 +244,8 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 将 SQLite3 单元格值归一化为可序列化值。
 	 *
-	 * @param value SQLite3 返回的原始值。
-	 * @returns 可渲染单元格值。
+	 * @param {unknown} value SQLite3 返回的原始值。
+	 * @returns {SqlExecutionCellValue} 可渲染单元格值。
 	 */
 	private normalizeCellValue(value: unknown): SqlExecutionCellValue {
 		if (value === null || value === undefined) {
@@ -270,8 +270,8 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 打开 SQLite3 数据库文件。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @returns 已打开的数据库实例。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @returns {Promise<Sqlite3RuntimeDatabase>} 已打开的数据库实例。
 	 */
 	private async openDatabase(
 		connection: Sqlite3ConnectionConfig
@@ -298,10 +298,10 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 执行 SQLite3 多行查询。
 	 *
-	 * @param database 已打开的数据库实例。
-	 * @param sql 需要执行的 SQL。
-	 * @param params 绑定参数。
-	 * @returns 原始查询行。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
+	 * @param {string} sql 需要执行的 SQL。
+	 * @param {readonly unknown[]} params 绑定参数。
+	 * @returns {Promise<Sqlite3QueryRows>} 原始查询行。
 	 */
 	private async all(
 		database: Sqlite3RuntimeDatabase,
@@ -330,10 +330,10 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 执行 SQLite3 写入语句。
 	 *
-	 * @param database 已打开的数据库实例。
-	 * @param sql 需要执行的 SQL。
-	 * @param params 绑定参数。
-	 * @returns 语句执行上下文。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
+	 * @param {string} sql 需要执行的 SQL。
+	 * @param {readonly unknown[]} params 绑定参数。
+	 * @returns {Promise<Sqlite3RunContext>} 语句执行上下文。
 	 */
 	private async run(
 		database: Sqlite3RuntimeDatabase,
@@ -358,7 +358,7 @@ export class Sqlite3SqlExecutor implements ApplicationSqlite3SqlExecutor {
 	/**
 	 * 关闭 SQLite3 数据库实例。
 	 *
-	 * @param database 已打开的数据库实例。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
 	 */
 	private async closeDatabase(database: Sqlite3RuntimeDatabase): Promise<void> {
 		await new Promise<void>((resolve, reject) => {

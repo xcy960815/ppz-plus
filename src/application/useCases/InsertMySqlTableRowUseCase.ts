@@ -21,11 +21,11 @@ export class InsertMySqlTableRowUseCase {
 	/**
 	 * 向指定 MySQL 表新增单条记录。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要新增记录的表。
-	 * @param values 需要显式写入的字段值。
-	 * @returns 单行新增结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要新增记录的表。
+	 * @param {MySqlTableInsertValues} values 需要显式写入的字段值。
+	 * @returns {Promise<MySqlTableInsertResult>} 单行新增结果。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,

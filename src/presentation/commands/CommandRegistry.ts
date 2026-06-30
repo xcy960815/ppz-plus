@@ -9,8 +9,8 @@ export class CommandRegistry {
 	/**
 	 * 将命令集合注册到指定扩展上下文中。
 	 *
-	 * @param commands 待注册的命令集合。
-	 * @param context VS Code 扩展生命周期上下文。
+	 * @param {readonly ExtensionCommand[]} commands 待注册的命令集合。
+	 * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
 	 */
 	public register(
 		commands: readonly ExtensionCommand[],

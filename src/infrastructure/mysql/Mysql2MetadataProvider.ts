@@ -26,8 +26,8 @@ export class Mysql2MetadataProvider implements MySqlMetadataProvider {
 	/**
 	 * 列出当前 MySQL 连接可见的 schema。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @returns 可见的 schema 列表。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @returns {Promise<readonly MySqlSchemaMetadata[]>} 可见的 schema 列表。
 	 */
 	public async listSchemas(
 		connection: MysqlConnectionConfig
@@ -49,9 +49,9 @@ export class Mysql2MetadataProvider implements MySqlMetadataProvider {
 	/**
 	 * 列出指定 MySQL schema 下的表。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 需要加载表的 schema。
-	 * @returns 该 schema 下可见的表。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 需要加载表的 schema。
+	 * @returns {Promise<readonly MySqlTableMetadata[]>} 该 schema 下可见的表。
 	 */
 	public async listTables(
 		connection: MysqlConnectionConfig,
@@ -83,8 +83,8 @@ export class Mysql2MetadataProvider implements MySqlMetadataProvider {
 	/**
 	 * 将 `SHOW DATABASES` 行归一化为 schema 元数据。
 	 *
-	 * @param rows mysql2 返回的原始行值。
-	 * @returns 归一化后的 schema 元数据。
+	 * @param {MySqlQueryRows} rows mysql2 返回的原始行值。
+	 * @returns {readonly MySqlSchemaMetadata[]} 归一化后的 schema 元数据。
 	 */
 	private normalizeDatabaseRows(
 		rows: MySqlQueryRows
@@ -110,9 +110,9 @@ export class Mysql2MetadataProvider implements MySqlMetadataProvider {
 	/**
 	 * 将 information_schema 行归一化为表元数据。
 	 *
-	 * @param rows mysql2 返回的原始行值。
-	 * @param schemaName 这些表所属的 schema。
-	 * @returns 归一化后的表元数据。
+	 * @param {MySqlQueryRows} rows mysql2 返回的原始行值。
+	 * @param {string} schemaName 这些表所属的 schema。
+	 * @returns {readonly MySqlTableMetadata[]} 归一化后的表元数据。
 	 */
 	private normalizeTableRows(
 		rows: MySqlQueryRows,

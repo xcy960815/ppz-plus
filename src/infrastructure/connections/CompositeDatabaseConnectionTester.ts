@@ -17,7 +17,7 @@ export class CompositeDatabaseConnectionTester implements ConnectionTester {
 	/**
 	 * 使用当前连接引擎对应的测试器执行连接测试。
 	 *
-	 * @param config 待验证的连接配置。
+	 * @param {ConnectionConfig} config 待验证的连接配置。
 	 */
 	public async test(config: ConnectionConfig): Promise<void> {
 		const tester = this.testersByEngine.get(config.engine);

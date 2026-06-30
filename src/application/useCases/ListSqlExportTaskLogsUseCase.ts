@@ -17,7 +17,7 @@ export class ListSqlExportTaskLogsUseCase {
 	/**
 	 * 读取最近的 SQL 导出任务日志。
 	 *
-	 * @returns 最近的 SQL 导出任务日志。
+	 * @returns {Promise<readonly SqlExportTaskLogEntry[]>} 最近的 SQL 导出任务日志。
 	 */
 	public async execute(): Promise<readonly SqlExportTaskLogEntry[]> {
 		return this.sqlExportTaskLogRepository.listRecent();

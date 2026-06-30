@@ -25,7 +25,7 @@ export class TcpMySqlConnectionTester implements ConnectionTester {
 	/**
 	 * 测试配置的 MySQL 端点是否可通过 TCP 访问。
 	 *
-	 * @param config 待验证的连接配置。
+	 * @param {ConnectionConfig} config 待验证的连接配置。
 	 */
 	public async test(config: ConnectionConfig): Promise<void> {
 		if (!this.mySqlConnectionAdapter.supports(config)) {

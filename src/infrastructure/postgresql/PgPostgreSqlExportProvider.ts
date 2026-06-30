@@ -86,10 +86,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 导出指定 PostgreSQL 表的 SQL 文档。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param target 表级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns 生成后的 SQL 导出文档。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {Promise<SqlExportDocument>} 生成后的 SQL 导出文档。
 	 */
 	public async exportTable(
 		connection: PostgreSqlConnectionConfig,
@@ -134,10 +134,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 导出指定 PostgreSQL schema 的 SQL 文档。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param target schema 级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns 生成后的 SQL 导出文档。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {PostgreSqlExportSchemaTarget} target schema 级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {Promise<SqlExportDocument>} 生成后的 SQL 导出文档。
 	 */
 	public async exportSchema(
 		connection: PostgreSqlConnectionConfig,
@@ -203,10 +203,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 导出指定 PostgreSQL database 的 SQL 文档。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param target database 级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns 生成后的 SQL 导出文档。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {PostgreSqlExportDatabaseTarget} target database 级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {Promise<SqlExportDocument>} 生成后的 SQL 导出文档。
 	 */
 	public async exportDatabase(
 		connection: PostgreSqlConnectionConfig,
@@ -274,9 +274,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 打开 pg 客户端连接。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 需要连接的 database。
-	 * @returns 已连接的 pg 客户端。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string} databaseName 需要连接的 database。
+	 * @returns {Promise<PgRuntimeClient>} 已连接的 pg 客户端。
 	 */
 	private async openClient(
 		connection: PostgreSqlConnectionConfig,
@@ -296,7 +296,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 关闭 pg 客户端连接。
 	 *
-	 * @param client 当前可用的 pg 客户端。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
 	 */
 	private async closeClient(client: PgRuntimeClient): Promise<void> {
 		try {
@@ -332,10 +332,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成 schema 级导出文档头部注释。
 	 *
-	 * @param connectionName 当前连接显示名。
-	 * @param target schema 级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns SQL 注释头。
+	 * @param {string} connectionName 当前连接显示名。
+	 * @param {PostgreSqlExportSchemaTarget} target schema 级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {string} SQL 注释头。
 	 */
 	private renderSchemaHeader(
 		connectionName: string,
@@ -353,10 +353,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成 database 级导出文档头部注释。
 	 *
-	 * @param connectionName 当前连接显示名。
-	 * @param target database 级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns SQL 注释头。
+	 * @param {string} connectionName 当前连接显示名。
+	 * @param {PostgreSqlExportDatabaseTarget} target database 级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {string} SQL 注释头。
 	 */
 	private renderDatabaseHeader(
 		connectionName: string,
@@ -373,8 +373,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成 PostgreSQL schema 创建语句。
 	 *
-	 * @param schemaName schema 名称。
-	 * @returns CREATE SCHEMA SQL。
+	 * @param {string} schemaName schema 名称。
+	 * @returns {string} CREATE SCHEMA SQL。
 	 */
 	private renderCreateSchemaStatement(schemaName: string): string {
 		return `CREATE SCHEMA IF NOT EXISTS ${this.escapeIdentifier(schemaName)};`;
@@ -386,8 +386,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * 确保后续 DDL 语句（CREATE TABLE / CREATE INDEX / ALTER TABLE）
 	 * 作用于目标 schema，而不是默认的 public 或用户同名 schema。
 	 *
-	 * @param schemaName schema 名称。
-	 * @returns SET search_path SQL。
+	 * @param {string} schemaName schema 名称。
+	 * @returns {string} SET search_path SQL。
 	 */
 	private renderSetSearchPathStatement(schemaName: string): string {
 		return `SET search_path TO ${this.escapeIdentifier(schemaName)};`;
@@ -396,7 +396,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成导出文件尾部注释。
 	 *
-	 * @returns 导出文件尾部 SQL。
+	 * @returns {string} 导出文件尾部 SQL。
 	 */
 	private renderFooter(): string {
 		return '-- PPZ Plus PostgreSQL export completed.';
@@ -405,11 +405,11 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 导出单个表在聚合导出文档中的 SQL 块。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param target 表级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @param options DDL 块组织选项。
-	 * @returns 单表 SQL 文本块。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @param {PostgreSqlDdlBlockOptions} options DDL 块组织选项。
+	 * @returns {Promise<string>} 单表 SQL 文本块。
 	 */
 	private async exportTableBlock(
 		client: PgRuntimeClient,
@@ -436,9 +436,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 列出 schema 下可导出的基础表。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param target schema 级导出目标。
-	 * @returns 表名列表。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {PostgreSqlExportSchemaTarget} target schema 级导出目标。
+	 * @returns {Promise<readonly string[]>} 表名列表。
 	 */
 	private async listSchemaTables(
 		client: PgRuntimeClient,
@@ -463,8 +463,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 列出 database 下所有可导出的用户 schema。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @returns 按名称排序的 schema 名称列表。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @returns {Promise<readonly string[]>} 按名称排序的 schema 名称列表。
 	 */
 	private async listDatabaseSchemas(
 		client: PgRuntimeClient
@@ -489,8 +489,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 列出 database 下所有可导出的基础表。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @returns 按 schema/table 排序的表目标列表。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @returns {Promise<readonly SqlExportTableTarget[]>} 按 schema/table 排序的表目标列表。
 	 */
 	private async listDatabaseTables(
 		client: PgRuntimeClient
@@ -525,10 +525,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 导出指定表的 DDL。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param target 表级导出目标。
-	 * @param options DDL 块组织选项。
-	 * @returns DDL SQL 文本。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @param {PostgreSqlDdlBlockOptions} options DDL 块组织选项。
+	 * @returns {Promise<string>} DDL SQL 文本。
 	 */
 	private async exportDdl(
 		client: PgRuntimeClient,
@@ -574,9 +574,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 读取 PostgreSQL 表字段元数据。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param target 表级导出目标。
-	 * @returns 字段定义列表。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @returns {Promise<readonly PostgreSqlColumnDefinition[]>} 字段定义列表。
 	 */
 	private async listColumns(
 		client: PgRuntimeClient,
@@ -615,9 +615,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 读取 PostgreSQL 表主键约束。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param target 表级导出目标。
-	 * @returns 主键约束定义列表。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @returns {Promise<readonly PostgreSqlConstraintDefinition[]>} 主键约束定义列表。
 	 */
 	private async listPrimaryKeys(
 		client: PgRuntimeClient,
@@ -629,9 +629,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 读取 PostgreSQL 表外键约束。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param target 表级导出目标。
-	 * @returns 外键约束定义列表。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @returns {Promise<readonly PostgreSqlConstraintDefinition[]>} 外键约束定义列表。
 	 */
 	private async listForeignKeys(
 		client: PgRuntimeClient,
@@ -643,10 +643,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 读取 PostgreSQL 表约束定义。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param target 表级导出目标。
-	 * @param constraintType PostgreSQL 约束类型标识。
-	 * @returns 约束定义列表。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @param {'p' | 'f'} constraintType PostgreSQL 约束类型标识。
+	 * @returns {Promise<readonly PostgreSqlConstraintDefinition[]>} 约束定义列表。
 	 */
 	private async listConstraints(
 		client: PgRuntimeClient,
@@ -680,9 +680,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 读取 PostgreSQL 表索引定义。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param target 表级导出目标。
-	 * @returns 索引定义列表。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @returns {Promise<readonly PostgreSqlIndexDefinition[]>} 索引定义列表。
 	 */
 	private async listIndexes(
 		client: PgRuntimeClient,
@@ -716,9 +716,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 读取 PostgreSQL 表字段拥有的 sequence 定义。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param target 表级导出目标。
-	 * @returns sequence 定义列表。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @returns {Promise<readonly PostgreSqlSequenceDefinition[]>} sequence 定义列表。
 	 */
 	private async listOwnedSequences(
 		client: PgRuntimeClient,
@@ -766,9 +766,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 导出多个表的外键约束语句。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param targets 表级导出目标列表。
-	 * @returns 外键 SQL 文本。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {readonly PostgreSqlExportTableTarget[]} targets 表级导出目标列表。
+	 * @returns {Promise<string>} 外键 SQL 文本。
 	 */
 	private async exportForeignKeys(
 		client: PgRuntimeClient,
@@ -789,10 +789,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成 CREATE TABLE 语句。
 	 *
-	 * @param target 表级导出目标。
-	 * @param columns 字段定义列表。
-	 * @param primaryKeys 主键约束列表。
-	 * @returns CREATE TABLE SQL。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @param {readonly PostgreSqlColumnDefinition[]} columns 字段定义列表。
+	 * @param {readonly PostgreSqlConstraintDefinition[]} primaryKeys 主键约束列表。
+	 * @returns {string} CREATE TABLE SQL。
 	 */
 	private renderCreateTableStatement(
 		target: PostgreSqlExportTableTarget,
@@ -820,8 +820,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成单个字段定义。
 	 *
-	 * @param column 字段 DDL 元数据。
-	 * @returns 字段定义 SQL 片段。
+	 * @param {PostgreSqlColumnDefinition} column 字段 DDL 元数据。
+	 * @returns {string} 字段定义 SQL 片段。
 	 */
 	private renderColumnDefinition(column: PostgreSqlColumnDefinition): string {
 		const fragments = [
@@ -856,8 +856,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成表内约束定义。
 	 *
-	 * @param constraint 约束 DDL 元数据。
-	 * @returns 表内约束 SQL 片段。
+	 * @param {PostgreSqlConstraintDefinition} constraint 约束 DDL 元数据。
+	 * @returns {string} 表内约束 SQL 片段。
 	 */
 	private renderTableConstraint(
 		constraint: PostgreSqlConstraintDefinition
@@ -868,8 +868,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成索引创建语句。
 	 *
-	 * @param index 索引 DDL 元数据。
-	 * @returns 索引 SQL。
+	 * @param {PostgreSqlIndexDefinition} index 索引 DDL 元数据。
+	 * @returns {string} 索引 SQL。
 	 */
 	private renderIndexStatement(index: PostgreSqlIndexDefinition): string {
 		return `${index.indexDefinition};`;
@@ -878,8 +878,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成 sequence 创建语句。
 	 *
-	 * @param sequence sequence DDL 元数据。
-	 * @returns CREATE SEQUENCE SQL。
+	 * @param {PostgreSqlSequenceDefinition} sequence sequence DDL 元数据。
+	 * @returns {string} CREATE SEQUENCE SQL。
 	 */
 	private renderCreateSequenceStatement(
 		sequence: PostgreSqlSequenceDefinition
@@ -899,9 +899,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成 sequence 字段归属语句。
 	 *
-	 * @param target 表级导出目标。
-	 * @param sequence sequence DDL 元数据。
-	 * @returns ALTER SEQUENCE OWNED BY SQL。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @param {PostgreSqlSequenceDefinition} sequence sequence DDL 元数据。
+	 * @returns {string} ALTER SEQUENCE OWNED BY SQL。
 	 */
 	private renderSequenceOwnershipStatement(
 		target: PostgreSqlExportTableTarget,
@@ -916,9 +916,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 生成外键约束创建语句。
 	 *
-	 * @param target 表级导出目标。
-	 * @param foreignKeys 外键约束列表。
-	 * @returns 外键 SQL。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @param {readonly PostgreSqlConstraintDefinition[]} foreignKeys 外键约束列表。
+	 * @returns {string} 外键 SQL。
 	 */
 	private renderForeignKeyStatements(
 		target: PostgreSqlExportTableTarget,
@@ -934,8 +934,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 将查询结果行归一化为字段定义。
 	 *
-	 * @param row pg 查询返回的原始行。
-	 * @returns 字段定义；无法识别时为空。
+	 * @param {Record<string, unknown>} row pg 查询返回的原始行。
+	 * @returns {PostgreSqlColumnDefinition | undefined} 字段定义；无法识别时为空。
 	 */
 	private normalizeColumnDefinition(
 		row: Record<string, unknown>
@@ -971,8 +971,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 将查询结果行归一化为约束定义。
 	 *
-	 * @param row pg 查询返回的原始行。
-	 * @returns 约束定义；无法识别时为空。
+	 * @param {Record<string, unknown>} row pg 查询返回的原始行。
+	 * @returns {PostgreSqlConstraintDefinition | undefined} 约束定义；无法识别时为空。
 	 */
 	private normalizeConstraintDefinition(
 		row: Record<string, unknown>
@@ -996,8 +996,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 将查询结果行归一化为索引定义。
 	 *
-	 * @param row pg 查询返回的原始行。
-	 * @returns 索引定义；无法识别时为空。
+	 * @param {Record<string, unknown>} row pg 查询返回的原始行。
+	 * @returns {PostgreSqlIndexDefinition | undefined} 索引定义；无法识别时为空。
 	 */
 	private normalizeIndexDefinition(
 		row: Record<string, unknown>
@@ -1018,8 +1018,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 将查询结果行归一化为 sequence 定义。
 	 *
-	 * @param row pg 查询返回的原始行。
-	 * @returns sequence 定义；无法识别时为空。
+	 * @param {Record<string, unknown>} row pg 查询返回的原始行。
+	 * @returns {PostgreSqlSequenceDefinition | undefined} sequence 定义；无法识别时为空。
 	 */
 	private normalizeSequenceDefinition(
 		row: Record<string, unknown>
@@ -1067,8 +1067,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 将 PostgreSQL 整数值归一化为 SQL 可写文本。
 	 *
-	 * @param value pg 返回的整数值。
-	 * @returns 整数字符串；无法识别时为空。
+	 * @param {unknown} value pg 返回的整数值。
+	 * @returns {string | undefined} 整数字符串；无法识别时为空。
 	 */
 	private normalizeIntegerText(value: unknown): string | undefined {
 		if (typeof value === 'number') {
@@ -1090,9 +1090,9 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 导出指定表的 DML。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param target 表级导出目标。
-	 * @returns DML SQL 文本。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {PostgreSqlExportTableTarget} target 表级导出目标。
+	 * @returns {Promise<string>} DML SQL 文本。
 	 */
 	private async exportDml(
 		client: PgRuntimeClient,
@@ -1149,10 +1149,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 渲染单行 INSERT 语句。
 	 *
-	 * @param target 表级导出目标。
-	 * @param columnNames 字段名列表。
-	 * @param row pg 返回的原始行。
-	 * @returns INSERT SQL 文本。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @param {readonly string[]} columnNames 字段名列表。
+	 * @param {Record<string, unknown>} row pg 返回的原始行。
+	 * @returns {string} INSERT SQL 文本。
 	 */
 	private renderInsertStatement(
 		target: SqlExportTableTarget,
@@ -1172,8 +1172,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 将 JavaScript 值格式化为 PostgreSQL 字面量。
 	 *
-	 * @param value 原始字段值。
-	 * @returns PostgreSQL SQL 字面量。
+	 * @param {unknown} value 原始字段值。
+	 * @returns {string} PostgreSQL SQL 字面量。
 	 */
 	private formatSqlValue(value: unknown): string {
 		if (value === null || value === undefined) {
@@ -1218,8 +1218,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 转义 PostgreSQL 字符串字面量内容。
 	 *
-	 * @param value 待转义的字符串。
-	 * @returns 转义后的字符串字面量内容。
+	 * @param {string} value 待转义的字符串。
+	 * @returns {string} 转义后的字符串字面量内容。
 	 */
 	private escapeSqlString(value: string): string {
 		return value.replaceAll("'", "''");
@@ -1228,8 +1228,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 转义 PostgreSQL 标识符。
 	 *
-	 * @param identifier 待转义的标识符。
-	 * @returns 转义后的标识符。
+	 * @param {string} identifier 待转义的标识符。
+	 * @returns {string} 转义后的标识符。
 	 */
 	private escapeIdentifier(identifier: string): string {
 		return `"${identifier.replaceAll('"', '""')}"`;
@@ -1238,8 +1238,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 转义完整 schema.table 引用。
 	 *
-	 * @param target 表级导出目标。
-	 * @returns 转义后的完整表名。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @returns {string} 转义后的完整表名。
 	 */
 	private escapeQualifiedTableName(target: SqlExportTableTarget): string {
 		return `${this.escapeIdentifier(target.schemaName)}.${this.escapeIdentifier(target.tableName)}`;
@@ -1248,8 +1248,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 转义完整 schema.sequence 引用。
 	 *
-	 * @param sequence sequence DDL 元数据。
-	 * @returns 转义后的完整 sequence 名称。
+	 * @param {PostgreSqlSequenceDefinition} sequence sequence DDL 元数据。
+	 * @returns {string} 转义后的完整 sequence 名称。
 	 */
 	private escapeQualifiedSequenceName(
 		sequence: PostgreSqlSequenceDefinition
@@ -1260,8 +1260,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	/**
 	 * 渲染日志和注释中使用的完整表名。
 	 *
-	 * @param target 表级导出目标。
-	 * @returns 可读的 schema.table 标签。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @returns {string} 可读的 schema.table 标签。
 	 */
 	private renderQualifiedTableLabel(target: SqlExportTableTarget): string {
 		return `${target.schemaName}.${target.tableName}`;

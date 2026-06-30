@@ -21,9 +21,9 @@ export class ImportColumnMapper {
 	/**
 	 * 根据源字段和目标字段生成默认映射。
 	 *
-	 * @param sourceFields 源文件字段列表。
-	 * @param targetFields 目标表字段列表。
-	 * @returns 默认字段映射。
+	 * @param {readonly string[]} sourceFields 源文件字段列表。
+	 * @param {readonly string[]} targetFields 目标表字段列表。
+	 * @returns {readonly ImportColumnMapping[]} 默认字段映射。
 	 */
 	public createDefaultMappings(
 		sourceFields: readonly string[],
@@ -39,10 +39,10 @@ export class ImportColumnMapper {
 	/**
 	 * 校验并归一化字段映射。
 	 *
-	 * @param sourceFields 源文件字段列表。
-	 * @param targetFields 目标表字段列表。
-	 * @param mappings 用户提供的字段映射。
-	 * @returns 可用于行转换的有效字段映射。
+	 * @param {readonly string[]} sourceFields 源文件字段列表。
+	 * @param {readonly string[]} targetFields 目标表字段列表。
+	 * @param {readonly ImportColumnMapping[]} mappings 用户提供的字段映射。
+	 * @returns {readonly NormalizedImportColumnMapping[]} 可用于行转换的有效字段映射。
 	 */
 	public normalizeMappings(
 		sourceFields: readonly string[],
@@ -96,12 +96,15 @@ export class ImportColumnMapper {
 	/**
 	 * 将源记录按映射转换为目标表写入行。
 	 *
-	 * @param rows 源文件记录。
-	 * @param sourceFields 源文件字段列表。
-	 * @param targetFields 目标表字段列表。
-	 * @param mappings 用户提供的字段映射。
-	 * @param readValue 从源记录读取字段值的函数。
-	 * @returns 目标表写入行。
+	 * @param {readonly TSourceRow[]} rows 源文件记录。
+	 * @param {readonly string[]} sourceFields 源文件字段列表。
+	 * @param {readonly string[]} targetFields 目标表字段列表。
+	 * @param {readonly ImportColumnMapping[] | undefined} mappings 用户提供的字段映射。
+	 * @param {(
+			row: TSourceRow,
+			sourceName: string
+		)} readValue 从源记录读取字段值的函数。
+	 * @returns {readonly MySqlTableImportRow[]} 目标表写入行。
 	 */
 	public mapRows<TSourceRow>(
 		rows: readonly TSourceRow[],
@@ -132,10 +135,10 @@ export class ImportColumnMapper {
 	/**
 	 * 按映射生成导入预览表头。
 	 *
-	 * @param sourceFields 源文件字段列表。
-	 * @param targetFields 目标表字段列表。
-	 * @param mappings 用户提供的字段映射。
-	 * @returns 目标表预览字段列表。
+	 * @param {readonly string[]} sourceFields 源文件字段列表。
+	 * @param {readonly string[]} targetFields 目标表字段列表。
+	 * @param {readonly ImportColumnMapping[]} mappings 用户提供的字段映射。
+	 * @returns {readonly string[]} 目标表预览字段列表。
 	 */
 	public mapHeaders(
 		sourceFields: readonly string[],

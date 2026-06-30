@@ -24,10 +24,10 @@ export class ExportPostgreSqlDatabaseUseCase {
 	/**
 	 * 导出指定 PostgreSQL database 的 SQL 内容。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param target database 级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns 生成后的 SQL 导出文档。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {PostgreSqlExportDatabaseTarget} target database 级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {Promise<SqlExportDocument>} 生成后的 SQL 导出文档。
 	 */
 	public async execute(
 		connection: PostgreSqlConnectionConfig,

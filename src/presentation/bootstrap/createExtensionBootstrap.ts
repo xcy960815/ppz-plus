@@ -122,8 +122,8 @@ import { MySqlTableDataPanel } from '../tableData/MySqlTableDataPanel';
 /**
  * 组装初始扩展启动对象图。
  *
- * @param context VS Code 扩展生命周期上下文。
- * @returns 可用于扩展激活的启动实例。
+ * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
+ * @returns {ExtensionBootstrap} 可用于扩展激活的启动实例。
  */
 export function createExtensionBootstrap(
 	context: vscode.ExtensionContext

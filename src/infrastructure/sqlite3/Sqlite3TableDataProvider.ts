@@ -52,9 +52,9 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 列出指定 SQLite3 表的字段。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly Sqlite3TableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	public async listColumns(
 		connection: Sqlite3ConnectionConfig,
@@ -72,12 +72,12 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 列出指定 SQLite3 表的一页行数据。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要加载行数据的表。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 每页请求的行数。
-	 * @param options 排序和过滤等查询选项。
-	 * @returns 分页行数据。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要加载行数据的表。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 每页请求的行数。
+	 * @param {Sqlite3TableQueryOptions} options 排序和过滤等查询选项。
+	 * @returns {Promise<Sqlite3TableRowPage>} 分页行数据。
 	 */
 	public async listRowPage(
 		connection: Sqlite3ConnectionConfig,
@@ -127,10 +127,10 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 向指定 SQLite3 表新增一条记录。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要新增记录的表。
-	 * @param values 需要显式写入的字段值。
-	 * @returns 单行新增结果。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要新增记录的表。
+	 * @param {Sqlite3TableInsertValues} values 需要显式写入的字段值。
+	 * @returns {Promise<Sqlite3TableInsertResult>} 单行新增结果。
 	 */
 	public async insertRow(
 		connection: Sqlite3ConnectionConfig,
@@ -160,11 +160,11 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 更新指定 SQLite3 表中的一条记录。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要更新记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @param values 需要更新的新字段值。
-	 * @returns 单行更新结果。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要更新记录的表。
+	 * @param {Sqlite3TableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @param {Sqlite3TableUpdateValues} values 需要更新的新字段值。
+	 * @returns {Promise<Sqlite3TableUpdateResult>} 单行更新结果。
 	 */
 	public async updateRow(
 		connection: Sqlite3ConnectionConfig,
@@ -198,10 +198,10 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 删除指定 SQLite3 表中的一条记录。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要删除记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @returns 单行删除结果。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要删除记录的表。
+	 * @param {Sqlite3TableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @returns {Promise<Sqlite3TableDeleteResult>} 单行删除结果。
 	 */
 	public async deleteRow(
 		connection: Sqlite3ConnectionConfig,
@@ -230,9 +230,9 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 复用已有 SQLite3 连接列出字段。
 	 *
-	 * @param database 当前可用的 SQLite3 连接。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {Sqlite3RuntimeDatabase} database 当前可用的 SQLite3 连接。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly Sqlite3TableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	private async listColumnsWithDatabase(
 		database: Sqlite3RuntimeDatabase,
@@ -281,12 +281,12 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 创建分页行查询。
 	 *
-	 * @param tableName 需要查询的表。
-	 * @param columns 表字段元数据。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 每页请求的行数。
-	 * @param options 排序和过滤选项。
-	 * @returns 可执行查询和展示 SQL。
+	 * @param {string} tableName 需要查询的表。
+	 * @param {readonly Sqlite3TableColumnMetadata[]} columns 表字段元数据。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 每页请求的行数。
+	 * @param {Sqlite3TableQueryOptions} options 排序和过滤选项。
+	 * @returns {Sqlite3PreparedQuery} 可执行查询和展示 SQL。
 	 */
 	private createRowPageQuery(
 		tableName: string,
@@ -323,10 +323,10 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 创建总行数查询。
 	 *
-	 * @param tableName 需要查询的表。
-	 * @param columns 表字段元数据。
-	 * @param options 排序和过滤选项。
-	 * @returns 可执行查询和展示 SQL。
+	 * @param {string} tableName 需要查询的表。
+	 * @param {readonly Sqlite3TableColumnMetadata[]} columns 表字段元数据。
+	 * @param {Sqlite3TableQueryOptions} options 排序和过滤选项。
+	 * @returns {Sqlite3PreparedQuery} 可执行查询和展示 SQL。
 	 */
 	private createRowCountQuery(
 		tableName: string,
@@ -352,8 +352,8 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 创建过滤条件片段。
 	 *
-	 * @param columns 表字段元数据。
-	 * @param options 查询选项。
+	 * @param {readonly Sqlite3TableColumnMetadata[]} columns 表字段元数据。
+	 * @param {Sqlite3TableQueryOptions} options 查询选项。
 	 * @returns WHERE SQL 片段和绑定参数。
 	 */
 	private createWhereClause(
@@ -393,7 +393,7 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 创建单个字段过滤条件。
 	 *
-	 * @param condition 表字段过滤条件。
+	 * @param {Sqlite3TableFilterCondition} condition 表字段过滤条件。
 	 * @returns SQL 片段和绑定参数；无效时为空。
 	 */
 	private createConditionClause(
@@ -436,9 +436,9 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 创建排序片段。
 	 *
-	 * @param columns 表字段元数据。
-	 * @param options 查询选项。
-	 * @returns ORDER BY SQL 片段。
+	 * @param {readonly Sqlite3TableColumnMetadata[]} columns 表字段元数据。
+	 * @param {Sqlite3TableQueryOptions} options 查询选项。
+	 * @returns {string} ORDER BY SQL 片段。
 	 */
 	private createOrderByClause(
 		columns: readonly Sqlite3TableColumnMetadata[],
@@ -464,9 +464,9 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 创建新增单行记录 SQL。
 	 *
-	 * @param tableName 需要新增记录的表。
-	 * @param values 需要写入的字段值。
-	 * @returns 可执行查询和展示 SQL。
+	 * @param {string} tableName 需要新增记录的表。
+	 * @param {Sqlite3TableInsertValues} values 需要写入的字段值。
+	 * @returns {Sqlite3PreparedQuery} 可执行查询和展示 SQL。
 	 */
 	private createInsertRowQuery(
 		tableName: string,
@@ -497,10 +497,10 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 创建更新单行记录 SQL。
 	 *
-	 * @param tableName 需要更新记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @param values 需要更新的新字段值。
-	 * @returns 可执行查询和展示 SQL。
+	 * @param {string} tableName 需要更新记录的表。
+	 * @param {Sqlite3TableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @param {Sqlite3TableUpdateValues} values 需要更新的新字段值。
+	 * @returns {Sqlite3PreparedQuery} 可执行查询和展示 SQL。
 	 */
 	private createUpdateRowQuery(
 		tableName: string,
@@ -536,9 +536,9 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 创建删除单行记录 SQL。
 	 *
-	 * @param tableName 需要删除记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @returns 可执行查询和展示 SQL。
+	 * @param {string} tableName 需要删除记录的表。
+	 * @param {Sqlite3TableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @returns {Sqlite3PreparedQuery} 可执行查询和展示 SQL。
 	 */
 	private createDeleteRowQuery(
 		tableName: string,
@@ -557,7 +557,7 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 创建主键定位条件。
 	 *
-	 * @param identityValues 用于定位原行的字段值。
+	 * @param {Sqlite3TableRowIdentityValues} identityValues 用于定位原行的字段值。
 	 * @returns WHERE SQL 片段和绑定参数。
 	 */
 	private createIdentityWhereClause(
@@ -588,8 +588,8 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 打开 SQLite3 数据库文件。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @returns 已打开的数据库实例。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @returns {Promise<Sqlite3RuntimeDatabase>} 已打开的数据库实例。
 	 */
 	private async openDatabase(
 		connection: Sqlite3ConnectionConfig
@@ -616,10 +616,10 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 执行 SQLite3 多行查询。
 	 *
-	 * @param database 已打开的数据库实例。
-	 * @param sql 需要执行的 SQL。
-	 * @param params 绑定参数。
-	 * @returns 原始查询行。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
+	 * @param {string} sql 需要执行的 SQL。
+	 * @param {readonly unknown[]} params 绑定参数。
+	 * @returns {Promise<Sqlite3QueryRows>} 原始查询行。
 	 */
 	private async all(
 		database: Sqlite3RuntimeDatabase,
@@ -648,10 +648,10 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 执行 SQLite3 写入语句。
 	 *
-	 * @param database 已打开的数据库实例。
-	 * @param sql 需要执行的 SQL。
-	 * @param params 绑定参数。
-	 * @returns 语句执行上下文。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
+	 * @param {string} sql 需要执行的 SQL。
+	 * @param {readonly unknown[]} params 绑定参数。
+	 * @returns {Promise<Sqlite3RunContext>} 语句执行上下文。
 	 */
 	private async run(
 		database: Sqlite3RuntimeDatabase,
@@ -676,7 +676,7 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 关闭 SQLite3 数据库实例。
 	 *
-	 * @param database 已打开的数据库实例。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
 	 */
 	private async closeDatabase(database: Sqlite3RuntimeDatabase): Promise<void> {
 		await new Promise<void>((resolve, reject) => {
@@ -694,8 +694,8 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 读取 COUNT(*) 查询结果。
 	 *
-	 * @param rows SQLite3 返回的原始行。
-	 * @returns 总行数。
+	 * @param {Sqlite3QueryRows} rows SQLite3 返回的原始行。
+	 * @returns {number} 总行数。
 	 */
 	private readTotalRowCount(rows: Sqlite3QueryRows): number {
 		const value = rows[0]?.totalRowCount;
@@ -705,8 +705,8 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 将 SQLite3 行归一化为可渲染对象。
 	 *
-	 * @param row SQLite3 返回的原始行。
-	 * @returns 可序列化的表行。
+	 * @param {Record<string, unknown>} row SQLite3 返回的原始行。
+	 * @returns {Record<string, Sqlite3TableCellValue>} 可序列化的表行。
 	 */
 	private normalizeRow(
 		row: Record<string, unknown>
@@ -722,8 +722,8 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 将 SQLite3 单元格值归一化为可序列化值。
 	 *
-	 * @param value SQLite3 返回的原始值。
-	 * @returns 可渲染单元格值。
+	 * @param {unknown} value SQLite3 返回的原始值。
+	 * @returns {Sqlite3TableCellValue} 可渲染单元格值。
 	 */
 	private normalizeCellValue(value: unknown): Sqlite3TableCellValue {
 		if (value === null || value === undefined) {
@@ -748,8 +748,8 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 转义 SQLite3 标识符。
 	 *
-	 * @param identifier 原始标识符。
-	 * @returns 可安全拼接进 SQL 的标识符。
+	 * @param {string} identifier 原始标识符。
+	 * @returns {string} 可安全拼接进 SQL 的标识符。
 	 */
 	private quoteIdentifier(identifier: string): string {
 		return `"${identifier.replaceAll('"', '""')}"`;
@@ -758,9 +758,9 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 创建带参数值的展示 SQL。
 	 *
-	 * @param sql 参数化 SQL。
-	 * @param values 绑定参数。
-	 * @returns 仅用于展示的 SQL。
+	 * @param {string} sql 参数化 SQL。
+	 * @param {readonly unknown[]} values 绑定参数。
+	 * @returns {string} 仅用于展示的 SQL。
 	 */
 	private createDisplaySql(sql: string, values: readonly unknown[]): string {
 		let valueIndex = 0;
@@ -772,8 +772,8 @@ export class Sqlite3TableDataProvider
 	/**
 	 * 格式化展示 SQL 中的字面量。
 	 *
-	 * @param value 原始绑定值。
-	 * @returns SQLite3 字面量文本。
+	 * @param {unknown} value 原始绑定值。
+	 * @returns {string} SQLite3 字面量文本。
 	 */
 	private formatLiteralForDisplay(value: unknown): string {
 		if (value === null || value === undefined) {

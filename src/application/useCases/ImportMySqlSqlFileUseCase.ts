@@ -23,10 +23,10 @@ export class ImportMySqlSqlFileUseCase {
 	/**
 	 * 读取并导入指定 SQL 文件。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param filePath SQL 文件路径。
-	 * @param cancellationSignal 可选的长任务取消信号。
-	 * @returns SQL 文件导入结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} filePath SQL 文件路径。
+	 * @param {CancellationSignal} cancellationSignal 可选的长任务取消信号。
+	 * @returns {Promise<SqlFileImportResult>} SQL 文件导入结果。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,

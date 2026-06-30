@@ -21,13 +21,13 @@ export class ListMySqlTableRowPageUseCase {
 	/**
 	 * 加载选中 MySQL 表的一页只读行数据。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载行数据的表。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 每页请求的行数。
-	 * @param options 排序和过滤等查询选项。
-	 * @returns 分页行数据。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载行数据的表。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 每页请求的行数。
+	 * @param {MySqlTableQueryOptions} options 排序和过滤等查询选项。
+	 * @returns {Promise<MySqlTableRowPage>} 分页行数据。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,

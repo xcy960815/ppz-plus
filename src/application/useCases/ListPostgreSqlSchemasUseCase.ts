@@ -20,9 +20,9 @@ export class ListPostgreSqlSchemasUseCase {
 	/**
 	 * 加载选中 PostgreSQL database 下的 schema。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 需要连接并读取 schema 的 database。
-	 * @returns 该 database 下可见的 schema 列表。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string} databaseName 需要连接并读取 schema 的 database。
+	 * @returns {Promise<readonly PostgreSqlSchemaMetadata[]>} 该 database 下可见的 schema 列表。
 	 */
 	public async execute(
 		connection: PostgreSqlConnectionConfig,

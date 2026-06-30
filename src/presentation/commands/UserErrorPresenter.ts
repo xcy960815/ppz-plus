@@ -23,7 +23,7 @@ export interface UserErrorPresentationInput {
 /**
  * 展示面向用户的错误提示，并允许复制详细诊断信息。
  *
- * @param input 用户级错误提示输入。
+ * @param {UserErrorPresentationInput} input 用户级错误提示输入。
  */
 export async function showUserErrorMessage(
 	input: UserErrorPresentationInput
@@ -52,9 +52,9 @@ export async function showUserErrorMessage(
 /**
  * 从未知错误中提取适合直接展示给用户的短消息。
  *
- * @param error 原始错误。
- * @param fallbackMessage 错误无消息时的兜底文案。
- * @returns 用户可读的错误消息。
+ * @param {unknown} error 原始错误。
+ * @param {any} fallbackMessage 错误无消息时的兜底文案。
+ * @returns {string} 用户可读的错误消息。
  */
 export function extractUserErrorMessage(
 	error: unknown,
@@ -79,10 +79,10 @@ export function extractUserErrorMessage(
 /**
  * 格式化可复制的错误详情。
  *
- * @param operation 失败的用户操作名称。
- * @param error 原始错误。
- * @param errorMessage 已展示给用户的错误消息。
- * @returns 可复制到剪贴板的诊断文本。
+ * @param {string} operation 失败的用户操作名称。
+ * @param {unknown} error 原始错误。
+ * @param {string} errorMessage 已展示给用户的错误消息。
+ * @returns {string} 可复制到剪贴板的诊断文本。
  */
 function formatUserErrorDetails(
 	operation: string,
@@ -118,8 +118,8 @@ function formatUserErrorDetails(
 /**
  * 从 AggregateError 一类的错误对象中提取子错误消息。
  *
- * @param error 原始错误。
- * @returns 汇总后的子错误消息；没有可读子错误时为空。
+ * @param {unknown} error 原始错误。
+ * @returns {string | undefined} 汇总后的子错误消息；没有可读子错误时为空。
  */
 function extractAggregateErrorMessage(error: unknown): string | undefined {
 	const messages = readAggregateErrors(error)
@@ -132,8 +132,8 @@ function extractAggregateErrorMessage(error: unknown): string | undefined {
 /**
  * 格式化 AggregateError 的子错误详情。
  *
- * @param error 原始错误。
- * @returns 可写入诊断信息的子错误行。
+ * @param {unknown} error 原始错误。
+ * @returns {readonly string[]} 可写入诊断信息的子错误行。
  */
 function formatAggregateErrorDetails(error: unknown): readonly string[] {
 	return readAggregateErrors(error).map((item, index) => {
@@ -145,8 +145,8 @@ function formatAggregateErrorDetails(error: unknown): readonly string[] {
 /**
  * 从未知错误对象中读取 AggregateError 子错误。
  *
- * @param error 原始错误。
- * @returns 子错误列表。
+ * @param {unknown} error 原始错误。
+ * @returns {readonly unknown[]} 子错误列表。
  */
 function readAggregateErrors(error: unknown): readonly unknown[] {
 	if (!error || typeof error !== 'object' || !('errors' in error)) {
@@ -160,8 +160,8 @@ function readAggregateErrors(error: unknown): readonly unknown[] {
 /**
  * 将未知错误安全转换为字符串。
  *
- * @param error 原始错误。
- * @returns 可写入诊断信息的字符串。
+ * @param {unknown} error 原始错误。
+ * @returns {string} 可写入诊断信息的字符串。
  */
 function safeStringifyError(error: unknown): string {
 	try {

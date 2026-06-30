@@ -70,9 +70,9 @@ export class ExportMySqlTablesBatchUseCase {
 	/**
 	 * 执行 MySQL 多表批量导出。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param input 批量导出请求。
-	 * @returns 批量导出的逐表结果和汇总数据。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {ExportMySqlTablesBatchInput} input 批量导出请求。
+	 * @returns {Promise<SqlExportBatchResult>} 批量导出的逐表结果和汇总数据。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,
@@ -198,8 +198,8 @@ export class ExportMySqlTablesBatchUseCase {
 	/**
 	 * 归一化并校验批量导出的表目标列表。
 	 *
-	 * @param tables 原始表目标列表。
-	 * @returns 去除空白后的表目标列表。
+	 * @param {readonly SqlExportBatchTableTarget[]} tables 原始表目标列表。
+	 * @returns {SqlExportBatchTableTarget[]} 去除空白后的表目标列表。
 	 */
 	private normalizeTables(
 		tables: readonly SqlExportBatchTableTarget[]
@@ -226,11 +226,11 @@ export class ExportMySqlTablesBatchUseCase {
 	/**
 	 * 创建单表批量导出的 SQL 文件路径。
 	 *
-	 * @param targetDirectory 批量导出的目标目录。
-	 * @param table 当前导出的表目标。
-	 * @param kind SQL 导出类型。
-	 * @param formatId SQL 导出格式标识。
-	 * @returns 单表 SQL 文件完整路径。
+	 * @param {string} targetDirectory 批量导出的目标目录。
+	 * @param {SqlExportBatchTableTarget} table 当前导出的表目标。
+	 * @param {SqlExportKind} kind SQL 导出类型。
+	 * @param {SqlExportFormatId} formatId SQL 导出格式标识。
+	 * @returns {string} 单表 SQL 文件完整路径。
 	 */
 	private createTableExportFilePath(
 		targetDirectory: string,
@@ -249,8 +249,8 @@ export class ExportMySqlTablesBatchUseCase {
 	/**
 	 * 清理 SQL 导出文件名中的路径敏感字符。
 	 *
-	 * @param segment 原始文件名片段。
-	 * @returns 可安全拼接到本地文件名中的片段。
+	 * @param {string} segment 原始文件名片段。
+	 * @returns {string} 可安全拼接到本地文件名中的片段。
 	 */
 	private sanitizeFileNameSegment(segment: string): string {
 		const sanitizedSegment = segment.replace(/[\\/:*?"<>|]/g, '_').trim();
@@ -265,9 +265,9 @@ export class ExportMySqlTablesBatchUseCase {
 	/**
 	 * 计算长任务完成百分比。
 	 *
-	 * @param completedItems 已完成对象数量。
-	 * @param totalItems 总对象数量。
-	 * @returns 限制在 0 到 100 的完成百分比。
+	 * @param {number} completedItems 已完成对象数量。
+	 * @param {number} totalItems 总对象数量。
+	 * @returns {number} 限制在 0 到 100 的完成百分比。
 	 */
 	private calculatePercentage(
 		completedItems: number,
@@ -283,8 +283,8 @@ export class ExportMySqlTablesBatchUseCase {
 	/**
 	 * 向可选进度回调安全上报进度。
 	 *
-	 * @param progressReporter 可选的导出进度回调。
-	 * @param progress 当前导出任务进度。
+	 * @param {SqlExportTaskProgressReporter | undefined} progressReporter 可选的导出进度回调。
+	 * @param {Parameters<SqlExportTaskProgressReporter>[0]} progress 当前导出任务进度。
 	 */
 	private reportProgress(
 		progressReporter: SqlExportTaskProgressReporter | undefined,

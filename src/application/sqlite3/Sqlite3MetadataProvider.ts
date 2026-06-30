@@ -15,8 +15,8 @@ export interface Sqlite3MetadataProvider {
 	/**
 	 * 列出当前 SQLite3 文件中可见的表和视图。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @returns 可见的表和视图列表。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @returns {Promise<readonly Sqlite3TableMetadata[]>} 可见的表和视图列表。
 	 */
 	listTables(
 		connection: Sqlite3ConnectionConfig

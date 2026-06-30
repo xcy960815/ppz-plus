@@ -21,10 +21,10 @@ export class DeleteSqlite3TableRowUseCase {
 	/**
 	 * 删除指定 SQLite3 表中的一条记录。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要删除记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @returns 单行删除结果。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要删除记录的表。
+	 * @param {Sqlite3TableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @returns {Promise<Sqlite3TableDeleteResult>} 单行删除结果。
 	 */
 	public async execute(
 		connection: Sqlite3ConnectionConfig,

@@ -16,7 +16,7 @@ export class DeleteStoredConnectionUseCase {
 	/**
 	 * 根据标识删除连接。
 	 *
-	 * @param id 需要删除的连接标识。
+	 * @param {string} id 需要删除的连接标识。
 	 */
 	public async execute(id: string): Promise<void> {
 		await this.connectionRepository.delete(id);

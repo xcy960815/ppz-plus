@@ -10,8 +10,8 @@ export class CreateImportErrorReportUseCase {
 	/**
 	 * 根据导入错误信息生成 Markdown 报告。
 	 *
-	 * @param input 导入错误报告输入。
-	 * @returns 可展示的导入错误报告文档。
+	 * @param {ImportErrorReportInput} input 导入错误报告输入。
+	 * @returns {ImportErrorReportDocument} 可展示的导入错误报告文档。
 	 */
 	public execute(input: ImportErrorReportInput): ImportErrorReportDocument {
 		const mappingLines =
@@ -50,8 +50,8 @@ export class CreateImportErrorReportUseCase {
 	/**
 	 * 格式化导入错误阶段。
 	 *
-	 * @param stage 原始导入错误阶段。
-	 * @returns 报告中展示的阶段名称。
+	 * @param {ImportErrorReportInput['stage']} stage 原始导入错误阶段。
+	 * @returns {string} 报告中展示的阶段名称。
 	 */
 	private formatStage(stage: ImportErrorReportInput['stage']): string {
 		if (stage === 'mapping') {

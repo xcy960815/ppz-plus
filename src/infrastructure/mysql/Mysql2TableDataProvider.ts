@@ -35,10 +35,10 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 列出指定 MySQL 表的字段。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly MySqlTableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	public async listColumns(
 		connection: MysqlConnectionConfig,
@@ -64,12 +64,12 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 列出指定 MySQL 表的一页行数据。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载行数据的表。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 每页请求的行数。
-	 * @returns 分页行数据。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载行数据的表。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 每页请求的行数。
+	 * @returns {Promise<MySqlTableRowPage>} 分页行数据。
 	 */
 	public async listRowPage(
 		connection: MysqlConnectionConfig,
@@ -128,11 +128,11 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 向指定 MySQL 表新增一条记录。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要新增记录的表。
-	 * @param values 需要显式写入的字段值。
-	 * @returns 单行新增结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要新增记录的表。
+	 * @param {MySqlTableInsertValues} values 需要显式写入的字段值。
+	 * @returns {Promise<MySqlTableInsertResult>} 单行新增结果。
 	 */
 	public async insertRow(
 		connection: MysqlConnectionConfig,
@@ -169,12 +169,12 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 更新指定 MySQL 表中的一条记录。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要更新记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @param values 需要更新的新字段值。
-	 * @returns 单行更新结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要更新记录的表。
+	 * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @param {MySqlTableUpdateValues} values 需要更新的新字段值。
+	 * @returns {Promise<MySqlTableUpdateResult>} 单行更新结果。
 	 */
 	public async updateRow(
 		connection: MysqlConnectionConfig,
@@ -212,11 +212,11 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 删除指定 MySQL 表中的一条记录。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要删除记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @returns 单行删除结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要删除记录的表。
+	 * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @returns {Promise<MySqlTableDeleteResult>} 单行删除结果。
 	 */
 	public async deleteRow(
 		connection: MysqlConnectionConfig,
@@ -252,10 +252,10 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 复用已有 mysql2 连接列出字段。
 	 *
-	 * @param runtimeConnection 当前可用的 mysql2 连接。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {MySqlRuntimeClient} runtimeConnection 当前可用的 mysql2 连接。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly MySqlTableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	private async listColumnsWithConnection(
 		runtimeConnection: MySqlRuntimeClient,
@@ -284,8 +284,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 将 information_schema 行归一化为字段元数据。
 	 *
-	 * @param rows mysql2 返回的原始行值。
-	 * @returns 归一化后的字段元数据。
+	 * @param {MySqlQueryRows} rows mysql2 返回的原始行值。
+	 * @returns {readonly MySqlTableColumnMetadata[]} 归一化后的字段元数据。
 	 */
 	private normalizeColumnRows(
 		rows: MySqlQueryRows
@@ -331,8 +331,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 归一化 MySQL 返回的日期时间小数秒精度。
 	 *
-	 * @param value information_schema 中的 DATETIME_PRECISION 值。
-	 * @returns 可用于展示截断的小数秒精度。
+	 * @param {unknown} value information_schema 中的 DATETIME_PRECISION 值。
+	 * @returns {number | null} 可用于展示截断的小数秒精度。
 	 */
 	private normalizeDateTimePrecision(value: unknown): number | null {
 		if (typeof value === 'number' && Number.isFinite(value)) {
@@ -350,11 +350,11 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 将 mysql2 行数据归一化为可序列化的分页载荷。
 	 *
-	 * @param rows mysql2 返回的原始行值。
-	 * @param columns 当前表字段元数据。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 请求的分页大小。
-	 * @returns 归一化后的分页行数据。
+	 * @param {MySqlQueryRows} rows mysql2 返回的原始行值。
+	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 请求的分页大小。
+	 * @returns {MySqlTableRowPage} 归一化后的分页行数据。
 	 */
 	private normalizeRowPage(
 		rows: MySqlQueryRows,
@@ -399,10 +399,10 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 创建表数据总数查询。
 	 *
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要统计的表。
-	 * @param columns 当前表字段元数据。
-	 * @param options 过滤查询选项。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要统计的表。
+	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {MySqlTableQueryOptions} options 过滤查询选项。
 	 * @returns 可执行 SQL 和参数。
 	 */
 	private createRowCountQuery(
@@ -430,12 +430,12 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 创建分页行数据查询。
 	 *
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载行数据的表。
-	 * @param columns 当前表字段元数据。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 每页请求的行数。
-	 * @param options 排序和过滤等查询选项。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载行数据的表。
+	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 每页请求的行数。
+	 * @param {MySqlTableQueryOptions} options 排序和过滤等查询选项。
 	 * @returns 可执行 SQL、参数和展示 SQL。
 	 */
 	private createRowPageQuery(
@@ -484,9 +484,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 创建单行新增 SQL。
 	 *
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要新增记录的表。
-	 * @param values 需要显式写入的字段值。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要新增记录的表。
+	 * @param {MySqlTableInsertValues} values 需要显式写入的字段值。
 	 * @returns 可执行 SQL、参数和展示 SQL。
 	 */
 	private createInsertRowQuery(
@@ -528,10 +528,10 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 创建单行更新 SQL。
 	 *
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要更新记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @param values 需要更新的新字段值。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要更新记录的表。
+	 * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @param {MySqlTableUpdateValues} values 需要更新的新字段值。
 	 * @returns 可执行 SQL、参数和展示 SQL。
 	 */
 	private createUpdateRowQuery(
@@ -579,9 +579,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 创建单行删除 SQL。
 	 *
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要删除记录的表。
-	 * @param identityValues 用于定位原行的字段值。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要删除记录的表。
+	 * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
 	 * @returns 可执行 SQL、参数和展示 SQL。
 	 */
 	private createDeleteRowQuery(
@@ -615,8 +615,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 创建关键词过滤 SQL 片段。
 	 *
-	 * @param columns 当前表字段元数据。
-	 * @param options 查询选项。
+	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {MySqlTableQueryOptions} options 查询选项。
 	 * @returns 过滤 SQL、展示 SQL 和参数。
 	 */
 	private createFilterClause(
@@ -685,9 +685,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 创建单条字段过滤条件 SQL 片段。
 	 *
-	 * @param columns 当前表字段元数据。
-	 * @param condition Webview 提交的字段过滤条件。
-	 * @returns 可拼接到 WHERE 中的条件片段；字段无效时为空。
+	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {MySqlTableFilterCondition} condition Webview 提交的字段过滤条件。
+	 * @returns {|} 可拼接到 WHERE 中的条件片段；字段无效时为空。
 	 */
 	private createFilterConditionClause(
 		columns: readonly MySqlTableColumnMetadata[],
@@ -749,9 +749,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 创建单值字段过滤条件 SQL 片段。
 	 *
-	 * @param columnSql 已转义的字段名。
-	 * @param operator 字段过滤操作符。
-	 * @param value 字段过滤值。
+	 * @param {string} columnSql 已转义的字段名。
+	 * @param {'} operator 字段过滤操作符。
+	 * @param {MySqlTableFilterCondition['value']} value 字段过滤值。
 	 * @returns 可拼接到 WHERE 中的条件片段。
 	 */
 	private createScalarFilterConditionClause(
@@ -778,10 +778,10 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 创建集合字段过滤条件 SQL 片段。
 	 *
-	 * @param columnSql 已转义的字段名。
-	 * @param operator 集合过滤操作符。
-	 * @param value 字段过滤值。
-	 * @returns 可拼接到 WHERE 中的条件片段；集合为空时为空。
+	 * @param {string} columnSql 已转义的字段名。
+	 * @param {'in' | 'not in'} operator 集合过滤操作符。
+	 * @param {MySqlTableFilterCondition['value']} value 字段过滤值。
+	 * @returns {|} 可拼接到 WHERE 中的条件片段；集合为空时为空。
 	 */
 	private createSetFilterConditionClause(
 		columnSql: string,
@@ -818,9 +818,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 创建排序 SQL 片段。
 	 *
-	 * @param columns 当前表字段元数据。
-	 * @param options 查询选项。
-	 * @returns ORDER BY SQL 片段。
+	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {MySqlTableQueryOptions} options 查询选项。
+	 * @returns {string} ORDER BY SQL 片段。
 	 */
 	private createOrderByClause(
 		columns: readonly MySqlTableColumnMetadata[],
@@ -848,8 +848,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 将单条 mysql2 行归一化为可序列化的单元格值。
 	 *
-	 * @param row mysql2 返回的原始行。
-	 * @returns 归一化后的行对象。
+	 * @param {Record<string, unknown>} row mysql2 返回的原始行。
+	 * @returns {Record<string, MySqlTableCellValue>} 归一化后的行对象。
 	 */
 	private normalizeRow(
 		row: Record<string, unknown>,
@@ -870,8 +870,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 将单个单元格值归一化为可安全 JSON 渲染的值。
 	 *
-	 * @param value 原始单元格值。
-	 * @returns 归一化后的单元格值。
+	 * @param {unknown} value 原始单元格值。
+	 * @returns {MySqlTableCellValue} 归一化后的单元格值。
 	 */
 	private normalizeCellValue(
 		value: unknown,
@@ -920,9 +920,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 按旧 PPZ 的 Date 展示规则格式化 MySQL 日期时间值。
 	 *
-	 * @param value mysql2 返回的 Date 值。
-	 * @param column 当前字段元数据。
-	 * @returns 面向表数据页展示的本地时间字符串。
+	 * @param {Date} value mysql2 返回的 Date 值。
+	 * @param {MySqlTableColumnMetadata} column 当前字段元数据。
+	 * @returns {string} 面向表数据页展示的本地时间字符串。
 	 */
 	private formatDateCellValue(
 		value: Date,
@@ -963,9 +963,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 将日期时间数字补齐到固定宽度。
 	 *
-	 * @param value 日期时间数字片段。
-	 * @param width 目标宽度。
-	 * @returns 补零后的数字片段。
+	 * @param {number} value 日期时间数字片段。
+	 * @param {number} width 目标宽度。
+	 * @returns {string} 补零后的数字片段。
 	 */
 	private padDatePart(value: number, width: number): string {
 		return String(value).padStart(width, '0');
@@ -974,8 +974,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 转义 MySQL 字符串字面量内容。
 	 *
-	 * @param value 待转义的字符串。
-	 * @returns 转义后的字符串字面量内容。
+	 * @param {string} value 待转义的字符串。
+	 * @returns {string} 转义后的字符串字面量内容。
 	 */
 	private escapeSqlString(value: string): string {
 		return value
@@ -992,8 +992,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 将单个值格式化为展示 SQL 使用的字面量。
 	 *
-	 * @param value 待格式化的字段值。
-	 * @returns 仅用于展示的 SQL 字面量。
+	 * @param {MySqlTableCellValue} value 待格式化的字段值。
+	 * @returns {string} 仅用于展示的 SQL 字面量。
 	 */
 	private formatSqlLiteral(value: MySqlTableCellValue): string {
 		if (value === null) {
@@ -1014,9 +1014,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 从 mysql2 执行结果中读取数字属性。
 	 *
-	 * @param result mysql2 返回的执行结果。
-	 * @param propertyName 需要读取的属性名。
-	 * @returns 可用数字，不存在时返回 0。
+	 * @param {unknown} result mysql2 返回的执行结果。
+	 * @param {string} propertyName 需要读取的属性名。
+	 * @returns {number} 可用数字，不存在时返回 0。
 	 */
 	private readNumberProperty(result: unknown, propertyName: string): number {
 		if (!result || typeof result !== 'object') {
@@ -1030,8 +1030,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 从 COUNT 查询结果中读取总行数。
 	 *
-	 * @param rows mysql2 返回的 COUNT 查询行。
-	 * @returns 当前查询条件下的总行数。
+	 * @param {MySqlQueryRows} rows mysql2 返回的 COUNT 查询行。
+	 * @returns {number} 当前查询条件下的总行数。
 	 */
 	private readTotalRowCount(rows: MySqlQueryRows): number {
 		if (!Array.isArray(rows) || rows.length === 0) {
@@ -1063,8 +1063,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 从 mysql2 执行结果中读取 insertId。
 	 *
-	 * @param result mysql2 返回的执行结果。
-	 * @returns 新增记录标识，不存在时返回 null。
+	 * @param {unknown} result mysql2 返回的执行结果。
+	 * @returns {string | number | null} 新增记录标识，不存在时返回 null。
 	 */
 	private readInsertId(result: unknown): string | number | null {
 		if (!result || typeof result !== 'object') {
@@ -1086,8 +1086,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 转义 MySQL 标识符以便放入原始 SQL 字符串。
 	 *
-	 * @param identifier 待转义的标识符。
-	 * @returns 转义后的标识符。
+	 * @param {string} identifier 待转义的标识符。
+	 * @returns {string} 转义后的标识符。
 	 */
 	private escapeIdentifier(identifier: string): string {
 		return `\`${identifier.replaceAll('`', '``')}\``;
@@ -1096,9 +1096,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	/**
 	 * 转义完整 schema.table 引用以便用于原始 SQL。
 	 *
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 选中的表名。
-	 * @returns 转义后的完整表名。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 选中的表名。
+	 * @returns {string} 转义后的完整表名。
 	 */
 	private escapeQualifiedTableName(
 		schemaName: string,

@@ -59,7 +59,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	/**
 	 * 向 VS Code 注册命令。
 	 *
-	 * @returns 命令注册的可释放句柄。
+	 * @returns {vscode.Disposable} 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
@@ -110,7 +110,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择一个已保存连接进行管理。
 	 *
-	 * @returns 用户选择的连接；未选择时为空。
+	 * @returns {Promise<ConnectionConfig | undefined>} 用户选择的连接；未选择时为空。
 	 */
 	private async pickConnection(): Promise<ConnectionConfig | undefined> {
 		const connections = await this.listStoredConnectionsUseCase.execute();
@@ -140,7 +140,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	/**
 	 * 向用户展示连接摘要。
 	 *
-	 * @param connection 当前选中的连接。
+	 * @param {ConnectionConfig} connection 当前选中的连接。
 	 */
 	private async showConnectionDetails(
 		connection: ConnectionConfig
@@ -179,7 +179,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	/**
 	 * 测试已保存连接并展示结果。
 	 *
-	 * @param connection 当前选中的连接。
+	 * @param {ConnectionConfig} connection 当前选中的连接。
 	 */
 	private async testConnection(connection: ConnectionConfig): Promise<void> {
 		try {
@@ -200,7 +200,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	/**
 	 * 提示用户编辑已保存连接。
 	 *
-	 * @param connection 当前选中的连接。
+	 * @param {ConnectionConfig} connection 当前选中的连接。
 	 */
 	private async editConnection(connection: ConnectionConfig): Promise<void> {
 		if (connection.engine === 'sqlite3') {
@@ -252,7 +252,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	/**
 	 * 确认后删除已保存连接。
 	 *
-	 * @param connection 当前选中的连接。
+	 * @param {ConnectionConfig} connection 当前选中的连接。
 	 */
 	private async deleteConnection(
 		connection: ConnectionConfig
@@ -277,8 +277,8 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择 MySQL 连接的编辑模式。
 	 *
-	 * @param currentMode 当前已有的连接模式。
-	 * @returns 用户选择的连接模式。
+	 * @param {ConnectionInputMode} currentMode 当前已有的连接模式。
+	 * @returns {Promise<ConnectionInputMode | undefined>} 用户选择的连接模式。
 	 */
 	private async promptForMode(
 		currentMode: ConnectionInputMode
@@ -309,8 +309,8 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	/**
 	 * 描述连接目标地址。
 	 *
-	 * @param connection 当前连接配置。
-	 * @returns 连接目标描述。
+	 * @param {ConnectionConfig} connection 当前连接配置。
+	 * @returns {string} 连接目标描述。
 	 */
 	private describeConnectionTarget(connection: ConnectionConfig): string {
 		if (connection.mode === 'parameters') {

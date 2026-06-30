@@ -23,12 +23,12 @@ export interface MySqlTableImportProvider {
 	/**
 	 * 将结构化数据行导入到指定 MySQL 表。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param target 导入目标表。
-	 * @param rows 准备写入的数据行。
-	 * @param progressReporter 可选的导入进度回调。
-	 * @param cancellationSignal 可选的长任务取消信号。
-	 * @returns 表级导入结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {TableImportTarget} target 导入目标表。
+	 * @param {readonly MySqlTableImportRow[]} rows 准备写入的数据行。
+	 * @param {ImportTaskProgressReporter} progressReporter 可选的导入进度回调。
+	 * @param {CancellationSignal} cancellationSignal 可选的长任务取消信号。
+	 * @returns {Promise<TableImportResult>} 表级导入结果。
 	 */
 	importRows(
 		connection: MysqlConnectionConfig,

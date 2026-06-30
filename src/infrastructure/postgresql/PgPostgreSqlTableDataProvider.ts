@@ -40,11 +40,11 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 列出选中 PostgreSQL 表的字段。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 表所属的 database。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string} databaseName 表所属的 database。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly TableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	public async listColumns(
 		connection: PostgreSqlConnectionConfig,
@@ -64,14 +64,14 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 列出选中 PostgreSQL 表的一页只读行数据。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 表所属的 database。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载行数据的表。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 每页请求的行数。
-	 * @param options 排序和过滤等查询选项。
-	 * @returns 分页行数据。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string} databaseName 表所属的 database。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载行数据的表。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 每页请求的行数。
+	 * @param {TableQueryOptions} options 排序和过滤等查询选项。
+	 * @returns {Promise<TableRowPage>} 分页行数据。
 	 */
 	public async listRowPage(
 		connection: PostgreSqlConnectionConfig,
@@ -128,10 +128,10 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 复用已有 pg 连接列出字段。
 	 *
-	 * @param client 当前可用的 pg 客户端。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {PgRuntimeClient} client 当前可用的 pg 客户端。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly TableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	private async listColumnsWithClient(
 		client: PgRuntimeClient,
@@ -179,9 +179,9 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 打开 pg 客户端连接。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 需要连接的 database。
-	 * @returns 已连接的 pg 客户端。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string} databaseName 需要连接的 database。
+	 * @returns {Promise<PgRuntimeClient>} 已连接的 pg 客户端。
 	 */
 	private async openClient(
 		connection: PostgreSqlConnectionConfig,
@@ -201,9 +201,9 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 将 information_schema 行归一化为字段元数据。
 	 *
-	 * @param rows pg 返回的原始行值。
-	 * @param primaryKeyNames 当前表主键字段名集合。
-	 * @returns 归一化后的字段元数据。
+	 * @param {readonly Record<string, unknown>[]} rows pg 返回的原始行值。
+	 * @param {ReadonlySet<string>} primaryKeyNames 当前表主键字段名集合。
+	 * @returns {readonly TableColumnMetadata[]} 归一化后的字段元数据。
 	 */
 	private normalizeColumnRows(
 		rows: readonly Record<string, unknown>[],
@@ -236,10 +236,10 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 创建表数据总数查询。
 	 *
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要统计的表。
-	 * @param columns 当前表字段元数据。
-	 * @param options 过滤查询选项。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要统计的表。
+	 * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {TableQueryOptions} options 过滤查询选项。
 	 * @returns 可执行 SQL 和参数。
 	 */
 	private createRowCountQuery(
@@ -266,12 +266,12 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 创建分页行数据查询。
 	 *
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载行数据的表。
-	 * @param columns 当前表字段元数据。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 每页请求的行数。
-	 * @param options 排序和过滤等查询选项。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载行数据的表。
+	 * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 每页请求的行数。
+	 * @param {TableQueryOptions} options 排序和过滤等查询选项。
 	 * @returns 可执行 SQL、参数和展示 SQL。
 	 */
 	private createRowPageQuery(
@@ -323,10 +323,10 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 创建过滤 SQL 片段。
 	 *
-	 * @param columns 当前表字段元数据。
-	 * @param startIndex PostgreSQL 参数起始下标。
-	 * @param options 查询选项。
-	 * @returns WHERE 片段和参数。
+	 * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {number} startIndex PostgreSQL 参数起始下标。
+	 * @param {TableQueryOptions} options 查询选项。
+	 * @returns {PostgreSqlQueryFragment} WHERE 片段和参数。
 	 */
 	private createFilterClause(
 		columns: readonly TableColumnMetadata[],
@@ -390,10 +390,10 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 创建单条字段过滤条件 SQL 片段。
 	 *
-	 * @param columns 当前表字段元数据。
-	 * @param condition 字段过滤条件。
-	 * @param parameterIndex PostgreSQL 参数下标。
-	 * @returns 可拼接到 WHERE 中的条件片段。
+	 * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {TableFilterCondition} condition 字段过滤条件。
+	 * @param {number} parameterIndex PostgreSQL 参数下标。
+	 * @returns {PostgreSqlQueryFragment | undefined} 可拼接到 WHERE 中的条件片段。
 	 */
 	private createConditionClause(
 		columns: readonly TableColumnMetadata[],
@@ -453,8 +453,8 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 将字段过滤值归一化为非空字符串列表。
 	 *
-	 * @param value Webview 提交的过滤值。
-	 * @returns 可用于 IN / NOT IN 查询的字符串列表。
+	 * @param {TableFilterCondition['value']} value Webview 提交的过滤值。
+	 * @returns {readonly string[]} 可用于 IN / NOT IN 查询的字符串列表。
 	 */
 	private normalizeFilterValueList(
 		value: TableFilterCondition['value']
@@ -472,8 +472,8 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 将字段过滤值归一化为单个字符串。
 	 *
-	 * @param value Webview 提交的过滤值。
-	 * @returns 可用于普通比较查询的字符串值。
+	 * @param {TableFilterCondition['value']} value Webview 提交的过滤值。
+	 * @returns {string} 可用于普通比较查询的字符串值。
 	 */
 	private normalizeFilterScalarValue(
 		value: TableFilterCondition['value']
@@ -492,9 +492,9 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 创建排序 SQL 片段。
 	 *
-	 * @param columns 当前表字段元数据。
-	 * @param options 查询选项。
-	 * @returns ORDER BY SQL 片段。
+	 * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {TableQueryOptions} options 查询选项。
+	 * @returns {string} ORDER BY SQL 片段。
 	 */
 	private createOrderByClause(
 		columns: readonly TableColumnMetadata[],
@@ -520,14 +520,14 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 将 pg 行数据归一化为可序列化的分页载荷。
 	 *
-	 * @param rows pg 返回的原始行值。
-	 * @param columns 当前表字段元数据。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 请求的分页大小。
-	 * @param totalRowCount 当前查询条件下的总行数。
-	 * @param sql 当前表数据页带分页条件的展示 SQL。
-	 * @param sqlWithoutPagination 当前表数据查询去掉分页条件后的展示 SQL。
-	 * @returns 归一化后的分页行数据。
+	 * @param {readonly Record<string, unknown>[]} rows pg 返回的原始行值。
+	 * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 请求的分页大小。
+	 * @param {number} totalRowCount 当前查询条件下的总行数。
+	 * @param {string} sql 当前表数据页带分页条件的展示 SQL。
+	 * @param {string} sqlWithoutPagination 当前表数据查询去掉分页条件后的展示 SQL。
+	 * @returns {TableRowPage} 归一化后的分页行数据。
 	 */
 	private normalizeRowPage(
 		rows: readonly Record<string, unknown>[],
@@ -552,9 +552,9 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 将单条 pg 行归一化为可序列化的单元格值。
 	 *
-	 * @param row pg 返回的原始行。
-	 * @param columns 当前表字段元数据。
-	 * @returns 归一化后的行对象。
+	 * @param {Record<string, unknown>} row pg 返回的原始行。
+	 * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+	 * @returns {Record<string, TableCellValue>} 归一化后的行对象。
 	 */
 	private normalizeRow(
 		row: Record<string, unknown>,
@@ -574,9 +574,9 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 将单个单元格值归一化为可安全 JSON 渲染的值。
 	 *
-	 * @param value 原始单元格值。
-	 * @param column 当前字段元数据。
-	 * @returns 归一化后的单元格值。
+	 * @param {unknown} value 原始单元格值。
+	 * @param {TableColumnMetadata} column 当前字段元数据。
+	 * @returns {TableCellValue} 归一化后的单元格值。
 	 */
 	private normalizeCellValue(
 		value: unknown,
@@ -608,9 +608,9 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 格式化日期时间单元格。
 	 *
-	 * @param value 原始 Date 值。
-	 * @param column 当前字段元数据。
-	 * @returns 旧 PPZ 风格的日期时间字符串。
+	 * @param {Date} value 原始 Date 值。
+	 * @param {TableColumnMetadata} column 当前字段元数据。
+	 * @returns {string} 旧 PPZ 风格的日期时间字符串。
 	 */
 	private formatDateCellValue(
 		value: Date,
@@ -635,8 +635,8 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 归一化 PostgreSQL 返回的日期时间小数秒精度。
 	 *
-	 * @param value information_schema 中的 datetime_precision 值。
-	 * @returns 可用于展示截断的小数秒精度。
+	 * @param {unknown} value information_schema 中的 datetime_precision 值。
+	 * @returns {number | null} 可用于展示截断的小数秒精度。
 	 */
 	private normalizeDateTimePrecision(value: unknown): number | null {
 		if (typeof value === 'number' && Number.isFinite(value)) {
@@ -652,8 +652,8 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 从 COUNT 查询结果中读取总行数。
 	 *
-	 * @param rows pg 返回的 COUNT 查询行。
-	 * @returns 当前查询条件下的总行数。
+	 * @param {readonly Record<string, unknown>[]} rows pg 返回的 COUNT 查询行。
+	 * @returns {number} 当前查询条件下的总行数。
 	 */
 	private readTotalRowCount(rows: readonly Record<string, unknown>[]): number {
 		const value = rows[0]?.totalRowCount;
@@ -673,8 +673,8 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 转义 PostgreSQL 标识符。
 	 *
-	 * @param value 原始标识符。
-	 * @returns 可拼接 SQL 的标识符。
+	 * @param {string} value 原始标识符。
+	 * @returns {string} 可拼接 SQL 的标识符。
 	 */
 	private quoteIdentifier(value: string): string {
 		return `"${value.replaceAll('"', '""')}"`;
@@ -683,9 +683,9 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 转义 PostgreSQL schema.table 名称。
 	 *
-	 * @param schemaName schema 名称。
-	 * @param tableName 表名称。
-	 * @returns 可拼接 SQL 的完整表名。
+	 * @param {string} schemaName schema 名称。
+	 * @param {string} tableName 表名称。
+	 * @returns {string} 可拼接 SQL 的完整表名。
 	 */
 	private quoteQualifiedTableName(schemaName: string, tableName: string): string {
 		return `${this.quoteIdentifier(schemaName)}.${this.quoteIdentifier(tableName)}`;
@@ -694,8 +694,8 @@ export class PgPostgreSqlTableDataProvider
 	/**
 	 * 格式化展示 SQL 使用的字面量。
 	 *
-	 * @param value 原始值。
-	 * @returns 可读 SQL 字面量。
+	 * @param {string} value 原始值。
+	 * @returns {string} 可读 SQL 字面量。
 	 */
 	private formatSqlLiteral(value: string): string {
 		return `'${value.replaceAll("'", "''")}'`;

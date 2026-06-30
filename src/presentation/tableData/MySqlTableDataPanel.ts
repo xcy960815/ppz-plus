@@ -140,7 +140,7 @@ export class MySqlTableDataPanel
 	/**
 	 * 注册表数据页 Webview 恢复器。
 	 *
-	 * @param context VS Code 扩展生命周期上下文。
+	 * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
 	 */
 	public activate(context: vscode.ExtensionContext): void {
 		context.subscriptions.push(
@@ -154,8 +154,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 从 VS Code 保存的 Webview 状态恢复表数据页。
 	 *
-	 * @param panel VS Code 恢复出来的 Webview 面板。
-	 * @param serializedState Webview 前端保存的轻量状态。
+	 * @param {vscode.WebviewPanel} panel VS Code 恢复出来的 Webview 面板。
+	 * @param {unknown} serializedState Webview 前端保存的轻量状态。
 	 */
 	public async deserializeWebviewPanel(
 		panel: vscode.WebviewPanel,
@@ -209,7 +209,7 @@ export class MySqlTableDataPanel
 	/**
 	 * 打开或显示选中表的数据页。
 	 *
-	 * @param tableNode 当前选中的表 Tree 节点。
+	 * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
 	 */
 	public async open(tableNode: TableDataTreeNode): Promise<void> {
 		const panelKey = this.createPanelKey(tableNode);
@@ -254,7 +254,7 @@ export class MySqlTableDataPanel
 	/**
 	 * 为表数据页注册生命周期和消息处理。
 	 *
-	 * @param state 当前表数据面板状态。
+	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
 	 */
 	private registerPanelHandlers(state: MySqlTablePanelState): void {
 		state.panel.onDidDispose(() => {
@@ -270,8 +270,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 解析 VS Code 保存的表数据页 Webview 状态。
 	 *
-	 * @param value 原始恢复状态。
-	 * @returns 可用于恢复表数据页的轻量状态；无效时为空。
+	 * @param {unknown} value 原始恢复状态。
+	 * @returns {MySqlTablePanelSerializedState | undefined} 可用于恢复表数据页的轻量状态；无效时为空。
 	 */
 	private parseSerializedState(
 		value: unknown
@@ -343,8 +343,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 解析 Webview 状态中保存的字段过滤条件。
 	 *
-	 * @param value 原始过滤条件值。
-	 * @returns 可传给应用层的字段过滤条件列表。
+	 * @param {unknown} value 原始过滤条件值。
+	 * @returns {readonly MySqlTableFilterCondition[]} 可传给应用层的字段过滤条件列表。
 	 */
 	private parseFilterConditions(
 		value: unknown
@@ -365,8 +365,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 解析单条字段过滤条件。
 	 *
-	 * @param value 原始字段过滤条件值。
-	 * @returns 可用字段过滤条件；无效时为空。
+	 * @param {unknown} value 原始字段过滤条件值。
+	 * @returns {MySqlTableFilterCondition | undefined} 可用字段过滤条件；无效时为空。
 	 */
 	private parseFilterCondition(
 		value: unknown
@@ -403,8 +403,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 判断过滤操作符是否为表数据页支持的旧 PPZ 操作符。
 	 *
-	 * @param value 待检查的操作符。
-	 * @returns 是否为支持的过滤操作符。
+	 * @param {unknown} value 待检查的操作符。
+	 * @returns {value is MySqlTableFilterCondition['operator']} 是否为支持的过滤操作符。
 	 */
 	private isSupportedFilterOperator(
 		value: unknown
@@ -427,9 +427,9 @@ export class MySqlTableDataPanel
 	/**
 	 * 按连接 ID 和数据库引擎查找可恢复的连接配置。
 	 *
-	 * @param connectionId 需要恢复的连接标识。
-	 * @param engine 需要恢复的数据库引擎。
-	 * @returns 匹配的连接配置；不存在时为空。
+	 * @param {string} connectionId 需要恢复的连接标识。
+	 * @param {'mysql' | 'postgresql' | 'sqlite3'} engine 需要恢复的数据库引擎。
+	 * @returns {Promise<ConnectionConfig | undefined>} 匹配的连接配置；不存在时为空。
 	 */
 	private async findRestoredConnection(
 		connectionId: string,
@@ -448,9 +448,9 @@ export class MySqlTableDataPanel
 	/**
 	 * 根据恢复状态创建表节点。
 	 *
-	 * @param connection 已恢复的连接配置。
-	 * @param restoredState 已解析的 Webview 状态。
-	 * @returns 可供表数据页使用的表节点。
+	 * @param {ConnectionConfig} connection 已恢复的连接配置。
+	 * @param {MySqlTablePanelSerializedState} restoredState 已解析的 Webview 状态。
+	 * @returns {TableDataTreeNode} 可供表数据页使用的表节点。
 	 */
 	private createRestoredTableNode(
 		connection: ConnectionConfig,
@@ -491,8 +491,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 处理分页和刷新的 Webview 动作。
 	 *
-	 * @param state 正在更新的面板状态。
-	 * @param message Webview 发出的消息。
+	 * @param {MySqlTablePanelState} state 正在更新的面板状态。
+	 * @param {MySqlTableDataWebviewMessage} message Webview 发出的消息。
 	 */
 	private async handleWebviewMessage(
 		state: MySqlTablePanelState,
@@ -608,8 +608,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 判断当前表节点是否只读。
 	 *
-	 * @param tableNode 当前表节点。
-	 * @returns 是否只开放只读能力。
+	 * @param {TableDataTreeNode} tableNode 当前表节点。
+	 * @returns {boolean} 是否只开放只读能力。
 	 */
 	private isReadOnlyTableNode(tableNode: TableDataTreeNode): boolean {
 		return tableNode.kind === 'postgresqlTable';
@@ -618,8 +618,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 从当前面板状态中读取可写的 MySQL 表节点。
 	 *
-	 * @param state 当前表数据面板状态。
-	 * @returns MySQL 表节点；非 MySQL 表时返回 undefined。
+	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
+	 * @returns {MySqlTableTreeNode | undefined} MySQL 表节点；非 MySQL 表时返回 undefined。
 	 */
 	private getMySqlTableNode(
 		state: MySqlTablePanelState
@@ -630,8 +630,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 从当前面板状态中读取可写的 SQLite3 表节点。
 	 *
-	 * @param state 当前表数据面板状态。
-	 * @returns SQLite3 表节点；非 SQLite3 表时返回 undefined。
+	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
+	 * @returns {Sqlite3TableTreeNode | undefined} SQLite3 表节点；非 SQLite3 表时返回 undefined。
 	 */
 	private getSqlite3TableNode(
 		state: MySqlTablePanelState
@@ -653,7 +653,7 @@ export class MySqlTableDataPanel
 	/**
 	 * 将当前查看的 SQL 写入系统剪贴板。
 	 *
-	 * @param sql Webview 当前选择的 SQL 文本。
+	 * @param {string} sql Webview 当前选择的 SQL 文本。
 	 */
 	private async copyCurrentSql(sql: string): Promise<void> {
 		await vscode.env.clipboard.writeText(sql);
@@ -663,7 +663,7 @@ export class MySqlTableDataPanel
 	/**
 	 * 在 VS Code 临时 SQL 文档中打开当前查看的 SQL。
 	 *
-	 * @param sql Webview 当前选择的 SQL 文本。
+	 * @param {string} sql Webview 当前选择的 SQL 文本。
 	 */
 	private async openCurrentSqlDocument(sql: string): Promise<void> {
 		const document = await vscode.workspace.openTextDocument({
@@ -679,7 +679,7 @@ export class MySqlTableDataPanel
 	/**
 	 * 收集字段值并新增一条表记录。
 	 *
-	 * @param state 当前表数据面板状态。
+	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
 	 */
 	private async insertRow(
 		state: MySqlTablePanelState,
@@ -747,8 +747,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 以当前聚焦行作为默认值新增一条表记录。
 	 *
-	 * @param state 当前表数据面板状态。
-	 * @param rowIndex 当前页行索引。
+	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
+	 * @param {number} rowIndex 当前页行索引。
 	 */
 	private async copyRow(
 		state: MySqlTablePanelState,
@@ -769,9 +769,9 @@ export class MySqlTableDataPanel
 	/**
 	 * 通过 VS Code 输入框收集单条新增记录的字段值。
 	 *
-	 * @param columns 当前表字段元数据。
-	 * @param sourceRow 作为新增默认值的来源行。
-	 * @returns 用户提交的字段值；取消时返回 undefined。
+	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {Record<string, MySqlTableCellValue>} sourceRow 作为新增默认值的来源行。
+	 * @returns {Promise<MySqlTableInsertValues | undefined>} 用户提交的字段值；取消时返回 undefined。
 	 */
 	private async promptInsertValues(
 		columns: readonly MySqlTableColumnMetadata[],
@@ -808,8 +808,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 编辑当前页中的一条表记录。
 	 *
-	 * @param state 当前表数据面板状态。
-	 * @param rowIndex 当前页行索引。
+	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
+	 * @param {number} rowIndex 当前页行索引。
 	 */
 	private async editRow(
 		state: MySqlTablePanelState,
@@ -991,9 +991,9 @@ export class MySqlTableDataPanel
 	/**
 	 * 归一化 Webview 内联编辑提交的字段值。
 	 *
-	 * @param columns 当前表字段元数据。
-	 * @param values Webview 提交的原始字段值。
-	 * @returns 可传入更新用例的字段值。
+	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {Record<string, string | number | boolean | null>} values Webview 提交的原始字段值。
+	 * @returns {MySqlTableUpdateValues} 可传入更新用例的字段值。
 	 */
 	private normalizeInlineEditValues(
 		columns: readonly MySqlTableColumnMetadata[],
@@ -1022,9 +1022,9 @@ export class MySqlTableDataPanel
 	/**
 	 * 根据主键字段从当前行创建原行定位值。
 	 *
-	 * @param primaryKeyColumns 主键字段列表。
-	 * @param row 当前页中的原始行。
-	 * @returns 原行定位值。
+	 * @param {readonly MySqlTableColumnMetadata[]} primaryKeyColumns 主键字段列表。
+	 * @param {Record<string, MySqlTableCellValue>} row 当前页中的原始行。
+	 * @returns {MySqlTableRowIdentityValues} 原行定位值。
 	 */
 	private createIdentityValues(
 		primaryKeyColumns: readonly MySqlTableColumnMetadata[],
@@ -1038,8 +1038,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 删除当前页中的一条表记录。
 	 *
-	 * @param state 当前表数据面板状态。
-	 * @param rowIndex 当前页行索引。
+	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
+	 * @param {number} rowIndex 当前页行索引。
 	 */
 	private async deleteRow(
 		state: MySqlTablePanelState,
@@ -1117,9 +1117,9 @@ export class MySqlTableDataPanel
 	/**
 	 * 创建对齐旧 PPZ 的删除确认明细。
 	 *
-	 * @param primaryKeyColumns 当前表主键字段列表。
-	 * @param row 当前准备删除的记录。
-	 * @returns 展示给用户确认的删除风险说明。
+	 * @param {readonly MySqlTableColumnMetadata[]} primaryKeyColumns 当前表主键字段列表。
+	 * @param {Record<string, MySqlTableCellValue>} row 当前准备删除的记录。
+	 * @returns {string} 展示给用户确认的删除风险说明。
 	 */
 	private createDeleteWarningMessage(
 		primaryKeyColumns: readonly MySqlTableColumnMetadata[],
@@ -1140,8 +1140,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 将单元格值转换为确认弹窗中的短文本。
 	 *
-	 * @param value 单元格原始展示值。
-	 * @returns 可放入 VS Code 消息框的文本。
+	 * @param {MySqlTableCellValue} value 单元格原始展示值。
+	 * @returns {string} 可放入 VS Code 消息框的文本。
 	 */
 	private formatCellValueForMessage(value: MySqlTableCellValue): string {
 		if (value === null) {
@@ -1154,9 +1154,9 @@ export class MySqlTableDataPanel
 	/**
 	 * 通过 VS Code 输入框收集单条记录更新值。
 	 *
-	 * @param columns 当前表字段元数据。
-	 * @param row 当前页中的原始行。
-	 * @returns 用户提交的更新值；取消时返回 undefined。
+	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+	 * @param {Record<string, MySqlTableCellValue>} row 当前页中的原始行。
+	 * @returns {Promise<MySqlTableUpdateValues | undefined>} 用户提交的更新值；取消时返回 undefined。
 	 */
 	private async promptUpdateValues(
 		columns: readonly MySqlTableColumnMetadata[],
@@ -1199,8 +1199,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 确认是否保存当前尚未写入数据库的修改。
 	 *
-	 * @param message 确认弹窗消息。
-	 * @returns 用户选择保存时返回 true。
+	 * @param {string} message 确认弹窗消息。
+	 * @returns {Promise<boolean>} 用户选择保存时返回 true。
 	 */
 	private async confirmPendingChange(message: string): Promise<boolean> {
 		const confirmation = await vscode.window.showWarningMessage(
@@ -1218,7 +1218,7 @@ export class MySqlTableDataPanel
 	/**
 	 * 加载表字段和行数据，并渲染当前面板状态。
 	 *
-	 * @param state 正在渲染的面板状态。
+	 * @param {MySqlTablePanelState} state 正在渲染的面板状态。
 	 */
 	private async renderTableData(state: MySqlTablePanelState): Promise<void> {
 		state.panel.title = `${state.tableNode.tableName} 表数据`;
@@ -1248,7 +1248,7 @@ export class MySqlTableDataPanel
 	/**
 	 * 根据表节点类型加载字段和分页行数据。
 	 *
-	 * @param state 正在渲染的面板状态。
+	 * @param {MySqlTablePanelState} state 正在渲染的面板状态。
 	 * @returns 字段和分页行数据。
 	 */
 	private async loadTableData(
@@ -1312,8 +1312,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 将当前面板状态转换为表数据查询选项。
 	 *
-	 * @param state 当前面板状态。
-	 * @returns 排序和过滤查询选项。
+	 * @param {MySqlTablePanelState} state 当前面板状态。
+	 * @returns {MySqlTableQueryOptions} 排序和过滤查询选项。
 	 */
 	private createQueryOptions(
 		state: MySqlTablePanelState
@@ -1340,8 +1340,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 为完整表名创建稳定的面板键。
 	 *
-	 * @param tableNode 当前选中的表 Tree 节点。
-	 * @returns 唯一的面板键。
+	 * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
+	 * @returns {string} 唯一的面板键。
 	 */
 	private createPanelKey(tableNode: TableDataTreeNode): string {
 		if (tableNode.kind === 'postgresqlTable') {
@@ -1358,8 +1358,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 从当前面板状态创建可保存到 Webview 的轻量状态。
 	 *
-	 * @param state 当前表数据面板状态。
-	 * @returns 可由 VS Code 恢复的表数据页状态。
+	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
+	 * @returns {MySqlTablePanelSerializedState} 可由 VS Code 恢复的表数据页状态。
 	 */
 	private createSerializedState(
 		state: MySqlTablePanelState
@@ -1391,8 +1391,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 在表数据加载期间渲染临时加载视图。
 	 *
-	 * @param tableNode 当前选中的表 Tree 节点。
-	 * @returns 加载状态的 HTML 文档。
+	 * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
+	 * @returns {string} 加载状态的 HTML 文档。
 	 */
 	private renderLoadingHtml(tableNode: TableDataTreeNode): string {
 		const qualifiedName =
@@ -1425,9 +1425,9 @@ export class MySqlTableDataPanel
 	/**
 	 * 为当前表面板渲染错误视图。
 	 *
-	 * @param tableNode 当前选中的表 Tree 节点。
-	 * @param message 需要展示的错误消息。
-	 * @returns 错误状态的 HTML 文档。
+	 * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
+	 * @param {string} message 需要展示的错误消息。
+	 * @returns {string} 错误状态的 HTML 文档。
 	 */
 	private renderErrorHtml(
 		tableNode: TableDataTreeNode,
@@ -1466,8 +1466,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 渲染 Webview 状态无法恢复时的错误页。
 	 *
-	 * @param message 需要展示的恢复错误。
-	 * @returns 错误状态的 HTML 文档。
+	 * @param {string} message 需要展示的恢复错误。
+	 * @returns {string} 错误状态的 HTML 文档。
 	 */
 	private renderRestoreErrorHtml(message: string): string {
 		return `<!DOCTYPE html>
@@ -1498,10 +1498,10 @@ export class MySqlTableDataPanel
 	/**
 	 * 渲染完整的表数据 HTML 文档。
 	 *
-	 * @param state 当前面板状态。
-	 * @param columns 当前选中表的字段元数据。
-	 * @param rowPage 当前选中表的分页行数据。
-	 * @returns 渲染到 Webview 内的 HTML 文档。
+	 * @param {MySqlTablePanelState} state 当前面板状态。
+	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前选中表的字段元数据。
+	 * @param {MySqlTableRowPage} rowPage 当前选中表的分页行数据。
+	 * @returns {string} 渲染到 Webview 内的 HTML 文档。
 	 */
 	private renderTableHtml(
 		state: MySqlTablePanelState,
@@ -2687,12 +2687,12 @@ export class MySqlTableDataPanel
 	/**
 	 * 按旧 PPZ 表格结构渲染单个表格单元格。
 	 *
-	 * @param rowIndex 当前页行索引。
-	 * @param column 当前单元格所属字段元数据。
-	 * @param value 待渲染的单元格值。
-	 * @param canEditRow 当前表是否允许通过主键编辑行。
-	 * @param hidden 当前字段是否初始隐藏。
-	 * @returns HTML 表格单元格标记。
+	 * @param {number} rowIndex 当前页行索引。
+	 * @param {MySqlTableColumnMetadata} column 当前单元格所属字段元数据。
+	 * @param {string | number | boolean | null} value 待渲染的单元格值。
+	 * @param {boolean} canEditRow 当前表是否允许通过主键编辑行。
+	 * @param {boolean} hidden 当前字段是否初始隐藏。
+	 * @returns {string} HTML 表格单元格标记。
 	 */
 	private renderCell(
 		rowIndex: number,
@@ -2720,7 +2720,7 @@ export class MySqlTableDataPanel
 	/**
 	 * 渲染旧 PPZ iconfont 的 SVG symbol 子集。
 	 *
-	 * @returns 当前表数据页工具栏所需的隐藏 SVG 符号。
+	 * @returns {string} 当前表数据页工具栏所需的隐藏 SVG 符号。
 	 */
 	private renderIconSprite(): string {
 		return `<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
@@ -2745,8 +2745,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 渲染旧 PPZ iconfont 图标引用。
 	 *
-	 * @param iconId 旧 PPZ iconfont 中的图标标识。
-	 * @returns SVG 图标引用。
+	 * @param {string} iconId 旧 PPZ iconfont 中的图标标识。
+	 * @returns {string} SVG 图标引用。
 	 */
 	private renderIcon(iconId: string): string {
 		return `<svg class="icon" aria-hidden="true"><use href="#icon-${this.escapeHtml(iconId)}"></use></svg>`;
@@ -2755,8 +2755,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 转义用户可控文本以便安全渲染 HTML。
 	 *
-	 * @param value 待转义的文本值。
-	 * @returns 转义后的 HTML 字符串。
+	 * @param {string} value 待转义的文本值。
+	 * @returns {string} 转义后的 HTML 字符串。
 	 */
 	private escapeHtml(value: string): string {
 		return value
@@ -2770,8 +2770,8 @@ export class MySqlTableDataPanel
 	/**
 	 * 将数据安全序列化为可嵌入 script 的 JSON。
 	 *
-	 * @param value 需要嵌入 Webview 脚本的数据。
-	 * @returns 经过转义的 JSON 字符串。
+	 * @param {unknown} value 需要嵌入 Webview 脚本的数据。
+	 * @returns {string} 经过转义的 JSON 字符串。
 	 */
 	private serializeScriptValue(value: unknown): string {
 		return JSON.stringify(value)

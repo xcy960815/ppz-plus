@@ -47,7 +47,7 @@ export class AddSqlite3ConnectionCommand implements ExtensionCommand {
 	/**
 	 * 向 VS Code 注册命令。
 	 *
-	 * @returns 命令注册的可释放句柄。
+	 * @returns {vscode.Disposable} 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(this.id, async () => {
@@ -97,8 +97,8 @@ export class AddSqlite3ConnectionCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择 SQLite3 数据库文件和连接名称。
 	 *
-	 * @param existingConfig 编辑时已有的连接配置。
-	 * @returns 最终得到的 SQLite3 连接配置。
+	 * @param {Sqlite3ConnectionConfig} existingConfig 编辑时已有的连接配置。
+	 * @returns {Promise<Sqlite3ConnectionConfig | undefined>} 最终得到的 SQLite3 连接配置。
 	 */
 	public static async collectSqlite3Config(
 		existingConfig?: Sqlite3ConnectionConfig

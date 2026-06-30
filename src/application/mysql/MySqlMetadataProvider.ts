@@ -22,8 +22,8 @@ export interface MySqlMetadataProvider {
 	/**
 	 * 列出当前 MySQL 连接可见的 schema。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @returns 可见的 schema 列表。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @returns {Promise<readonly MySqlSchemaMetadata[]>} 可见的 schema 列表。
 	 */
 	listSchemas(
 		connection: MysqlConnectionConfig
@@ -32,9 +32,9 @@ export interface MySqlMetadataProvider {
 	/**
 	 * 列出选中 MySQL schema 下的表。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 需要加载表的 schema。
-	 * @returns 该 schema 下可见的表。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 需要加载表的 schema。
+	 * @returns {Promise<readonly MySqlTableMetadata[]>} 该 schema 下可见的表。
 	 */
 	listTables(
 		connection: MysqlConnectionConfig,

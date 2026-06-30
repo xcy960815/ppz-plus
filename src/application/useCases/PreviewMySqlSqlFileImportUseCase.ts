@@ -20,8 +20,8 @@ export class PreviewMySqlSqlFileImportUseCase {
 	/**
 	 * 读取 SQL 文件并生成导入预览。
 	 *
-	 * @param filePath SQL 文件路径。
-	 * @returns SQL 文件导入预览结果。
+	 * @param {string} filePath SQL 文件路径。
+	 * @returns {Promise<SqlFileImportPreviewResult>} SQL 文件导入预览结果。
 	 */
 	public async execute(filePath: string): Promise<SqlFileImportPreviewResult> {
 		try {

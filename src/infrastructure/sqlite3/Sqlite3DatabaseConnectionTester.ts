@@ -25,7 +25,7 @@ export class Sqlite3DatabaseConnectionTester implements ConnectionTester {
 	/**
 	 * 测试 SQLite3 数据库文件是否可访问并可执行 SQL。
 	 *
-	 * @param config 待验证的连接配置。
+	 * @param {ConnectionConfig} config 待验证的连接配置。
 	 */
 	public async test(config: ConnectionConfig): Promise<void> {
 		if (!this.sqlite3ConnectionAdapter.supports(config)) {
@@ -51,9 +51,9 @@ export class Sqlite3DatabaseConnectionTester implements ConnectionTester {
 	/**
 	 * 打开 SQLite3 数据库文件。
 	 *
-	 * @param databasePath 数据库文件路径。
-	 * @param mode SQLite3 打开模式。
-	 * @returns 已打开的数据库实例。
+	 * @param {string} databasePath 数据库文件路径。
+	 * @param {number} mode SQLite3 打开模式。
+	 * @returns {Promise<Sqlite3RuntimeDatabase>} 已打开的数据库实例。
 	 */
 	private async openDatabase(
 		databasePath: string,
@@ -75,9 +75,9 @@ export class Sqlite3DatabaseConnectionTester implements ConnectionTester {
 	/**
 	 * 执行一条 SQLite3 单行查询。
 	 *
-	 * @param database 已打开的数据库实例。
-	 * @param sql 需要执行的 SQL。
-	 * @param params 绑定参数。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
+	 * @param {string} sql 需要执行的 SQL。
+	 * @param {readonly unknown[]} params 绑定参数。
 	 */
 	private async get(
 		database: Sqlite3RuntimeDatabase,
@@ -99,7 +99,7 @@ export class Sqlite3DatabaseConnectionTester implements ConnectionTester {
 	/**
 	 * 关闭 SQLite3 数据库实例。
 	 *
-	 * @param database 已打开的数据库实例。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
 	 */
 	private async closeDatabase(database: Sqlite3RuntimeDatabase): Promise<void> {
 		await new Promise<void>((resolve, reject) => {

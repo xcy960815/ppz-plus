@@ -29,7 +29,7 @@ export class GlobalStateSqlExportTaskLogRepository
 	/**
 	 * 追加一条 SQL 导出任务日志。
 	 *
-	 * @param entry 需要保存的 SQL 导出任务日志。
+	 * @param {SqlExportTaskLogEntry} entry 需要保存的 SQL 导出任务日志。
 	 */
 	public async append(entry: SqlExportTaskLogEntry): Promise<void> {
 		const nextEntries = [entry, ...this.readEntries()].slice(
@@ -46,7 +46,7 @@ export class GlobalStateSqlExportTaskLogRepository
 	/**
 	 * 列出最近的 SQL 导出任务日志。
 	 *
-	 * @returns 最近的 SQL 导出任务日志。
+	 * @returns {Promise<readonly SqlExportTaskLogEntry[]>} 最近的 SQL 导出任务日志。
 	 */
 	public async listRecent(): Promise<readonly SqlExportTaskLogEntry[]> {
 		return this.readEntries();
@@ -55,7 +55,7 @@ export class GlobalStateSqlExportTaskLogRepository
 	/**
 	 * 从 VS Code 全局状态读取 SQL 导出任务日志。
 	 *
-	 * @returns 已保存的 SQL 导出任务日志。
+	 * @returns {SqlExportTaskLogEntry[]} 已保存的 SQL 导出任务日志。
 	 */
 	private readEntries(): SqlExportTaskLogEntry[] {
 		return this.globalState.get<SqlExportTaskLogEntry[]>(

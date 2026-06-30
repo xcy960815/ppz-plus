@@ -5,8 +5,8 @@ import type { ConnectionConfig } from '../../domain/connections/ConnectionConfig
 /**
  * 返回连接配置对应的用户可读数据库名称。
  *
- * @param connection 需要展示的连接配置。
- * @returns 数据库引擎展示名称。
+ * @param {ConnectionConfig} connection 需要展示的连接配置。
+ * @returns {string} 数据库引擎展示名称。
  */
 export function describeConnectionEngine(connection: ConnectionConfig): string {
 	if (connection.engine === 'postgresql') {
@@ -23,8 +23,8 @@ export function describeConnectionEngine(connection: ConnectionConfig): string {
 /**
  * 带 VS Code 进度提示执行连接测试任务。
  *
- * @param connection 需要测试的连接配置。
- * @param task 实际执行连接测试的异步任务。
+ * @param {ConnectionConfig} connection 需要测试的连接配置。
+ * @param {()} task 实际执行连接测试的异步任务。
  */
 export async function withConnectionTestProgress(
 	connection: ConnectionConfig,

@@ -7,7 +7,7 @@ export class Sqlite3RuntimeLoader {
 	/**
 	 * 按需加载 @vscode/sqlite3 运行时模块。
 	 *
-	 * @returns 动态导入的 @vscode/sqlite3 模块。
+	 * @returns {Promise<Sqlite3RuntimeModule>} 动态导入的 @vscode/sqlite3 模块。
 	 */
 	public async loadSqlite3Module(): Promise<Sqlite3RuntimeModule> {
 		try {

@@ -16,9 +16,9 @@ export class SaveSqlExportDocumentUseCase {
 	/**
 	 * 将 SQL 导出文档保存到指定文件路径。
 	 *
-	 * @param document 已生成的 SQL 导出文档。
-	 * @param filePath 用户选择的目标文件路径。
-	 * @returns SQL 导出文件保存结果。
+	 * @param {SqlExportDocument} document 已生成的 SQL 导出文档。
+	 * @param {string} filePath 用户选择的目标文件路径。
+	 * @returns {Promise<SqlExportFileSaveResult>} SQL 导出文件保存结果。
 	 */
 	public async execute(
 		document: SqlExportDocument,

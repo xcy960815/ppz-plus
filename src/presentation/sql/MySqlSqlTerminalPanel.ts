@@ -64,7 +64,7 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 注册 SQL 终端 Webview 恢复器。
 	 *
-	 * @param context VS Code 扩展生命周期上下文。
+	 * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
 	 */
 	public activate(context: vscode.ExtensionContext): void {
 		context.subscriptions.push(
@@ -78,8 +78,8 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 从 VS Code 保存的 Webview 状态恢复 SQL 终端面板。
 	 *
-	 * @param panel VS Code 恢复出来的 Webview 面板。
-	 * @param serializedState Webview 前端保存的轻量状态。
+	 * @param {vscode.WebviewPanel} panel VS Code 恢复出来的 Webview 面板。
+	 * @param {unknown} serializedState Webview 前端保存的轻量状态。
 	 */
 	public async deserializeWebviewPanel(
 		panel: vscode.WebviewPanel,
@@ -103,8 +103,8 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 打开或显示 MySQL SQL 终端。
 	 *
-	 * @param initialConnection 可选的初始选中连接。
-	 * @param initialSql 可选的初始 SQL 文本。
+	 * @param {MysqlConnectionConfig} initialConnection 可选的初始选中连接。
+	 * @param {string} initialSql 可选的初始 SQL 文本。
 	 */
 	public async open(
 		initialConnection?: MysqlConnectionConfig,
@@ -147,7 +147,7 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 为 SQL 终端面板注册生命周期和消息处理。
 	 *
-	 * @param state 当前面板状态。
+	 * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
 	 */
 	private registerPanelHandlers(state: MySqlSqlTerminalPanelState): void {
 		state.panel.onDidDispose(() => {
@@ -165,8 +165,8 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 处理 SQL 终端 Webview 动作。
 	 *
-	 * @param state 当前面板状态。
-	 * @param message Webview 发出的消息。
+	 * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
+	 * @param {MySqlSqlTerminalWebviewMessage} message Webview 发出的消息。
 	 */
 	private async handleWebviewMessage(
 		state: MySqlSqlTerminalPanelState,
@@ -212,7 +212,7 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 渲染当前 SQL 终端面板。
 	 *
-	 * @param state 当前面板状态。
+	 * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
 	 */
 	private async render(state: MySqlSqlTerminalPanelState): Promise<void> {
 		state.panel.title = 'MySQL SQL 终端';
@@ -222,9 +222,9 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 创建 SQL 终端 Webview HTML。
 	 *
-	 * @param state 当前面板状态。
-	 * @param isExecuting 是否正在执行 SQL。
-	 * @returns Webview HTML 文档。
+	 * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
+	 * @param {boolean} isExecuting 是否正在执行 SQL。
+	 * @returns {Promise<string>} Webview HTML 文档。
 	 */
 	private async renderHtml(
 		state: MySqlSqlTerminalPanelState,
@@ -496,8 +496,8 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 解析 VS Code 保存的 SQL 终端 Webview 状态。
 	 *
-	 * @param value 原始恢复状态。
-	 * @returns 可用于重新渲染的 SQL 终端状态。
+	 * @param {unknown} value 原始恢复状态。
+	 * @returns {MySqlSqlTerminalSerializedState} 可用于重新渲染的 SQL 终端状态。
 	 */
 	private parseSerializedState(
 		value: unknown
@@ -523,7 +523,7 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 读取当前保存的 MySQL 连接。
 	 *
-	 * @returns MySQL 连接配置列表。
+	 * @returns {Promise<readonly MysqlConnectionConfig[]>} MySQL 连接配置列表。
 	 */
 	private async listMySqlConnections(): Promise<readonly MysqlConnectionConfig[]> {
 		const connections = await this.listStoredConnectionsUseCase.execute();
@@ -536,8 +536,8 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 判断连接配置是否为 MySQL 连接。
 	 *
-	 * @param connection 待检查的连接配置。
-	 * @returns 是否为 MySQL 连接。
+	 * @param {ConnectionConfig} connection 待检查的连接配置。
+	 * @returns {connection is MysqlConnectionConfig} 是否为 MySQL 连接。
 	 */
 	private isMySqlConnection(
 		connection: ConnectionConfig
@@ -548,8 +548,8 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 为连接选择框创建用户可读描述。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @returns 连接描述文本。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @returns {string} 连接描述文本。
 	 */
 	private describeConnection(connection: MysqlConnectionConfig): string {
 		if (connection.mode === 'parameters') {
@@ -563,9 +563,9 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 创建当前选中连接的状态文本。
 	 *
-	 * @param connections 当前可选的 MySQL 连接。
-	 * @param selectedConnectionId 当前选中的连接标识。
-	 * @returns 连接状态文本。
+	 * @param {readonly MysqlConnectionConfig[]} connections 当前可选的 MySQL 连接。
+	 * @param {string} selectedConnectionId 当前选中的连接标识。
+	 * @returns {string} 连接状态文本。
 	 */
 	private describeSelectedConnection(
 		connections: readonly MysqlConnectionConfig[],
@@ -583,8 +583,8 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 转义用户可控文本以便安全渲染 HTML。
 	 *
-	 * @param value 待转义的文本值。
-	 * @returns 转义后的 HTML 字符串。
+	 * @param {string} value 待转义的文本值。
+	 * @returns {string} 转义后的 HTML 字符串。
 	 */
 	private escapeHtml(value: string): string {
 		return value
@@ -598,8 +598,8 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 转义用户可控文本以便安全放入 HTML 属性。
 	 *
-	 * @param value 待转义的文本值。
-	 * @returns 转义后的属性字符串。
+	 * @param {string} value 待转义的文本值。
+	 * @returns {string} 转义后的属性字符串。
 	 */
 	private escapeHtmlAttribute(value: string): string {
 		return this.escapeHtml(value);
@@ -608,8 +608,8 @@ export class MySqlSqlTerminalPanel
 	/**
 	 * 将数据安全序列化为可嵌入 script 的 JSON。
 	 *
-	 * @param value 需要嵌入 Webview 脚本的数据。
-	 * @returns 经过转义的 JSON 字符串。
+	 * @param {unknown} value 需要嵌入 Webview 脚本的数据。
+	 * @returns {string} 经过转义的 JSON 字符串。
 	 */
 	private serializeScriptValue(value: unknown): string {
 		return JSON.stringify(value)

@@ -7,8 +7,8 @@ export class CsvDocumentParser {
 	/**
 	 * 将 CSV 文本解析为表头和记录。
 	 *
-	 * @param content CSV 原始文本。
-	 * @returns 解析后的 CSV 文档。
+	 * @param {string} content CSV 原始文本。
+	 * @returns {CsvDocument} 解析后的 CSV 文档。
 	 */
 	public parse(content: string): CsvDocument {
 		const records = this.parseRecords(content).filter((record) =>
@@ -49,8 +49,8 @@ export class CsvDocumentParser {
 	/**
 	 * 解析 CSV 文本为原始二维记录。
 	 *
-	 * @param content CSV 原始文本。
-	 * @returns 未映射表头的二维字段数组。
+	 * @param {string} content CSV 原始文本。
+	 * @returns {string[][]} 未映射表头的二维字段数组。
 	 */
 	private parseRecords(content: string): string[][] {
 		const records: string[][] = [];
@@ -126,7 +126,7 @@ export class CsvDocumentParser {
 	/**
 	 * 校验 CSV 表头是否可用于字段映射。
 	 *
-	 * @param headers CSV 表头字段名。
+	 * @param {readonly string[]} headers CSV 表头字段名。
 	 */
 	private validateHeaders(headers: readonly string[]): void {
 		if (headers.length === 0) {

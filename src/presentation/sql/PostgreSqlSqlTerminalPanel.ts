@@ -66,7 +66,7 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 注册 SQL 终端 Webview 恢复器。
 	 *
-	 * @param context VS Code 扩展生命周期上下文。
+	 * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
 	 */
 	public activate(context: vscode.ExtensionContext): void {
 		context.subscriptions.push(
@@ -80,8 +80,8 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 从 VS Code 保存的 Webview 状态恢复 SQL 终端面板。
 	 *
-	 * @param panel VS Code 恢复出来的 Webview 面板。
-	 * @param serializedState Webview 前端保存的轻量状态。
+	 * @param {vscode.WebviewPanel} panel VS Code 恢复出来的 Webview 面板。
+	 * @param {unknown} serializedState Webview 前端保存的轻量状态。
 	 */
 	public async deserializeWebviewPanel(
 		panel: vscode.WebviewPanel,
@@ -106,9 +106,9 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 打开或显示 PostgreSQL SQL 终端。
 	 *
-	 * @param initialConnection 可选的初始选中连接。
-	 * @param initialDatabaseName 可选的初始 database。
-	 * @param initialSql 可选的初始 SQL 文本。
+	 * @param {PostgreSqlConnectionConfig} initialConnection 可选的初始选中连接。
+	 * @param {string} initialDatabaseName 可选的初始 database。
+	 * @param {string} initialSql 可选的初始 SQL 文本。
 	 */
 	public async open(
 		initialConnection?: PostgreSqlConnectionConfig,
@@ -154,7 +154,7 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 为 SQL 终端面板注册生命周期和消息处理。
 	 *
-	 * @param state 当前面板状态。
+	 * @param {PostgreSqlSqlTerminalPanelState} state 当前面板状态。
 	 */
 	private registerPanelHandlers(
 		state: PostgreSqlSqlTerminalPanelState
@@ -174,8 +174,8 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 处理 SQL 终端 Webview 动作。
 	 *
-	 * @param state 当前面板状态。
-	 * @param message Webview 发出的消息。
+	 * @param {PostgreSqlSqlTerminalPanelState} state 当前面板状态。
+	 * @param {PostgreSqlSqlTerminalWebviewMessage} message Webview 发出的消息。
 	 */
 	private async handleWebviewMessage(
 		state: PostgreSqlSqlTerminalPanelState,
@@ -226,7 +226,7 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 渲染当前 SQL 终端面板。
 	 *
-	 * @param state 当前面板状态。
+	 * @param {PostgreSqlSqlTerminalPanelState} state 当前面板状态。
 	 */
 	private async render(state: PostgreSqlSqlTerminalPanelState): Promise<void> {
 		state.panel.title = 'PostgreSQL SQL 终端';
@@ -236,9 +236,9 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 创建 SQL 终端 Webview HTML。
 	 *
-	 * @param state 当前面板状态。
-	 * @param isExecuting 是否正在执行 SQL。
-	 * @returns Webview HTML 文档。
+	 * @param {PostgreSqlSqlTerminalPanelState} state 当前面板状态。
+	 * @param {boolean} isExecuting 是否正在执行 SQL。
+	 * @returns {Promise<string>} Webview HTML 文档。
 	 */
 	private async renderHtml(
 		state: PostgreSqlSqlTerminalPanelState,
@@ -536,8 +536,8 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 解析 VS Code 保存的 SQL 终端 Webview 状态。
 	 *
-	 * @param value 原始恢复状态。
-	 * @returns 可用于重新渲染的 SQL 终端状态。
+	 * @param {unknown} value 原始恢复状态。
+	 * @returns {PostgreSqlSqlTerminalSerializedState} 可用于重新渲染的 SQL 终端状态。
 	 */
 	private parseSerializedState(
 		value: unknown
@@ -585,8 +585,8 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 判断连接配置是否为 PostgreSQL 连接。
 	 *
-	 * @param connection 待检查的连接配置。
-	 * @returns 是否为 PostgreSQL 连接。
+	 * @param {ConnectionConfig} connection 待检查的连接配置。
+	 * @returns {connection is PostgreSqlConnectionConfig} 是否为 PostgreSQL 连接。
 	 */
 	private isPostgreSqlConnection(
 		connection: ConnectionConfig
@@ -597,8 +597,8 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 从连接配置中解析默认 database。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @returns 默认 database；无法识别时为空。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @returns {string | undefined} 默认 database；无法识别时为空。
 	 */
 	private resolveConfiguredDatabaseName(
 		connection: PostgreSqlConnectionConfig
@@ -620,9 +620,9 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 为连接选择框创建用户可读描述。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 当前执行目标 database。
-	 * @returns 连接描述文本。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string | undefined} databaseName 当前执行目标 database。
+	 * @returns {string} 连接描述文本。
 	 */
 	private describeConnection(
 		connection: PostgreSqlConnectionConfig,
@@ -640,10 +640,10 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 创建当前选中连接的状态文本。
 	 *
-	 * @param connections 当前可选的 PostgreSQL 连接。
-	 * @param selectedConnectionId 当前选中的连接标识。
-	 * @param selectedDatabaseName 当前选中的 database。
-	 * @returns 连接状态文本。
+	 * @param {readonly PostgreSqlConnectionConfig[]} connections 当前可选的 PostgreSQL 连接。
+	 * @param {string} selectedConnectionId 当前选中的连接标识。
+	 * @param {string | undefined} selectedDatabaseName 当前选中的 database。
+	 * @returns {string} 连接状态文本。
 	 */
 	private describeSelectedConnection(
 		connections: readonly PostgreSqlConnectionConfig[],
@@ -662,8 +662,8 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 转义用户可控文本以便安全渲染 HTML。
 	 *
-	 * @param value 待转义的文本值。
-	 * @returns 转义后的 HTML 字符串。
+	 * @param {string} value 待转义的文本值。
+	 * @returns {string} 转义后的 HTML 字符串。
 	 */
 	private escapeHtml(value: string): string {
 		return value
@@ -677,8 +677,8 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 转义用户可控文本以便安全放入 HTML 属性。
 	 *
-	 * @param value 待转义的文本值。
-	 * @returns 转义后的属性字符串。
+	 * @param {string} value 待转义的文本值。
+	 * @returns {string} 转义后的属性字符串。
 	 */
 	private escapeHtmlAttribute(value: string): string {
 		return this.escapeHtml(value);
@@ -687,8 +687,8 @@ export class PostgreSqlSqlTerminalPanel
 	/**
 	 * 将数据安全序列化为可嵌入 script 的 JSON。
 	 *
-	 * @param value 待序列化的数据。
-	 * @returns 转义后的 JSON 字符串。
+	 * @param {unknown} value 待序列化的数据。
+	 * @returns {string} 转义后的 JSON 字符串。
 	 */
 	private serializeScriptValue(value: unknown): string {
 		return JSON.stringify(value).replaceAll('<', '\\u003c');

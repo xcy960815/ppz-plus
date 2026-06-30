@@ -11,12 +11,12 @@ import { showImportErrorReport } from './ImportErrorReportPresenter';
 /**
  * 提示用户确认或配置导入字段映射。
  *
- * @param createImportErrorReportUseCase 用于创建错误报告文档的用例。
- * @param formatName 导入文件格式名称。
- * @param fileName 导入文件名。
- * @param targetName 导入目标表名称。
- * @param preparation 字段映射配置准备结果。
- * @returns 用户确认后的字段映射；取消时返回空。
+ * @param {CreateImportErrorReportUseCase} createImportErrorReportUseCase 用于创建错误报告文档的用例。
+ * @param {string} formatName 导入文件格式名称。
+ * @param {string} fileName 导入文件名。
+ * @param {string} targetName 导入目标表名称。
+ * @param {ImportMappingPreparationResult} preparation 字段映射配置准备结果。
+ * @returns {Promise<readonly ImportColumnMapping[] | undefined>} 用户确认后的字段映射；取消时返回空。
  */
 export async function promptImportColumnMapping(
 	createImportErrorReportUseCase: CreateImportErrorReportUseCase,
@@ -62,10 +62,10 @@ export async function promptImportColumnMapping(
 /**
  * 判断用户是否需要手动配置字段映射。
  *
- * @param formatName 导入文件格式名称。
- * @param fileName 导入文件名。
- * @param preparation 成功准备好的映射上下文。
- * @returns 是否进入手动配置；取消时返回空。
+ * @param {string} formatName 导入文件格式名称。
+ * @param {string} fileName 导入文件名。
+ * @param {ImportMappingPreparationSuccessResult} preparation 成功准备好的映射上下文。
+ * @returns {Promise<boolean | undefined>} 是否进入手动配置；取消时返回空。
  */
 async function shouldConfigureMapping(
 	formatName: string,
@@ -107,12 +107,12 @@ async function shouldConfigureMapping(
 /**
  * 逐个源字段提示用户选择目标字段。
  *
- * @param createImportErrorReportUseCase 用于创建错误报告文档的用例。
- * @param formatName 导入文件格式名称。
- * @param fileName 导入文件名。
- * @param targetName 导入目标表名称。
- * @param preparation 成功准备好的映射上下文。
- * @returns 手动配置后的字段映射；取消时返回空。
+ * @param {CreateImportErrorReportUseCase} createImportErrorReportUseCase 用于创建错误报告文档的用例。
+ * @param {string} formatName 导入文件格式名称。
+ * @param {string} fileName 导入文件名。
+ * @param {string} targetName 导入目标表名称。
+ * @param {ImportMappingPreparationSuccessResult} preparation 成功准备好的映射上下文。
+ * @returns {Promise<readonly ImportColumnMapping[] | undefined>} 手动配置后的字段映射；取消时返回空。
  */
 async function promptManualMappings(
 	createImportErrorReportUseCase: CreateImportErrorReportUseCase,
@@ -175,10 +175,10 @@ async function promptManualMappings(
 /**
  * 创建单个源字段可选择的目标字段列表。
  *
- * @param targetFields 目标表字段列表。
- * @param usedTargetFields 已被映射的目标字段。
- * @param defaultTarget 当前源字段的默认目标字段。
- * @returns QuickPick 可展示的选项。
+ * @param {readonly string[]} targetFields 目标表字段列表。
+ * @param {ReadonlySet<string>} usedTargetFields 已被映射的目标字段。
+ * @param {string | null | undefined} defaultTarget 当前源字段的默认目标字段。
+ * @returns {Array<vscode.QuickPickItem &} QuickPick 可展示的选项。
  */
 function createMappingItems(
 	targetFields: readonly string[],
@@ -208,8 +208,8 @@ function createMappingItems(
 /**
  * 格式化默认字段映射详情。
  *
- * @param mappings 默认字段映射。
- * @returns 可展示的字段映射文本。
+ * @param {readonly ImportColumnMapping[]} mappings 默认字段映射。
+ * @returns {string} 可展示的字段映射文本。
  */
 function formatMappingDetail(
 	mappings: readonly ImportColumnMapping[]

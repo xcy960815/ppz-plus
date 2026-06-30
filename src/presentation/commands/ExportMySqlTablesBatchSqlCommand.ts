@@ -94,7 +94,7 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	/**
 	 * 向 VS Code 注册命令。
 	 *
-	 * @returns 命令注册的可释放句柄。
+	 * @returns {vscode.Disposable} 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
@@ -115,7 +115,7 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	/**
 	 * 执行 schema 下多张表的批量 SQL 导出流程。
 	 *
-	 * @param schemaNode 当前选中的 schema Tree 节点。
+	 * @param {MySqlSchemaTreeNode} schemaNode 当前选中的 schema Tree 节点。
 	 */
 	private async exportTables(schemaNode: MySqlSchemaTreeNode): Promise<void> {
 		try {
@@ -186,8 +186,8 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	/**
 	 * 提示用户从当前 schema 下选择需要批量导出的表。
 	 *
-	 * @param schemaNode 当前选中的 schema Tree 节点。
-	 * @returns 选中的表名列表；取消时为空。
+	 * @param {MySqlSchemaTreeNode} schemaNode 当前选中的 schema Tree 节点。
+	 * @returns {Promise<readonly string[] | undefined>} 选中的表名列表；取消时为空。
 	 */
 	private async promptTables(
 		schemaNode: MySqlSchemaTreeNode
@@ -233,7 +233,7 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择批量 SQL 导出类型。
 	 *
-	 * @returns 选中的 SQL 导出类型；取消时为空。
+	 * @returns {Promise<SqlExportKind | undefined>} 选中的 SQL 导出类型；取消时为空。
 	 */
 	private async promptExportKind(): Promise<SqlExportKind | undefined> {
 		const selectedItem = await vscode.window.showQuickPick(
@@ -250,7 +250,7 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择批量 SQL 文件输出目录。
 	 *
-	 * @returns 选中的本地目录路径；取消时为空。
+	 * @returns {Promise<string | undefined>} 选中的本地目录路径；取消时为空。
 	 */
 	private async promptTargetDirectory(): Promise<string | undefined> {
 		const defaultWorkspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -269,8 +269,8 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	/**
 	 * 记录批量导出的逐表任务日志。
 	 *
-	 * @param schemaNode 当前选中的 schema Tree 节点。
-	 * @param result 批量导出汇总结果。
+	 * @param {MySqlSchemaTreeNode} schemaNode 当前选中的 schema Tree 节点。
+	 * @param {SqlExportBatchResult} result 批量导出汇总结果。
 	 */
 	private async recordExportLogs(
 		schemaNode: MySqlSchemaTreeNode,
@@ -288,9 +288,9 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	/**
 	 * 记录单张表批量导出成功日志。
 	 *
-	 * @param schemaNode 当前选中的 schema Tree 节点。
-	 * @param kind SQL 导出类型。
-	 * @param item 单表成功结果。
+	 * @param {MySqlSchemaTreeNode} schemaNode 当前选中的 schema Tree 节点。
+	 * @param {SqlExportKind} kind SQL 导出类型。
+	 * @param {SqlExportBatchSuccessItem} item 单表成功结果。
 	 */
 	private async recordSuccessLog(
 		schemaNode: MySqlSchemaTreeNode,
@@ -314,9 +314,9 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	/**
 	 * 记录单张表批量导出失败日志。
 	 *
-	 * @param schemaNode 当前选中的 schema Tree 节点。
-	 * @param kind SQL 导出类型。
-	 * @param item 单表失败结果。
+	 * @param {MySqlSchemaTreeNode} schemaNode 当前选中的 schema Tree 节点。
+	 * @param {SqlExportKind} kind SQL 导出类型。
+	 * @param {SqlExportBatchFailureItem} item 单表失败结果。
 	 */
 	private async recordFailureLog(
 		schemaNode: MySqlSchemaTreeNode,
@@ -341,7 +341,7 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	/**
 	 * 展示批量 SQL 导出结果。
 	 *
-	 * @param result 批量导出汇总结果。
+	 * @param {SqlExportBatchResult} result 批量导出汇总结果。
 	 */
 	private async presentBatchResult(result: SqlExportBatchResult): Promise<void> {
 		if (result.failureCount === 0) {
@@ -365,8 +365,8 @@ export class ExportMySqlTablesBatchSqlCommand implements ExtensionCommand {
 	/**
 	 * 格式化批量导出失败摘要。
 	 *
-	 * @param failures 批量导出的失败条目。
-	 * @returns 适合在 VS Code 提示中展示的失败摘要。
+	 * @param {readonly SqlExportBatchFailureItem[]} failures 批量导出的失败条目。
+	 * @returns {string} 适合在 VS Code 提示中展示的失败摘要。
 	 */
 	private formatFailureSummary(
 		failures: readonly SqlExportBatchFailureItem[]

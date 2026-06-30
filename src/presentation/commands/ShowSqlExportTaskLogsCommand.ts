@@ -30,7 +30,7 @@ export class ShowSqlExportTaskLogsCommand implements ExtensionCommand {
 	/**
 	 * 向 VS Code 注册命令。
 	 *
-	 * @returns 命令注册的可释放句柄。
+	 * @returns {vscode.Disposable} 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(this.id, async () => {
@@ -49,8 +49,8 @@ export class ShowSqlExportTaskLogsCommand implements ExtensionCommand {
 	/**
 	 * 将导出任务日志渲染为 Markdown 文档。
 	 *
-	 * @param logs 最近的导出任务日志。
-	 * @returns Markdown 日志文本。
+	 * @param {readonly SqlExportTaskLogEntry[]} logs 最近的导出任务日志。
+	 * @returns {string} Markdown 日志文本。
 	 */
 	private renderLogs(logs: readonly SqlExportTaskLogEntry[]): string {
 		if (logs.length === 0) {
@@ -73,8 +73,8 @@ export class ShowSqlExportTaskLogsCommand implements ExtensionCommand {
 	/**
 	 * 渲染单条导出任务日志。
 	 *
-	 * @param log 导出任务日志。
-	 * @returns Markdown 片段。
+	 * @param {SqlExportTaskLogEntry} log 导出任务日志。
+	 * @returns {readonly string[]} Markdown 片段。
 	 */
 	private renderLogEntry(log: SqlExportTaskLogEntry): readonly string[] {
 		const status = log.status === 'success' ? '成功' : '失败';

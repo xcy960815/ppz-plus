@@ -36,7 +36,7 @@ export class TcpDatabaseConnectionTester implements ConnectionTester {
 	/**
 	 * 测试配置的数据库端点是否可通过 TCP 访问。
 	 *
-	 * @param config 待验证的连接配置。
+	 * @param {ConnectionConfig} config 待验证的连接配置。
 	 */
 	public async test(config: ConnectionConfig): Promise<void> {
 		const endpoint = this.resolveEndpoint(config);
@@ -80,8 +80,8 @@ export class TcpDatabaseConnectionTester implements ConnectionTester {
 	/**
 	 * 根据连接类型解析 TCP 端点。
 	 *
-	 * @param config 待测试连接配置。
-	 * @returns 当前连接对应的 TCP 端点。
+	 * @param {ConnectionConfig} config 待测试连接配置。
+	 * @returns {TcpConnectionEndpoint} 当前连接对应的 TCP 端点。
 	 */
 	private resolveEndpoint(config: ConnectionConfig): TcpConnectionEndpoint {
 		if (this.mySqlConnectionAdapter.supports(config)) {

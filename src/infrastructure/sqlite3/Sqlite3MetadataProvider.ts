@@ -30,8 +30,8 @@ export class Sqlite3MetadataProvider
 	/**
 	 * 列出当前 SQLite3 文件中的表和视图。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @returns 可见的表和视图列表。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @returns {Promise<readonly Sqlite3TableMetadata[]>} 可见的表和视图列表。
 	 */
 	public async listTables(
 		connection: Sqlite3ConnectionConfig
@@ -60,8 +60,8 @@ export class Sqlite3MetadataProvider
 	/**
 	 * 打开 SQLite3 数据库文件。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @returns 已打开的数据库实例。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @returns {Promise<Sqlite3RuntimeDatabase>} 已打开的数据库实例。
 	 */
 	private async openDatabase(
 		connection: Sqlite3ConnectionConfig
@@ -88,10 +88,10 @@ export class Sqlite3MetadataProvider
 	/**
 	 * 执行 SQLite3 多行查询。
 	 *
-	 * @param database 已打开的数据库实例。
-	 * @param sql 需要执行的 SQL。
-	 * @param params 绑定参数。
-	 * @returns 原始查询行。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
+	 * @param {string} sql 需要执行的 SQL。
+	 * @param {readonly unknown[]} params 绑定参数。
+	 * @returns {Promise<Sqlite3QueryRows>} 原始查询行。
 	 */
 	private async all(
 		database: Sqlite3RuntimeDatabase,
@@ -113,7 +113,7 @@ export class Sqlite3MetadataProvider
 	/**
 	 * 关闭 SQLite3 数据库实例。
 	 *
-	 * @param database 已打开的数据库实例。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
 	 */
 	private async closeDatabase(database: Sqlite3RuntimeDatabase): Promise<void> {
 		await new Promise<void>((resolve, reject) => {
@@ -131,8 +131,8 @@ export class Sqlite3MetadataProvider
 	/**
 	 * 将运行时返回的行集合归一化为对象数组。
 	 *
-	 * @param rows SQLite3 返回的原始行。
-	 * @returns 对象行集合。
+	 * @param {unknown[]} rows SQLite3 返回的原始行。
+	 * @returns {Sqlite3QueryRows} 对象行集合。
 	 */
 	private normalizeRawRows(rows: unknown[]): Sqlite3QueryRows {
 		return rows.filter(
@@ -144,8 +144,8 @@ export class Sqlite3MetadataProvider
 	/**
 	 * 将 sqlite_master 行归一化为表元数据。
 	 *
-	 * @param rows SQLite3 返回的原始行。
-	 * @returns 归一化后的表元数据。
+	 * @param {Sqlite3QueryRows} rows SQLite3 返回的原始行。
+	 * @returns {readonly Sqlite3TableMetadata[]} 归一化后的表元数据。
 	 */
 	private normalizeTableRows(
 		rows: Sqlite3QueryRows

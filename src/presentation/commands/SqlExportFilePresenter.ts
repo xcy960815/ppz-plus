@@ -7,8 +7,8 @@ import { getSqlExportFormat } from '../../domain/export/SqlExportFormat';
 /**
  * 提示用户选择 SQL 导出文件保存路径。
  *
- * @param document 已生成的 SQL 导出文档。
- * @returns 用户选择的文件路径；取消时为空。
+ * @param {SqlExportDocument} document 已生成的 SQL 导出文档。
+ * @returns {Promise<string | undefined>} 用户选择的文件路径；取消时为空。
  */
 export async function promptSqlExportFilePath(
 	document: SqlExportDocument
@@ -34,8 +34,8 @@ export async function promptSqlExportFilePath(
 /**
  * 清理 SQL 导出默认文件名中的路径敏感字符。
  *
- * @param fileName 原始导出文件名。
- * @returns 可作为本地文件名使用的字符串。
+ * @param {string} fileName 原始导出文件名。
+ * @returns {string} 可作为本地文件名使用的字符串。
  */
 function sanitizeSqlExportFileName(fileName: string): string {
 	return fileName.replace(/[\\/:*?"<>|]/g, '_');
@@ -44,7 +44,7 @@ function sanitizeSqlExportFileName(fileName: string): string {
 /**
  * 展示 SQL 导出文件保存结果，并在成功后打开保存的文件。
  *
- * @param result SQL 导出文件保存结果。
+ * @param {SqlExportFileSaveResult} result SQL 导出文件保存结果。
  */
 export async function presentSqlExportFileSaveResult(
 	result: SqlExportFileSaveResult

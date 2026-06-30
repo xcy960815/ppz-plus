@@ -13,7 +13,7 @@ export class PostgreSqlRuntimeLoader {
 	/**
 	 * 加载 pg 运行时模块。
 	 *
-	 * @returns pg 模块的最小接口。
+	 * @returns {PgRuntimeModule} pg 模块的最小接口。
 	 */
 	public loadPostgreSqlModule(): PgRuntimeModule {
 		return this.require('pg') as PgRuntimeModule;

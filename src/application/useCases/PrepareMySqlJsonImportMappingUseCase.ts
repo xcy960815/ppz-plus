@@ -28,10 +28,10 @@ export class PrepareMySqlJsonImportMappingUseCase {
 	/**
 	 * 解析源字段和目标字段，并生成默认映射。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param target JSON 导入目标表。
-	 * @param filePath JSON 文件路径。
-	 * @returns 字段映射配置准备结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {JsonTableImportTarget} target JSON 导入目标表。
+	 * @param {string} filePath JSON 文件路径。
+	 * @returns {Promise<ImportMappingPreparationResult>} 字段映射配置准备结果。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,

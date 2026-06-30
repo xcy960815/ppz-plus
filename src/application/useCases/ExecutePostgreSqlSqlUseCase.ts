@@ -18,10 +18,10 @@ export class ExecutePostgreSqlSqlUseCase {
 	/**
 	 * 执行用户提交的 PostgreSQL SQL。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 本次执行要连接的 database。
-	 * @param sql 用户输入的 SQL 文本。
-	 * @returns 统一 SQL 执行结果。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string | undefined} databaseName 本次执行要连接的 database。
+	 * @param {string} sql 用户输入的 SQL 文本。
+	 * @returns {Promise<SqlExecutionResult>} 统一 SQL 执行结果。
 	 */
 	public async execute(
 		connection: PostgreSqlConnectionConfig,

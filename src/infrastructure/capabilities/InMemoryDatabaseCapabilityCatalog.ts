@@ -20,8 +20,8 @@ export class InMemoryDatabaseCapabilityCatalog
 	/**
 	 * 根据数据库引擎查找能力声明。
 	 *
-	 * @param engine 数据库引擎标识。
-	 * @returns 存在时返回匹配的能力声明。
+	 * @param {DatabaseEngine} engine 数据库引擎标识。
+	 * @returns {DatabaseCapabilityDeclaration | undefined} 存在时返回匹配的能力声明。
 	 */
 	public find(
 		engine: DatabaseEngine
@@ -32,7 +32,7 @@ export class InMemoryDatabaseCapabilityCatalog
 	/**
 	 * 返回内存中保存的全部能力声明。
 	 *
-	 * @returns 不可变的能力声明列表。
+	 * @returns {readonly DatabaseCapabilityDeclaration[]} 不可变的能力声明列表。
 	 */
 	public list(): readonly DatabaseCapabilityDeclaration[] {
 		return this.declarations;

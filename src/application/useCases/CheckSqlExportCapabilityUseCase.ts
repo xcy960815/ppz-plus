@@ -41,9 +41,9 @@ export class CheckSqlExportCapabilityUseCase {
 	/**
 	 * 检查指定数据库引擎是否支持目标 SQL 导出类型。
 	 *
-	 * @param engine 数据库引擎标识。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns 可供表现层决定是否继续执行的能力检查结果。
+	 * @param {DatabaseEngine} engine 数据库引擎标识。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {SqlExportCapabilityCheck} 可供表现层决定是否继续执行的能力检查结果。
 	 */
 	public execute(
 		engine: DatabaseEngine,
@@ -75,8 +75,8 @@ export class CheckSqlExportCapabilityUseCase {
 	/**
 	 * 将 SQL 导出类型转换为需要满足的能力键。
 	 *
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns 当前导出类型要求的能力键列表。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {readonly DatabaseCapabilityKey[]} 当前导出类型要求的能力键列表。
 	 */
 	private resolveRequiredCapabilityKeys(
 		kind: SqlExportKind

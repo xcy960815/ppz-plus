@@ -40,12 +40,12 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 	/**
 	 * 将结构化数据行批量写入目标 MySQL 表。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param target 导入目标表。
-	 * @param rows 准备写入的数据行。
-	 * @param progressReporter 可选的导入进度回调。
-	 * @param cancellationSignal 可选的长任务取消信号。
-	 * @returns 表级导入结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {TableImportTarget} target 导入目标表。
+	 * @param {readonly MySqlTableImportRow[]} rows 准备写入的数据行。
+	 * @param {ImportTaskProgressReporter} progressReporter 可选的导入进度回调。
+	 * @param {CancellationSignal} cancellationSignal 可选的长任务取消信号。
+	 * @returns {Promise<TableImportResult>} 表级导入结果。
 	 */
 	public async importRows(
 		connection: MysqlConnectionConfig,
@@ -168,9 +168,9 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 	/**
 	 * 创建批量插入 SQL。
 	 *
-	 * @param target 导入目标表。
-	 * @param rows 当前批次的数据行。
-	 * @returns 可执行的批量插入 SQL。
+	 * @param {TableImportTarget} target 导入目标表。
+	 * @param {readonly MySqlTableImportRow[]} rows 当前批次的数据行。
+	 * @returns {string} 可执行的批量插入 SQL。
 	 */
 	private createInsertSql(
 		target: TableImportTarget,
@@ -197,8 +197,8 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 	/**
 	 * 将多行结构化数据值展开为 mysql2 参数数组。
 	 *
-	 * @param rows 当前批次的数据行。
-	 * @returns 展平后的参数数组。
+	 * @param {readonly MySqlTableImportRow[]} rows 当前批次的数据行。
+	 * @returns {readonly unknown[]} 展平后的参数数组。
 	 */
 	private flattenValues(rows: readonly MySqlTableImportRow[]): readonly unknown[] {
 		const columns = Object.keys(rows[0] ?? {});
@@ -208,9 +208,9 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 	/**
 	 * 从 mysql2 执行结果中读取数字属性。
 	 *
-	 * @param result mysql2 返回的执行结果。
-	 * @param propertyName 需要读取的属性名。
-	 * @returns 读取到的数字值，无法识别时返回 0。
+	 * @param {unknown} result mysql2 返回的执行结果。
+	 * @param {string} propertyName 需要读取的属性名。
+	 * @returns {number} 读取到的数字值，无法识别时返回 0。
 	 */
 	private readNumberProperty(result: unknown, propertyName: string): number {
 		if (!result || typeof result !== 'object') {
@@ -224,8 +224,8 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 	/**
 	 * 转义 MySQL 标识符以便放入原始 SQL 字符串。
 	 *
-	 * @param identifier 待转义的标识符。
-	 * @returns 转义后的标识符。
+	 * @param {string} identifier 待转义的标识符。
+	 * @returns {string} 转义后的标识符。
 	 */
 	private escapeIdentifier(identifier: string): string {
 		return `\`${identifier.replaceAll('`', '``')}\``;
@@ -234,9 +234,9 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 	/**
 	 * 转义完整 schema.table 引用以便用于原始 SQL。
 	 *
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 选中的表名。
-	 * @returns 转义后的完整表名。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 选中的表名。
+	 * @returns {string} 转义后的完整表名。
 	 */
 	private escapeQualifiedTableName(
 		schemaName: string,

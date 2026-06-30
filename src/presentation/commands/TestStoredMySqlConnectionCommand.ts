@@ -39,7 +39,7 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 向 VS Code 注册命令。
 	 *
-	 * @returns 命令注册的可释放句柄。
+	 * @returns {vscode.Disposable} 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
@@ -74,7 +74,7 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择一个已保存连接。
 	 *
-	 * @returns 用户选择的连接；未选择时为空。
+	 * @returns {Promise<ConnectionConfig | undefined>} 用户选择的连接；未选择时为空。
 	 */
 	private async pickConnection(): Promise<ConnectionConfig | undefined> {
 		const connections = await this.listStoredConnectionsUseCase.execute();
@@ -104,8 +104,8 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 描述连接目标地址。
 	 *
-	 * @param connection 当前连接配置。
-	 * @returns 连接目标描述。
+	 * @param {ConnectionConfig} connection 当前连接配置。
+	 * @returns {string} 连接目标描述。
 	 */
 	private describeConnectionTarget(connection: ConnectionConfig): string {
 		if (connection.mode === 'parameters') {

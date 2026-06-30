@@ -35,10 +35,10 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 导出指定 MySQL 表的 SQL 文档。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param target 表级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns 生成后的 SQL 导出文档。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {Promise<SqlExportDocument>} 生成后的 SQL 导出文档。
 	 */
 	public async exportTable(
 		connection: MysqlConnectionConfig,
@@ -169,10 +169,10 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 生成 schema 级导出文档头部注释。
 	 *
-	 * @param connectionName 当前连接显示名。
-	 * @param target schema 级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns SQL 注释头。
+	 * @param {string} connectionName 当前连接显示名。
+	 * @param {SqlExportSchemaTarget} target schema 级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {string} SQL 注释头。
 	 */
 	private renderSchemaHeader(
 		connectionName: string,
@@ -189,8 +189,8 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 生成可重新导入的数据库准备语句。
 	 *
-	 * @param schemaName 导出目标 schema 名称。
-	 * @returns 数据库创建和切换 SQL。
+	 * @param {string} schemaName 导出目标 schema 名称。
+	 * @returns {string} 数据库创建和切换 SQL。
 	 */
 	private renderDatabaseUseBlock(schemaName: string): string {
 		const schemaSql = this.escapeIdentifier(schemaName);
@@ -205,7 +205,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 生成导出文件尾部控制语句。
 	 *
-	 * @returns 导出文件尾部 SQL。
+	 * @returns {string} 导出文件尾部 SQL。
 	 */
 	private renderFooter(): string {
 		return [
@@ -217,10 +217,10 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 导出单个表在 schema 导出文档中的 SQL 块。
 	 *
-	 * @param runtimeConnection 当前可用的 mysql2 连接。
-	 * @param target 表级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns 单表 SQL 文本块。
+	 * @param {MySqlRuntimeClient} runtimeConnection 当前可用的 mysql2 连接。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {Promise<string>} 单表 SQL 文本块。
 	 */
 	private async exportTableBlock(
 		runtimeConnection: MySqlRuntimeClient,
@@ -243,9 +243,9 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 列出 schema 下可导出的基础表。
 	 *
-	 * @param runtimeConnection 当前可用的 mysql2 连接。
-	 * @param target schema 级导出目标。
-	 * @returns 表名列表。
+	 * @param {MySqlRuntimeClient} runtimeConnection 当前可用的 mysql2 连接。
+	 * @param {SqlExportSchemaTarget} target schema 级导出目标。
+	 * @returns {Promise<readonly string[]>} 表名列表。
 	 */
 	private async listSchemaTables(
 		runtimeConnection: MySqlRuntimeClient,
@@ -281,9 +281,9 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 导出指定表的 DDL。
 	 *
-	 * @param runtimeConnection 当前可用的 mysql2 连接。
-	 * @param target 表级导出目标。
-	 * @returns DDL SQL 文本。
+	 * @param {MySqlRuntimeClient} runtimeConnection 当前可用的 mysql2 连接。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @returns {Promise<string>} DDL SQL 文本。
 	 */
 	private async exportDdl(
 		runtimeConnection: MySqlRuntimeClient,
@@ -306,9 +306,9 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 导出指定表的 DML。
 	 *
-	 * @param runtimeConnection 当前可用的 mysql2 连接。
-	 * @param target 表级导出目标。
-	 * @returns DML SQL 文本。
+	 * @param {MySqlRuntimeClient} runtimeConnection 当前可用的 mysql2 连接。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @returns {Promise<string>} DML SQL 文本。
 	 */
 	private async exportDml(
 		runtimeConnection: MySqlRuntimeClient,
@@ -339,8 +339,8 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 从 SHOW CREATE TABLE 结果中提取 CREATE TABLE SQL。
 	 *
-	 * @param rows mysql2 返回的原始行集合。
-	 * @returns CREATE TABLE SQL；无法识别时为空。
+	 * @param {MySqlQueryRows} rows mysql2 返回的原始行集合。
+	 * @returns {string | undefined} CREATE TABLE SQL；无法识别时为空。
 	 */
 	private extractCreateTableSql(rows: MySqlQueryRows): string | undefined {
 		if (!Array.isArray(rows)) {
@@ -365,8 +365,8 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 将 mysql2 字段元数据归一化为字段名列表。
 	 *
-	 * @param fields mysql2 返回的字段元数据。
-	 * @returns 字段名列表。
+	 * @param {MySqlQueryResultFields | undefined} fields mysql2 返回的字段元数据。
+	 * @returns {readonly string[]} 字段名列表。
 	 */
 	private normalizeFieldNames(
 		fields: MySqlQueryResultFields | undefined
@@ -394,10 +394,10 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 渲染单行 INSERT 语句。
 	 *
-	 * @param target 表级导出目标。
-	 * @param columnNames 字段名列表。
-	 * @param row mysql2 返回的原始行。
-	 * @returns INSERT SQL 文本。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @param {readonly string[]} columnNames 字段名列表。
+	 * @param {Record<string, unknown>} row mysql2 返回的原始行。
+	 * @returns {string} INSERT SQL 文本。
 	 */
 	private renderInsertStatement(
 		target: SqlExportTableTarget,
@@ -417,8 +417,8 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 将 JavaScript 值格式化为 MySQL 字面量。
 	 *
-	 * @param value 原始字段值。
-	 * @returns MySQL SQL 字面量。
+	 * @param {unknown} value 原始字段值。
+	 * @returns {string} MySQL SQL 字面量。
 	 */
 	private formatSqlValue(value: unknown): string {
 		if (value === null || value === undefined) {
@@ -465,8 +465,8 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 转义 MySQL 字符串字面量内容。
 	 *
-	 * @param value 待转义的字符串。
-	 * @returns 转义后的字符串字面量内容。
+	 * @param {string} value 待转义的字符串。
+	 * @returns {string} 转义后的字符串字面量内容。
 	 */
 	private escapeSqlString(value: string): string {
 		return value
@@ -483,8 +483,8 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 转义 MySQL 标识符。
 	 *
-	 * @param identifier 待转义的标识符。
-	 * @returns 转义后的标识符。
+	 * @param {string} identifier 待转义的标识符。
+	 * @returns {string} 转义后的标识符。
 	 */
 	private escapeIdentifier(identifier: string): string {
 		return `\`${identifier.replaceAll('`', '``')}\``;
@@ -493,8 +493,8 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	/**
 	 * 转义完整 schema.table 引用。
 	 *
-	 * @param target 表级导出目标。
-	 * @returns 转义后的完整表名。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @returns {string} 转义后的完整表名。
 	 */
 	private escapeQualifiedTableName(target: SqlExportTableTarget): string {
 		return `${this.escapeIdentifier(target.schemaName)}.${this.escapeIdentifier(target.tableName)}`;

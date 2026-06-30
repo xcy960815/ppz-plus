@@ -29,7 +29,7 @@ export class ExtensionBootstrap {
 	/**
 	 * 为当前扩展会话激活表现层启动流程。
 	 *
-	 * @param context VS Code 扩展生命周期上下文。
+	 * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
 	 */
 	public activate(context: vscode.ExtensionContext): void {
 		this.commandRegistry.register(this.commands, context);

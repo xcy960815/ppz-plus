@@ -13,8 +13,8 @@ export class SqlExecutionResultRenderer {
 	/**
 	 * 渲染 SQL 执行结果。
 	 *
-	 * @param result SQL 执行结果。
-	 * @returns 结果区域 HTML。
+	 * @param {SqlExecutionResult} result SQL 执行结果。
+	 * @returns {string} 结果区域 HTML。
 	 */
 	public render(result: SqlExecutionResult): string {
 		if (!result.success) {
@@ -48,8 +48,8 @@ export class SqlExecutionResultRenderer {
 	/**
 	 * 解析结果中可渲染的结果集列表。
 	 *
-	 * @param result SQL 执行结果。
-	 * @returns 结果集列表。
+	 * @param {SqlExecutionResult} result SQL 执行结果。
+	 * @returns {readonly SqlExecutionResultSet[]} 结果集列表。
 	 */
 	private resolveResultSets(
 		result: SqlExecutionResult
@@ -72,8 +72,8 @@ export class SqlExecutionResultRenderer {
 	/**
 	 * 渲染多个 SQL 结果集。
 	 *
-	 * @param resultSets SQL 结果集列表。
-	 * @returns 多结果 HTML。
+	 * @param {readonly SqlExecutionResultSet[]} resultSets SQL 结果集列表。
+	 * @returns {string} 多结果 HTML。
 	 */
 	private renderMultipleResultSets(
 		resultSets: readonly SqlExecutionResultSet[]
@@ -97,8 +97,8 @@ export class SqlExecutionResultRenderer {
 	/**
 	 * 渲染单个 SQL 结果集。
 	 *
-	 * @param resultSet SQL 结果集。
-	 * @returns 单结果 HTML。
+	 * @param {SqlExecutionResultSet | undefined} resultSet SQL 结果集。
+	 * @returns {string} 单结果 HTML。
 	 */
 	private renderResultSet(resultSet: SqlExecutionResultSet | undefined): string {
 		if (!resultSet) {
@@ -115,9 +115,9 @@ export class SqlExecutionResultRenderer {
 	/**
 	 * 渲染查询结果表格。
 	 *
-	 * @param fields 查询字段。
-	 * @param rows 查询记录。
-	 * @returns 表格 HTML。
+	 * @param {readonly SqlExecutionField[]} fields 查询字段。
+	 * @param {readonly Record<string, SqlExecutionCellValue>[]} rows 查询记录。
+	 * @returns {string} 表格 HTML。
 	 */
 	private renderDataTable(
 		fields: readonly SqlExecutionField[],
@@ -153,8 +153,8 @@ export class SqlExecutionResultRenderer {
 	/**
 	 * 渲染非查询语句的 key/value 摘要表。
 	 *
-	 * @param metadata 非查询执行摘要。
-	 * @returns key/value 表格 HTML。
+	 * @param {readonly SqlExecutionResultMetadataEntry[]} metadata 非查询执行摘要。
+	 * @returns {string} key/value 表格 HTML。
 	 */
 	private renderKeyValueTable(
 		metadata: readonly SqlExecutionResultMetadataEntry[]
@@ -186,8 +186,8 @@ export class SqlExecutionResultRenderer {
 	/**
 	 * 渲染单个 SQL 结果单元格。
 	 *
-	 * @param value 待渲染的单元格值。
-	 * @returns HTML 表格单元格标记。
+	 * @param {SqlExecutionCellValue} value 待渲染的单元格值。
+	 * @returns {string} HTML 表格单元格标记。
 	 */
 	private renderCell(value: SqlExecutionCellValue): string {
 		if (value === null) {
@@ -200,8 +200,8 @@ export class SqlExecutionResultRenderer {
 	/**
 	 * 转义用户可控文本以便安全渲染 HTML。
 	 *
-	 * @param value 待转义的文本值。
-	 * @returns 转义后的 HTML 字符串。
+	 * @param {string} value 待转义的文本值。
+	 * @returns {string} 转义后的 HTML 字符串。
 	 */
 	private escapeHtml(value: string): string {
 		return value

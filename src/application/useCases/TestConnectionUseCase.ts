@@ -15,7 +15,7 @@ export class TestConnectionUseCase {
 	/**
 	 * 测试连接配置。
 	 *
-	 * @param config 待验证的连接配置。
+	 * @param {ConnectionConfig} config 待验证的连接配置。
 	 */
 	public async execute(config: ConnectionConfig): Promise<void> {
 		await this.connectionTester.test(config);

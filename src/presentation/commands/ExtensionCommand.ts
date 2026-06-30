@@ -9,7 +9,7 @@ export interface ExtensionCommand {
 	/**
 	 * 将命令注册到 VS Code 命令服务。
 	 *
-	 * @returns 注册产生的可释放句柄。
+	 * @returns {vscode.Disposable} 注册产生的可释放句柄。
 	 */
 	register(): vscode.Disposable;
 }

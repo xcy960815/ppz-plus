@@ -63,7 +63,7 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 	/**
 	 * 向 VS Code 注册命令。
 	 *
-	 * @returns 命令注册的可释放句柄。
+	 * @returns {vscode.Disposable} 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
@@ -127,7 +127,7 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 	/**
 	 * 解析或提示用户选择 CSV 导入目标。
 	 *
-	 * @param node 可选的 MySQL Tree 节点。
+	 * @param {MySqlConnectionsTreeNode} node 可选的 MySQL Tree 节点。
 	 * @returns 完整 CSV 导入选择。
 	 */
 	private async resolveImportSelection(node?: MySqlConnectionsTreeNode): Promise<
@@ -173,7 +173,7 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择一个已保存的 MySQL 连接。
 	 *
-	 * @returns 用户选择的 MySQL 连接；未选择时为空。
+	 * @returns {Promise<MysqlConnectionConfig | undefined>} 用户选择的 MySQL 连接；未选择时为空。
 	 */
 	private async pickConnection(): Promise<MysqlConnectionConfig | undefined> {
 		const connections = (
@@ -215,8 +215,8 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择目标 schema。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @returns 用户选择的 schema 名称；未选择时为空。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @returns {Promise<string | undefined>} 用户选择的 schema 名称；未选择时为空。
 	 */
 	private async pickSchema(
 		connection: MysqlConnectionConfig
@@ -259,9 +259,9 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择目标表。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 已选择的 schema 名称。
-	 * @returns 用户选择的表名；未选择时为空。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 已选择的 schema 名称。
+	 * @returns {Promise<string | undefined>} 用户选择的表名；未选择时为空。
 	 */
 	private async pickTable(
 		connection: MysqlConnectionConfig,
@@ -308,7 +308,7 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择一个 CSV 文件。
 	 *
-	 * @returns 用户选择的 CSV 文件路径；未选择时为空。
+	 * @returns {Promise<string | undefined>} 用户选择的 CSV 文件路径；未选择时为空。
 	 */
 	private async pickCsvFilePath(): Promise<string | undefined> {
 		const selectedFiles = await vscode.window.showOpenDialog({
@@ -327,10 +327,10 @@ export class ImportMySqlCsvFileCommand implements ExtensionCommand {
 	/**
 	 * 执行 CSV 文件导入并展示用户可见结果。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param target CSV 导入目标表。
-	 * @param filePath CSV 文件路径。
-	 * @param mappings 字段映射配置。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {CsvTableImportTarget} target CSV 导入目标表。
+	 * @param {string} filePath CSV 文件路径。
+	 * @param {readonly ImportColumnMapping[]} mappings 字段映射配置。
 	 */
 	private async importCsvFile(
 		connection: MysqlConnectionConfig,

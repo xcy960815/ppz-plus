@@ -26,9 +26,9 @@ export class Mysql2SqlFileImportProvider
 	/**
 	 * 执行 SQL 文件内容。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param sql SQL 文件内容。
-	 * @returns SQL 文件导入结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} sql SQL 文件内容。
+	 * @returns {Promise<SqlFileImportResult>} SQL 文件导入结果。
 	 */
 	public async importSql(
 		connection: MysqlConnectionConfig,
@@ -98,8 +98,8 @@ export class Mysql2SqlFileImportProvider
 	/**
 	 * 解析 MySQL dump 中的 DELIMITER 指令。
 	 *
-	 * @param line SQL 文件中的单行文本。
-	 * @returns 指令指定的新分隔符；不是 DELIMITER 指令时为空。
+	 * @param {string} line SQL 文件中的单行文本。
+	 * @returns {string | undefined} 指令指定的新分隔符；不是 DELIMITER 指令时为空。
 	 */
 	private parseDelimiterDirective(line: string): string | undefined {
 		const match = /^delimiter\s+(.+)$/i.exec(line.trim());
@@ -111,9 +111,9 @@ export class Mysql2SqlFileImportProvider
 	/**
 	 * 将自定义语句分隔符替换回标准分号。
 	 *
-	 * @param line SQL 文件中的单行文本。
-	 * @param delimiter 当前 MySQL dump 自定义分隔符。
-	 * @returns 替换后的 SQL 行文本。
+	 * @param {string} line SQL 文件中的单行文本。
+	 * @param {string} delimiter 当前 MySQL dump 自定义分隔符。
+	 * @returns {string} 替换后的 SQL 行文本。
 	 */
 	private replaceCustomDelimiterAtLineEnd(
 		line: string,
@@ -131,8 +131,8 @@ export class Mysql2SqlFileImportProvider
 	/**
 	 * 为 SQL 文件导入开启 mysql2 多语句执行选项。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @returns mysql2 可接收的导入连接选项。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @returns {string | (MySqlDriverOptions &} mysql2 可接收的导入连接选项。
 	 */
 	private resolveImportDriverOptions(
 		connection: MysqlConnectionConfig
@@ -153,8 +153,8 @@ export class Mysql2SqlFileImportProvider
 	/**
 	 * 为 MySQL URL 连接追加多语句执行选项。
 	 *
-	 * @param connectionUrl 用户保存的 MySQL 连接 URL。
-	 * @returns 带有 multipleStatements 参数的连接 URL。
+	 * @param {string} connectionUrl 用户保存的 MySQL 连接 URL。
+	 * @returns {string} 带有 multipleStatements 参数的连接 URL。
 	 */
 	private appendMultipleStatementsOption(connectionUrl: string): string {
 		if (/[?&]multipleStatements=/.test(connectionUrl)) {

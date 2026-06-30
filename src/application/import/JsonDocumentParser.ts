@@ -11,8 +11,8 @@ export class JsonDocumentParser {
 	/**
 	 * 将 JSON 文本解析为字段列表和记录。
 	 *
-	 * @param content JSON 原始文本。
-	 * @returns 解析后的 JSON 导入文档。
+	 * @param {string} content JSON 原始文本。
+	 * @returns {JsonDocument} 解析后的 JSON 导入文档。
 	 */
 	public parse(content: string): JsonDocument {
 		if (content.trim().length === 0) {
@@ -47,8 +47,8 @@ export class JsonDocumentParser {
 	/**
 	 * 解析 JSON 文本并统一错误提示。
 	 *
-	 * @param content JSON 原始文本。
-	 * @returns JSON.parse 返回的未知结构。
+	 * @param {string} content JSON 原始文本。
+	 * @returns {unknown} JSON.parse 返回的未知结构。
 	 */
 	private parseJson(content: string): unknown {
 		try {
@@ -63,11 +63,11 @@ export class JsonDocumentParser {
 	/**
 	 * 将单个 JSON 数组元素归一化为导入行。
 	 *
-	 * @param value JSON 数组中的单个元素。
-	 * @param rowNumber 从 1 开始的 JSON 行号。
-	 * @param headers 当前累计的字段列表。
-	 * @param seenHeaders 当前已出现的字段名集合。
-	 * @returns 可导入的 JSON 行。
+	 * @param {unknown} value JSON 数组中的单个元素。
+	 * @param {number} rowNumber 从 1 开始的 JSON 行号。
+	 * @param {string[]} headers 当前累计的字段列表。
+	 * @param {Set<string>} seenHeaders 当前已出现的字段名集合。
+	 * @returns {JsonDocumentRow} 可导入的 JSON 行。
 	 */
 	private normalizeRow(
 		value: unknown,
@@ -98,10 +98,10 @@ export class JsonDocumentParser {
 	/**
 	 * 校验并归一化 JSON 单元格值。
 	 *
-	 * @param value 原始 JSON 字段值。
-	 * @param rowNumber 从 1 开始的 JSON 行号。
-	 * @param key 当前字段名。
-	 * @returns 可写入 MySQL 的 JSON 字段值。
+	 * @param {unknown} value 原始 JSON 字段值。
+	 * @param {number} rowNumber 从 1 开始的 JSON 行号。
+	 * @param {string} key 当前字段名。
+	 * @returns {JsonDocumentValue} 可写入 MySQL 的 JSON 字段值。
 	 */
 	private normalizeCellValue(
 		value: unknown,

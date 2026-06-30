@@ -36,8 +36,8 @@ export class MySqlConnectionAdapter {
 	/**
 	 * 检查连接配置是否属于 MySQL MVP 引擎。
 	 *
-	 * @param config 正在检查的连接配置。
-	 * @returns 该配置是否为 MySQL 连接。
+	 * @param {ConnectionConfig} config 正在检查的连接配置。
+	 * @returns {config is MysqlConnectionConfig} 该配置是否为 MySQL 连接。
 	 */
 	public supports(config: ConnectionConfig): config is MysqlConnectionConfig {
 		return config.engine === 'mysql';
@@ -46,8 +46,8 @@ export class MySqlConnectionAdapter {
 	/**
 	 * 解析访问 MySQL 服务使用的 TCP 端点。
 	 *
-	 * @param config MySQL 连接配置。
-	 * @returns 解析出的 host 和 port。
+	 * @param {MysqlConnectionConfig} config MySQL 连接配置。
+	 * @returns {MySqlConnectionEndpoint} 解析出的 host 和 port。
 	 */
 	public resolveEndpoint(config: MysqlConnectionConfig): MySqlConnectionEndpoint {
 		if (config.mode === 'parameters') {
@@ -70,8 +70,8 @@ export class MySqlConnectionAdapter {
 	/**
 	 * 解析 MySQL 配置对应的 mysql2 运行时连接选项。
 	 *
-	 * @param config MySQL 连接配置。
-	 * @returns 归一化后的 mysql2 运行时连接选项。
+	 * @param {MysqlConnectionConfig} config MySQL 连接配置。
+	 * @returns {MySqlDriverConnectionInput} 归一化后的 mysql2 运行时连接选项。
 	 */
 	public resolveDriverOptions(
 		config: MysqlConnectionConfig

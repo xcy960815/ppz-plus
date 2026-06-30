@@ -20,10 +20,10 @@ export class ListPostgreSqlTablesUseCase {
 	/**
 	 * 加载选中 PostgreSQL schema 下的表。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 需要连接的 database。
-	 * @param schemaName 需要加载表的 schema。
-	 * @returns 该 schema 下可见的表。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string} databaseName 需要连接的 database。
+	 * @param {string} schemaName 需要加载表的 schema。
+	 * @returns {Promise<readonly PostgreSqlTableMetadata[]>} 该 schema 下可见的表。
 	 */
 	public async execute(
 		connection: PostgreSqlConnectionConfig,

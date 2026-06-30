@@ -19,7 +19,7 @@ export class MySqlConnectionsView implements ExtensionActivationParticipant {
 	/**
 	 * 为当前扩展会话激活 MySQL 资源树。
 	 *
-	 * @param context VS Code 扩展生命周期上下文。
+	 * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
 	 */
 	public activate(context: vscode.ExtensionContext): void {
 		const treeView = vscode.window.createTreeView(

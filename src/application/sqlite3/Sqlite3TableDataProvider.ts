@@ -114,9 +114,9 @@ export interface Sqlite3TableDataProvider {
 	/**
 	 * 列出选中 SQLite3 表的字段。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly Sqlite3TableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	listColumns(
 		connection: Sqlite3ConnectionConfig,
@@ -126,12 +126,12 @@ export interface Sqlite3TableDataProvider {
 	/**
 	 * 列出选中 SQLite3 表的一页行数据。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要加载行数据的表。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 每页请求的行数。
-	 * @param options 排序和过滤等查询选项。
-	 * @returns 分页行数据。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要加载行数据的表。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 每页请求的行数。
+	 * @param {Sqlite3TableQueryOptions} options 排序和过滤等查询选项。
+	 * @returns {Promise<Sqlite3TableRowPage>} 分页行数据。
 	 */
 	listRowPage(
 		connection: Sqlite3ConnectionConfig,
@@ -144,10 +144,10 @@ export interface Sqlite3TableDataProvider {
 	/**
 	 * 向选中 SQLite3 表新增一条记录。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要新增记录的表。
-	 * @param values 需要显式写入的字段值。
-	 * @returns 单行新增结果。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要新增记录的表。
+	 * @param {Sqlite3TableInsertValues} values 需要显式写入的字段值。
+	 * @returns {Promise<Sqlite3TableInsertResult>} 单行新增结果。
 	 */
 	insertRow(
 		connection: Sqlite3ConnectionConfig,
@@ -158,11 +158,11 @@ export interface Sqlite3TableDataProvider {
 	/**
 	 * 更新选中 SQLite3 表中的一条记录。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要更新记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @param values 需要更新的新字段值。
-	 * @returns 单行更新结果。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要更新记录的表。
+	 * @param {Sqlite3TableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @param {Sqlite3TableUpdateValues} values 需要更新的新字段值。
+	 * @returns {Promise<Sqlite3TableUpdateResult>} 单行更新结果。
 	 */
 	updateRow(
 		connection: Sqlite3ConnectionConfig,
@@ -174,10 +174,10 @@ export interface Sqlite3TableDataProvider {
 	/**
 	 * 删除选中 SQLite3 表中的一条记录。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要删除记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @returns 单行删除结果。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要删除记录的表。
+	 * @param {Sqlite3TableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @returns {Promise<Sqlite3TableDeleteResult>} 单行删除结果。
 	 */
 	deleteRow(
 		connection: Sqlite3ConnectionConfig,
