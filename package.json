@@ -244,7 +244,7 @@
     "viewsWelcome": [
       {
         "view": "ppzPlus.helpAndFeedback",
-        "contents": "简介：VS Code 数据库导入导出工具\n\n当前版本：v0.0.1\n\n[$(github) GitHub](https://github.com/xcy960815/ppz-plus)\n\n[$(book) 使用帮助](https://github.com/xcy960815/ppz-plus#readme)\n\n[$(comment) 意见反馈](https://github.com/xcy960815/ppz-plus/issues)\n\n[$(bug) 发现 bug!](https://github.com/xcy960815/ppz-plus/issues/new)\n\n[$(trash) 清空 PPZ Plus](command:ppz-plus.clearPpzState)"
+        "contents": "简介：VS Code 数据库导入导出工具\n\n当前版本：v0.0.1\n\n[$(github) GitHub](https://github.com/xcy960815/ppz-plus)\n\n[$(book) 使用帮助](https://xcy960815.github.io/ppz-plus/)\n\n[$(comment-discussion) 反馈与 Bug](https://github.com/xcy960815/ppz-plus/issues/new)\n\n[$(trash) 清空 PPZ Plus](command:ppz-plus.clearPpzState)"
       }
     ],
     "menus": {
