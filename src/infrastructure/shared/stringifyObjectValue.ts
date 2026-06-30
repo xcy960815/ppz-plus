@@ -5,10 +5,10 @@
  * @returns {string} 可写入 SQL 字面量或执行结果单元格的字符串。
  */
 export function stringifyObjectValue(value: object): string {
-	try {
-		const serializedValue = JSON.stringify(value);
-		return typeof serializedValue === 'string' ? serializedValue : String(value);
-	} catch {
-		return String(value);
-	}
+  try {
+    const serializedValue = JSON.stringify(value);
+    return typeof serializedValue === "string" ? serializedValue : String(value);
+  } catch {
+    return String(value);
+  }
 }

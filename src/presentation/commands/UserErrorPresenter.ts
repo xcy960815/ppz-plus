@@ -1,23 +1,23 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 /**
  * 描述用户级错误提示输入。
  */
 export interface UserErrorPresentationInput {
-	/**
-	 * 保存当前失败的用户操作名称。
-	 */
-	readonly operation: string;
+  /**
+   * 保存当前失败的用户操作名称。
+   */
+  readonly operation: string;
 
-	/**
-	 * 保存捕获到的原始错误。
-	 */
-	readonly error: unknown;
+  /**
+   * 保存捕获到的原始错误。
+   */
+  readonly error: unknown;
 
-	/**
-	 * 保存错误对象没有可读消息时使用的兜底文案。
-	 */
-	readonly fallbackMessage?: string;
+  /**
+   * 保存错误对象没有可读消息时使用的兜底文案。
+   */
+  readonly fallbackMessage?: string;
 }
 
 /**
@@ -25,28 +25,21 @@ export interface UserErrorPresentationInput {
  *
  * @param {UserErrorPresentationInput} input 用户级错误提示输入。
  */
-export async function showUserErrorMessage(
-	input: UserErrorPresentationInput
-): Promise<void> {
-	const errorMessage = extractUserErrorMessage(
-		input.error,
-		input.fallbackMessage
-	);
-	const action = await vscode.window.showErrorMessage(
-		`${input.operation}失败：${errorMessage}`,
-		'复制详情'
-	);
+export async function showUserErrorMessage(input: UserErrorPresentationInput): Promise<void> {
+  const errorMessage = extractUserErrorMessage(input.error, input.fallbackMessage);
+  const action = await vscode.window.showErrorMessage(
+    `${input.operation}失败：${errorMessage}`,
+    "复制详情",
+  );
 
-	if (action !== '复制详情') {
-		return;
-	}
+  if (action !== "复制详情") {
+    return;
+  }
 
-	await vscode.env.clipboard.writeText(
-		formatUserErrorDetails(input.operation, input.error, errorMessage)
-	);
-	await vscode.window.showInformationMessage(
-		'错误详情已复制到剪贴板。'
-	);
+  await vscode.env.clipboard.writeText(
+    formatUserErrorDetails(input.operation, input.error, errorMessage),
+  );
+  await vscode.window.showInformationMessage("错误详情已复制到剪贴板。");
 }
 
 /**
@@ -57,23 +50,23 @@ export async function showUserErrorMessage(
  * @returns {string} 用户可读的错误消息。
  */
 export function extractUserErrorMessage(
-	error: unknown,
-	fallbackMessage = '发生未知错误。'
+  error: unknown,
+  fallbackMessage = "发生未知错误。",
 ): string {
-	if (error instanceof Error && error.message.trim().length > 0) {
-		return error.message.trim();
-	}
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message.trim();
+  }
 
-	const aggregateMessage = extractAggregateErrorMessage(error);
-	if (aggregateMessage !== undefined) {
-		return aggregateMessage;
-	}
+  const aggregateMessage = extractAggregateErrorMessage(error);
+  if (aggregateMessage !== undefined) {
+    return aggregateMessage;
+  }
 
-	if (typeof error === 'string' && error.trim().length > 0) {
-		return error.trim();
-	}
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error.trim();
+  }
 
-	return fallbackMessage;
+  return fallbackMessage;
 }
 
 /**
@@ -84,35 +77,31 @@ export function extractUserErrorMessage(
  * @param {string} errorMessage 已展示给用户的错误消息。
  * @returns {string} 可复制到剪贴板的诊断文本。
  */
-function formatUserErrorDetails(
-	operation: string,
-	error: unknown,
-	errorMessage: string
-): string {
-	const detailLines = [
-		`操作：${operation}`,
-		`消息：${errorMessage}`,
-		`创建时间：${new Date().toISOString()}`,
-	];
-	const aggregateDetails = formatAggregateErrorDetails(error);
+function formatUserErrorDetails(operation: string, error: unknown, errorMessage: string): string {
+  const detailLines = [
+    `操作：${operation}`,
+    `消息：${errorMessage}`,
+    `创建时间：${new Date().toISOString()}`,
+  ];
+  const aggregateDetails = formatAggregateErrorDetails(error);
 
-	if (error instanceof Error && error.stack) {
-		detailLines.push('', '堆栈：', error.stack);
-		if (aggregateDetails.length > 0) {
-			detailLines.push('', '子错误：', ...aggregateDetails);
-		}
-		return detailLines.join('\n');
-	}
+  if (error instanceof Error && error.stack) {
+    detailLines.push("", "堆栈：", error.stack);
+    if (aggregateDetails.length > 0) {
+      detailLines.push("", "子错误：", ...aggregateDetails);
+    }
+    return detailLines.join("\n");
+  }
 
-	if (aggregateDetails.length > 0) {
-		detailLines.push('', '子错误：', ...aggregateDetails);
-	}
+  if (aggregateDetails.length > 0) {
+    detailLines.push("", "子错误：", ...aggregateDetails);
+  }
 
-	if (typeof error !== 'string') {
-		detailLines.push('', '原始错误：', safeStringifyError(error));
-	}
+  if (typeof error !== "string") {
+    detailLines.push("", "原始错误：", safeStringifyError(error));
+  }
 
-	return detailLines.join('\n');
+  return detailLines.join("\n");
 }
 
 /**
@@ -122,11 +111,11 @@ function formatUserErrorDetails(
  * @returns {string | undefined} 汇总后的子错误消息；没有可读子错误时为空。
  */
 function extractAggregateErrorMessage(error: unknown): string | undefined {
-	const messages = readAggregateErrors(error)
-		.map((item) => extractUserErrorMessage(item, ''))
-		.filter((message) => message.length > 0);
+  const messages = readAggregateErrors(error)
+    .map((item) => extractUserErrorMessage(item, ""))
+    .filter((message) => message.length > 0);
 
-	return messages.length > 0 ? messages.join('；') : undefined;
+  return messages.length > 0 ? messages.join("；") : undefined;
 }
 
 /**
@@ -136,10 +125,10 @@ function extractAggregateErrorMessage(error: unknown): string | undefined {
  * @returns {readonly string[]} 可写入诊断信息的子错误行。
  */
 function formatAggregateErrorDetails(error: unknown): readonly string[] {
-	return readAggregateErrors(error).map((item, index) => {
-		const message = extractUserErrorMessage(item, '无错误消息。');
-		return `${index + 1}. ${message}`;
-	});
+  return readAggregateErrors(error).map((item, index) => {
+    const message = extractUserErrorMessage(item, "无错误消息。");
+    return `${index + 1}. ${message}`;
+  });
 }
 
 /**
@@ -149,12 +138,12 @@ function formatAggregateErrorDetails(error: unknown): readonly string[] {
  * @returns {readonly unknown[]} 子错误列表。
  */
 function readAggregateErrors(error: unknown): readonly unknown[] {
-	if (!error || typeof error !== 'object' || !('errors' in error)) {
-		return [];
-	}
+  if (!error || typeof error !== "object" || !("errors" in error)) {
+    return [];
+  }
 
-	const errors = (error as { readonly errors?: unknown }).errors;
-	return Array.isArray(errors) ? errors : [];
+  const errors = (error as { readonly errors?: unknown }).errors;
+  return Array.isArray(errors) ? errors : [];
 }
 
 /**
@@ -164,9 +153,9 @@ function readAggregateErrors(error: unknown): readonly unknown[] {
  * @returns {string} 可写入诊断信息的字符串。
  */
 function safeStringifyError(error: unknown): string {
-	try {
-		return JSON.stringify(error, null, 2) ?? String(error);
-	} catch {
-		return String(error);
-	}
+  try {
+    return JSON.stringify(error, null, 2) ?? String(error);
+  } catch {
+    return String(error);
+  }
 }

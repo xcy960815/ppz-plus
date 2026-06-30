@@ -1,0 +1,2 @@
+allowBuilds:
+  "@vscode/sqlite3": true

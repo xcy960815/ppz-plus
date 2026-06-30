@@ -1,6 +1,6 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
-import type { CancellationSignal } from '../../domain/tasks/CancellationSignal';
+import type { CancellationSignal } from "../../domain/tasks/CancellationSignal";
 
 /**
  * 将 VS Code 取消令牌适配为跨层取消信号。
@@ -9,13 +9,13 @@ import type { CancellationSignal } from '../../domain/tasks/CancellationSignal';
  * @returns {CancellationSignal} 应用层可读取的取消信号。
  */
 export function createVsCodeCancellationSignal(
-	token: vscode.CancellationToken
+  token: vscode.CancellationToken,
 ): CancellationSignal {
-	return {
-		get isCancellationRequested(): boolean {
-			return token.isCancellationRequested;
-		},
-	};
+  return {
+    get isCancellationRequested(): boolean {
+      return token.isCancellationRequested;
+    },
+  };
 }
 
 /**
@@ -24,5 +24,5 @@ export function createVsCodeCancellationSignal(
  * @param {string} taskName 被取消的任务名称。
  */
 export async function showTaskCanceledMessage(taskName: string): Promise<void> {
-	await vscode.window.showInformationMessage(`已取消${taskName}。`);
+  await vscode.window.showInformationMessage(`已取消${taskName}。`);
 }

@@ -2,12 +2,12 @@
  * 列出领域模型中预留的数据库引擎。
  */
 export const DATABASE_ENGINES = [
-	'mysql',
-	'postgresql',
-	'sqlite3',
-	'mssql',
-	'cockroachdb',
-	'mariadb',
+  "mysql",
+  "postgresql",
+  "sqlite3",
+  "mssql",
+  "cockroachdb",
+  "mariadb",
 ] as const;
 
 /**

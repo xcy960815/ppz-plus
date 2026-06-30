@@ -1,19 +1,19 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
-import type { CreateImportErrorReportUseCase } from '../../application/useCases/CreateImportErrorReportUseCase';
-import type { ImportColumnMapping } from '../../domain/import/ImportColumnMapping';
-import type { ImportErrorStage } from '../../domain/import/ImportErrorReport';
+import type { CreateImportErrorReportUseCase } from "../../application/useCases/CreateImportErrorReportUseCase";
+import type { ImportColumnMapping } from "../../domain/import/ImportColumnMapping";
+import type { ImportErrorStage } from "../../domain/import/ImportErrorReport";
 
 /**
  * 描述导入错误提示和报告所需的输入。
  */
 export interface ImportErrorReportPresentationInput {
-	readonly formatName: string;
-	readonly fileName: string;
-	readonly targetName: string;
-	readonly stage: ImportErrorStage;
-	readonly errorMessage: string;
-	readonly mappings?: readonly ImportColumnMapping[];
+  readonly formatName: string;
+  readonly fileName: string;
+  readonly targetName: string;
+  readonly stage: ImportErrorStage;
+  readonly errorMessage: string;
+  readonly mappings?: readonly ImportColumnMapping[];
 }
 
 /**
@@ -23,29 +23,27 @@ export interface ImportErrorReportPresentationInput {
  * @param {ImportErrorReportPresentationInput} input 导入错误展示输入。
  */
 export async function showImportErrorReport(
-	createImportErrorReportUseCase: CreateImportErrorReportUseCase,
-	input: ImportErrorReportPresentationInput
+  createImportErrorReportUseCase: CreateImportErrorReportUseCase,
+  input: ImportErrorReportPresentationInput,
 ): Promise<void> {
-	const action = await vscode.window.showErrorMessage(
-		`${input.formatName} 导入在${formatImportStage(
-			input.stage
-		)}阶段失败：${input.errorMessage}`,
-		'打开报告'
-	);
+  const action = await vscode.window.showErrorMessage(
+    `${input.formatName} 导入在${formatImportStage(input.stage)}阶段失败：${input.errorMessage}`,
+    "打开报告",
+  );
 
-	if (action !== '打开报告') {
-		return;
-	}
+  if (action !== "打开报告") {
+    return;
+  }
 
-	const report = createImportErrorReportUseCase.execute(input);
-	const document = await vscode.workspace.openTextDocument({
-		content: report.content,
-		language: report.language,
-	});
+  const report = createImportErrorReportUseCase.execute(input);
+  const document = await vscode.workspace.openTextDocument({
+    content: report.content,
+    language: report.language,
+  });
 
-	await vscode.window.showTextDocument(document, {
-		preview: false,
-	});
+  await vscode.window.showTextDocument(document, {
+    preview: false,
+  });
 }
 
 /**
@@ -55,13 +53,13 @@ export async function showImportErrorReport(
  * @returns {string} 面向用户展示的导入阶段名称。
  */
 function formatImportStage(stage: ImportErrorStage): string {
-	if (stage === 'mapping') {
-		return '字段映射';
-	}
+  if (stage === "mapping") {
+    return "字段映射";
+  }
 
-	if (stage === 'preview') {
-		return '预览';
-	}
+  if (stage === "preview") {
+    return "预览";
+  }
 
-	return '执行';
+  return "执行";
 }

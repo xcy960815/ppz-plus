@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
-import type { SqlExportDocument } from '../../domain/export/SqlExportDocument';
-import type { SqlExportFileSaveResult } from '../../domain/export/SqlExportFileSaveResult';
-import { getSqlExportFormat } from '../../domain/export/SqlExportFormat';
+import type { SqlExportDocument } from "../../domain/export/SqlExportDocument";
+import type { SqlExportFileSaveResult } from "../../domain/export/SqlExportFileSaveResult";
+import { getSqlExportFormat } from "../../domain/export/SqlExportFormat";
 
 /**
  * 提示用户选择 SQL 导出文件保存路径。
@@ -11,24 +11,24 @@ import { getSqlExportFormat } from '../../domain/export/SqlExportFormat';
  * @returns {Promise<string | undefined>} 用户选择的文件路径；取消时为空。
  */
 export async function promptSqlExportFilePath(
-	document: SqlExportDocument
+  document: SqlExportDocument,
 ): Promise<string | undefined> {
-	const format = getSqlExportFormat(document.format);
-	const defaultFileName = sanitizeSqlExportFileName(document.title);
-	const defaultWorkspaceFolder = vscode.workspace.workspaceFolders?.[0];
-	const defaultUri = defaultWorkspaceFolder
-		? vscode.Uri.joinPath(defaultWorkspaceFolder.uri, defaultFileName)
-		: vscode.Uri.file(defaultFileName);
-	const selectedFile = await vscode.window.showSaveDialog({
-		defaultUri,
-		filters: {
-			[format.dialogFilterLabel]: [format.fileExtension],
-		},
-		saveLabel: '导出',
-		title: `PPZ Plus: 导出 ${format.label} 到文件`,
-	});
+  const format = getSqlExportFormat(document.format);
+  const defaultFileName = sanitizeSqlExportFileName(document.title);
+  const defaultWorkspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  const defaultUri = defaultWorkspaceFolder
+    ? vscode.Uri.joinPath(defaultWorkspaceFolder.uri, defaultFileName)
+    : vscode.Uri.file(defaultFileName);
+  const selectedFile = await vscode.window.showSaveDialog({
+    defaultUri,
+    filters: {
+      [format.dialogFilterLabel]: [format.fileExtension],
+    },
+    saveLabel: "导出",
+    title: `PPZ Plus: 导出 ${format.label} 到文件`,
+  });
 
-	return selectedFile?.fsPath;
+  return selectedFile?.fsPath;
 }
 
 /**
@@ -38,7 +38,7 @@ export async function promptSqlExportFilePath(
  * @returns {string} 可作为本地文件名使用的字符串。
  */
 function sanitizeSqlExportFileName(fileName: string): string {
-	return fileName.replace(/[\\/:*?"<>|]/g, '_');
+  return fileName.replace(/[\\/:*?"<>|]/g, "_");
 }
 
 /**
@@ -47,22 +47,18 @@ function sanitizeSqlExportFileName(fileName: string): string {
  * @param {SqlExportFileSaveResult} result SQL 导出文件保存结果。
  */
 export async function presentSqlExportFileSaveResult(
-	result: SqlExportFileSaveResult
+  result: SqlExportFileSaveResult,
 ): Promise<void> {
-	if (result.success) {
-		const textDocument = await vscode.workspace.openTextDocument(result.filePath);
-		await vscode.window.showTextDocument(textDocument, {
-			preview: false,
-		});
-		await vscode.window.showInformationMessage(
-			`已导出 SQL 到“${result.filePath}”。`
-		);
-		return;
-	}
+  if (result.success) {
+    const textDocument = await vscode.workspace.openTextDocument(result.filePath);
+    await vscode.window.showTextDocument(textDocument, {
+      preview: false,
+    });
+    await vscode.window.showInformationMessage(`已导出 SQL 到“${result.filePath}”。`);
+    return;
+  }
 
-	await vscode.window.showErrorMessage(
-		`导出 SQL${result.filePath ? ` 到“${result.filePath}”` : ''}失败：${
-			result.errorMessage
-		}`
-	);
+  await vscode.window.showErrorMessage(
+    `导出 SQL${result.filePath ? ` 到“${result.filePath}”` : ""}失败：${result.errorMessage}`,
+  );
 }
