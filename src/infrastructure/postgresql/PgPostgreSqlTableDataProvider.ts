@@ -1,11 +1,11 @@
 import type { PostgreSqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type {
-	MySqlTableCellValue,
-	MySqlTableColumnMetadata,
-	MySqlTableFilterCondition,
-	MySqlTableQueryOptions,
-	MySqlTableRowPage,
-} from '../../application/mysql/MySqlTableDataProvider';
+	TableCellValue,
+	TableColumnMetadata,
+	TableFilterCondition,
+	TableQueryOptions,
+	TableRowPage,
+} from '../../application/shared/TableDataTypes';
 import type { PostgreSqlTableDataProvider } from '../../application/postgresql/PostgreSqlTableDataProvider';
 import { PostgreSqlConnectionAdapter } from './PostgreSqlConnectionAdapter';
 import type { PgRuntimeClient } from './PgRuntimeTypes';
@@ -51,45 +51,11 @@ export class PgPostgreSqlTableDataProvider
 		databaseName: string,
 		schemaName: string,
 		tableName: string
-	): Promise<readonly MySqlTableColumnMetadata[]> {
+	): Promise<readonly TableColumnMetadata[]> {
 		const client = await this.openClient(connection, databaseName);
 
 		try {
-			const [columnsResult, primaryKeysResult] = await Promise.all([
-				client.query(
-					[
-						'SELECT column_name AS "columnName",',
-						'udt_name AS "dataType",',
-						'datetime_precision AS "dateTimePrecision",',
-						'is_nullable AS "isNullable",',
-						'column_default AS "columnDefault"',
-						'FROM information_schema.columns',
-						'WHERE table_schema = $1 AND table_name = $2',
-						'ORDER BY ordinal_position',
-					].join(' '),
-					[schemaName, tableName]
-				),
-				client.query(
-					[
-						'SELECT a.attname AS "columnName"',
-						'FROM pg_index i',
-						'JOIN pg_attribute a ON a.attrelid = i.indrelid',
-						'AND a.attnum = ANY(i.indkey)',
-						'WHERE i.indrelid = $1::regclass',
-						'AND i.indisprimary',
-					].join(' '),
-					[`${this.quoteIdentifier(schemaName)}.${this.quoteIdentifier(tableName)}`]
-				),
-			]);
-
-			return this.normalizeColumnRows(
-				columnsResult.rows,
-				new Set(
-					primaryKeysResult.rows
-						.map((row) => row.columnName)
-						.filter((value): value is string => typeof value === 'string')
-				)
-			);
+			return this.listColumnsWithClient(client, schemaName, tableName);
 		} finally {
 			await client.end();
 		}
@@ -114,11 +80,12 @@ export class PgPostgreSqlTableDataProvider
 		tableName: string,
 		pageIndex: number,
 		pageSize: number,
-		options?: MySqlTableQueryOptions
-	): Promise<MySqlTableRowPage> {
+		options?: TableQueryOptions
+	): Promise<TableRowPage> {
 		const client = await this.openClient(connection, databaseName);
 
 		try {
+			const normalizedPageIndex = Math.max(pageIndex, 0);
 			const columns = await this.listColumnsWithClient(
 				client,
 				schemaName,
@@ -134,7 +101,7 @@ export class PgPostgreSqlTableDataProvider
 				schemaName,
 				tableName,
 				columns,
-				pageIndex,
+				normalizedPageIndex,
 				pageSize,
 				options
 			);
@@ -147,7 +114,7 @@ export class PgPostgreSqlTableDataProvider
 			return this.normalizeRowPage(
 				rowsResult.rows,
 				columns,
-				pageIndex,
+				normalizedPageIndex,
 				pageSize,
 				this.readTotalRowCount(countResult.rows),
 				rowPageQuery.displaySql,
@@ -170,7 +137,7 @@ export class PgPostgreSqlTableDataProvider
 		client: PgRuntimeClient,
 		schemaName: string,
 		tableName: string
-	): Promise<readonly MySqlTableColumnMetadata[]> {
+	): Promise<readonly TableColumnMetadata[]> {
 		const [columnsResult, primaryKeysResult] = await Promise.all([
 			client.query(
 				[
@@ -194,6 +161,7 @@ export class PgPostgreSqlTableDataProvider
 					'WHERE i.indrelid = $1::regclass',
 					'AND i.indisprimary',
 				].join(' '),
+				// regclass 文本由 quoteIdentifier 负责双引号转义，避免特殊 schema/table 名破坏限定名解析。
 				[`${this.quoteIdentifier(schemaName)}.${this.quoteIdentifier(tableName)}`]
 			),
 		]);
@@ -240,7 +208,7 @@ export class PgPostgreSqlTableDataProvider
 	private normalizeColumnRows(
 		rows: readonly Record<string, unknown>[],
 		primaryKeyNames: ReadonlySet<string>
-	): readonly MySqlTableColumnMetadata[] {
+	): readonly TableColumnMetadata[] {
 		return rows
 			.map((row) => {
 				const name = row.columnName;
@@ -261,7 +229,7 @@ export class PgPostgreSqlTableDataProvider
 				};
 			})
 			.filter(
-				(column): column is MySqlTableColumnMetadata => column !== undefined
+				(column): column is TableColumnMetadata => column !== undefined
 			);
 	}
 
@@ -277,8 +245,8 @@ export class PgPostgreSqlTableDataProvider
 	private createRowCountQuery(
 		schemaName: string,
 		tableName: string,
-		columns: readonly MySqlTableColumnMetadata[],
-		options?: MySqlTableQueryOptions
+		columns: readonly TableColumnMetadata[],
+		options?: TableQueryOptions
 	): {
 		readonly sql: string;
 		readonly values: readonly unknown[];
@@ -309,10 +277,10 @@ export class PgPostgreSqlTableDataProvider
 	private createRowPageQuery(
 		schemaName: string,
 		tableName: string,
-		columns: readonly MySqlTableColumnMetadata[],
+		columns: readonly TableColumnMetadata[],
 		pageIndex: number,
 		pageSize: number,
-		options?: MySqlTableQueryOptions
+		options?: TableQueryOptions
 	): {
 		readonly sql: string;
 		readonly values: readonly unknown[];
@@ -361,9 +329,9 @@ export class PgPostgreSqlTableDataProvider
 	 * @returns WHERE 片段和参数。
 	 */
 	private createFilterClause(
-		columns: readonly MySqlTableColumnMetadata[],
+		columns: readonly TableColumnMetadata[],
 		startIndex: number,
-		options?: MySqlTableQueryOptions
+		options?: TableQueryOptions
 	): PostgreSqlQueryFragment {
 		const fragments: PostgreSqlQueryFragment[] = [];
 		let nextIndex = startIndex;
@@ -428,8 +396,8 @@ export class PgPostgreSqlTableDataProvider
 	 * @returns 可拼接到 WHERE 中的条件片段。
 	 */
 	private createConditionClause(
-		columns: readonly MySqlTableColumnMetadata[],
-		condition: MySqlTableFilterCondition,
+		columns: readonly TableColumnMetadata[],
+		condition: TableFilterCondition,
 		parameterIndex: number
 	): PostgreSqlQueryFragment | undefined {
 		const column = columns.find((item) => item.name === condition.columnName);
@@ -489,7 +457,7 @@ export class PgPostgreSqlTableDataProvider
 	 * @returns 可用于 IN / NOT IN 查询的字符串列表。
 	 */
 	private normalizeFilterValueList(
-		value: MySqlTableFilterCondition['value']
+		value: TableFilterCondition['value']
 	): readonly string[] {
 		const values =
 			typeof value === 'string'
@@ -508,7 +476,7 @@ export class PgPostgreSqlTableDataProvider
 	 * @returns 可用于普通比较查询的字符串值。
 	 */
 	private normalizeFilterScalarValue(
-		value: MySqlTableFilterCondition['value']
+		value: TableFilterCondition['value']
 	): string {
 		if (typeof value === 'string') {
 			return value;
@@ -529,8 +497,8 @@ export class PgPostgreSqlTableDataProvider
 	 * @returns ORDER BY SQL 片段。
 	 */
 	private createOrderByClause(
-		columns: readonly MySqlTableColumnMetadata[],
-		options?: MySqlTableQueryOptions
+		columns: readonly TableColumnMetadata[],
+		options?: TableQueryOptions
 	): string {
 		const requestedSortColumn = options?.sort
 			? columns.find((column) => column.name === options.sort?.columnName)
@@ -563,13 +531,13 @@ export class PgPostgreSqlTableDataProvider
 	 */
 	private normalizeRowPage(
 		rows: readonly Record<string, unknown>[],
-		columns: readonly MySqlTableColumnMetadata[],
+		columns: readonly TableColumnMetadata[],
 		pageIndex: number,
 		pageSize: number,
 		totalRowCount: number,
 		sql: string,
 		sqlWithoutPagination: string
-	): MySqlTableRowPage {
+	): TableRowPage {
 		return {
 			pageIndex,
 			pageSize,
@@ -590,8 +558,8 @@ export class PgPostgreSqlTableDataProvider
 	 */
 	private normalizeRow(
 		row: Record<string, unknown>,
-		columns: readonly MySqlTableColumnMetadata[]
-	): Record<string, MySqlTableCellValue> {
+		columns: readonly TableColumnMetadata[]
+	): Record<string, TableCellValue> {
 		const columnsByName = new Map(
 			columns.map((column) => [column.name, column])
 		);
@@ -612,8 +580,8 @@ export class PgPostgreSqlTableDataProvider
 	 */
 	private normalizeCellValue(
 		value: unknown,
-		column?: MySqlTableColumnMetadata
-	): MySqlTableCellValue {
+		column?: TableColumnMetadata
+	): TableCellValue {
 		if (
 			value === null ||
 			typeof value === 'string' ||
@@ -646,7 +614,7 @@ export class PgPostgreSqlTableDataProvider
 	 */
 	private formatDateCellValue(
 		value: Date,
-		column?: MySqlTableColumnMetadata
+		column?: TableColumnMetadata
 	): string {
 		const year = value.getFullYear().toString().padStart(4, '0');
 		const month = (value.getMonth() + 1).toString().padStart(2, '0');

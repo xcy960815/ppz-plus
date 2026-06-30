@@ -1,6 +1,6 @@
 import type { PostgreSqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
-import type { MySqlTableColumnMetadata } from '../mysql/MySqlTableDataProvider';
 import type { PostgreSqlTableDataProvider } from '../postgresql/PostgreSqlTableDataProvider';
+import type { TableColumnMetadata } from '../shared/TableDataTypes';
 
 /**
  * 列出 PostgreSQL 表的字段元数据。
@@ -29,7 +29,7 @@ export class ListPostgreSqlTableColumnsUseCase {
 		databaseName: string,
 		schemaName: string,
 		tableName: string
-	): Promise<readonly MySqlTableColumnMetadata[]> {
+	): Promise<readonly TableColumnMetadata[]> {
 		return this.postgreSqlTableDataProvider.listColumns(
 			connection,
 			databaseName,

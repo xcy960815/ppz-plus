@@ -1,9 +1,21 @@
 import type { MysqlConnectionConfig } from '../../domain/connections/ConnectionConfig';
+import type {
+	TableCellValue,
+	TableColumnMetadata,
+	TableFilterCondition,
+	TableFilterConditionValue,
+	TableFilterOperator,
+	TableFilterOptions,
+	TableQueryOptions,
+	TableRowPage,
+	TableSortDirection,
+	TableSortOptions,
+} from '../shared/TableDataTypes';
 
 /**
  * 表示 MySQL 表数据页中渲染的可序列化单元格值。
  */
-export type MySqlTableCellValue = string | number | boolean | null;
+export type MySqlTableCellValue = TableCellValue;
 
 /**
  * 表示新增单行记录时可写入的字段值。
@@ -34,98 +46,47 @@ export type MySqlTableUpdateValues = Readonly<
 /**
  * 描述 MySQL 表数据页中可见的字段。
  */
-export interface MySqlTableColumnMetadata {
-	readonly name: string;
-	readonly dataType: string;
-	/**
-	 * 日期时间字段的小数秒精度。
-	 */
-	readonly dateTimePrecision: number | null;
-	readonly nullable: boolean;
-	readonly isPrimaryKey: boolean;
-	readonly extra: string;
-}
+export type MySqlTableColumnMetadata = TableColumnMetadata;
 
 /**
  * 描述 MySQL 表数据排序方向。
  */
-export type MySqlTableSortDirection = 'asc' | 'desc';
+export type MySqlTableSortDirection = TableSortDirection;
 
 /**
  * 描述 MySQL 表数据排序条件。
  */
-export interface MySqlTableSortOptions {
-	readonly columnName: string;
-	readonly direction: MySqlTableSortDirection;
-}
+export type MySqlTableSortOptions = TableSortOptions;
 
 /**
  * 描述 MySQL 表数据过滤操作符。
  */
-export type MySqlTableFilterOperator =
-	| '='
-	| '!='
-	| '>'
-	| '>='
-	| '<'
-	| '<='
-	| 'like'
-	| 'in'
-	| 'not in'
-	| 'null'
-	| 'not null';
+export type MySqlTableFilterOperator = TableFilterOperator;
 
 /**
  * 描述 MySQL 表数据过滤条件值。
  */
-export type MySqlTableFilterConditionValue = string | readonly string[];
+export type MySqlTableFilterConditionValue = TableFilterConditionValue;
 
 /**
  * 描述 MySQL 表数据单条字段过滤条件。
  */
-export interface MySqlTableFilterCondition {
-	readonly columnName: string;
-	readonly operator: MySqlTableFilterOperator;
-	readonly value?: MySqlTableFilterConditionValue;
-}
+export type MySqlTableFilterCondition = TableFilterCondition;
 
 /**
  * 描述 MySQL 表数据过滤条件。
  */
-export interface MySqlTableFilterOptions {
-	readonly keyword?: string;
-	readonly conditions?: readonly MySqlTableFilterCondition[];
-}
+export type MySqlTableFilterOptions = TableFilterOptions;
 
 /**
  * 描述 MySQL 表数据页查询选项。
  */
-export interface MySqlTableQueryOptions {
-	readonly sort?: MySqlTableSortOptions;
-	readonly filter?: MySqlTableFilterOptions;
-}
+export type MySqlTableQueryOptions = TableQueryOptions;
 
 /**
  * 描述 MySQL 数据流程返回的一页表行。
  */
-export interface MySqlTableRowPage {
-	readonly pageIndex: number;
-	readonly pageSize: number;
-	/**
-	 * 当前查询条件下的总行数。
-	 */
-	readonly totalRowCount: number;
-	readonly hasNextPage: boolean;
-	/**
-	 * 当前表数据页带分页条件的展示 SQL。
-	 */
-	readonly sql: string;
-	/**
-	 * 当前表数据查询去掉分页条件后的展示 SQL。
-	 */
-	readonly sqlWithoutPagination: string;
-	readonly rows: readonly Record<string, MySqlTableCellValue>[];
-}
+export type MySqlTableRowPage = TableRowPage;
 
 /**
  * 描述 MySQL 单行新增结果。
