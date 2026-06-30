@@ -130,7 +130,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 			blocks.push(this.renderFooter());
 
 			return {
-				title: `${target.schemaName}.${kind}.sql`,
+				title: `${target.schemaName}.sql`,
 				format: SQL_EXPORT_FORMAT.id,
 				kind,
 				target,
@@ -254,11 +254,11 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	): Promise<readonly string[]> {
 		const [rows] = await runtimeConnection.query(
 			[
-				'SELECT table_name',
+				'SELECT TABLE_NAME AS tableName',
 				'FROM information_schema.tables',
-				'WHERE table_schema = ?',
-				"AND table_type = 'BASE TABLE'",
-				'ORDER BY table_name',
+				'WHERE TABLE_SCHEMA = ?',
+				"AND TABLE_TYPE = 'BASE TABLE'",
+				'ORDER BY TABLE_NAME',
 			].join(' '),
 			[target.schemaName]
 		);
@@ -273,7 +273,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 					return undefined;
 				}
 
-				const tableName = Reflect.get(row, 'table_name');
+				const tableName = (row as Record<string, unknown>).tableName;
 				return typeof tableName === 'string' ? tableName : undefined;
 			})
 			.filter((tableName): tableName is string => tableName !== undefined);

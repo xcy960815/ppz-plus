@@ -1,9 +1,10 @@
 import type { SqlExportKind } from './SqlExportDocument';
+import type { DatabaseEngine } from '../database/DatabaseEngine';
 
 /**
  * 表示 SQL 导出任务的目标类型。
  */
-export type SqlExportTaskTargetType = 'schema' | 'table';
+export type SqlExportTaskTargetType = 'database' | 'schema' | 'table';
 
 /**
  * 表示 SQL 导出任务的最终状态。
@@ -15,7 +16,7 @@ export type SqlExportTaskStatus = 'success' | 'failure';
  */
 export interface SqlExportTaskLogEntry {
 	readonly id: string;
-	readonly engine: 'mysql';
+	readonly engine: DatabaseEngine;
 	readonly connectionName: string;
 	readonly targetType: SqlExportTaskTargetType;
 	readonly targetName: string;

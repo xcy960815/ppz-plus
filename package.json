@@ -12,6 +12,7 @@
   ],
   "activationEvents": [
     "onWebviewPanel:ppzPlus.mysqlSqlTerminal",
+    "onWebviewPanel:ppzPlus.postgreSqlSqlTerminal",
     "onWebviewPanel:ppzPlus.mysqlTableData"
   ],
   "dependencies": {
@@ -69,6 +70,11 @@
         "icon": "$(terminal)"
       },
       {
+        "command": "ppz-plus.openPostgreSqlSqlTerminal",
+        "title": "PPZ Plus: 打开 PostgreSQL SQL 终端",
+        "icon": "$(terminal)"
+      },
+      {
         "command": "ppz-plus.importMySqlSqlFile",
         "title": "PPZ Plus: 导入 MySQL SQL 文件",
         "icon": "$(file-code)"
@@ -117,6 +123,51 @@
         "command": "ppz-plus.exportMySqlTablesBatch",
         "title": "PPZ Plus: 批量导出 MySQL 表",
         "icon": "$(save-all)"
+      },
+      {
+        "command": "ppz-plus.exportPostgreSqlDatabaseDdl",
+        "title": "PPZ Plus: 导出 PostgreSQL Database DDL",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportPostgreSqlDatabaseDml",
+        "title": "PPZ Plus: 导出 PostgreSQL Database DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportPostgreSqlDatabaseBoth",
+        "title": "PPZ Plus: 导出 PostgreSQL Database DDL + DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportPostgreSqlSchemaDdl",
+        "title": "PPZ Plus: 导出 PostgreSQL Schema DDL",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportPostgreSqlSchemaDml",
+        "title": "PPZ Plus: 导出 PostgreSQL Schema DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportPostgreSqlSchemaBoth",
+        "title": "PPZ Plus: 导出 PostgreSQL Schema DDL + DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportPostgreSqlTableDdl",
+        "title": "PPZ Plus: 导出 PostgreSQL 表 DDL",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportPostgreSqlTableDml",
+        "title": "PPZ Plus: 导出 PostgreSQL 表 DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportPostgreSqlTableBoth",
+        "title": "PPZ Plus: 导出 PostgreSQL 表 DDL + DML",
+        "icon": "$(save)"
       },
       {
         "command": "ppz-plus.showSqlExportTaskLogs",
@@ -169,6 +220,11 @@
           "group": "inline@3"
         },
         {
+          "command": "ppz-plus.openPostgreSqlSqlTerminal",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlConnection",
+          "group": "inline@4"
+        },
+        {
           "command": "ppz-plus.openMySqlSqlTerminal",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
           "group": "inline@4"
@@ -194,9 +250,49 @@
           "group": "inline@1"
         },
         {
+          "command": "ppz-plus.openPostgreSqlSqlTerminal",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlDatabase",
+          "group": "inline@2"
+        },
+        {
+          "command": "ppz-plus.exportPostgreSqlDatabaseDdl",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlDatabase",
+          "group": "export@1"
+        },
+        {
+          "command": "ppz-plus.exportPostgreSqlDatabaseDml",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlDatabase",
+          "group": "export@2"
+        },
+        {
+          "command": "ppz-plus.exportPostgreSqlDatabaseBoth",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlDatabase",
+          "group": "export@3"
+        },
+        {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlSchema",
           "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.openPostgreSqlSqlTerminal",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlSchema",
+          "group": "inline@2"
+        },
+        {
+          "command": "ppz-plus.exportPostgreSqlSchemaDdl",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlSchema",
+          "group": "export@1"
+        },
+        {
+          "command": "ppz-plus.exportPostgreSqlSchemaDml",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlSchema",
+          "group": "export@2"
+        },
+        {
+          "command": "ppz-plus.exportPostgreSqlSchemaBoth",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlSchema",
+          "group": "export@3"
         },
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
@@ -207,6 +303,26 @@
           "command": "ppz-plus.openMySqlTableData",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlTable",
           "group": "inline@2"
+        },
+        {
+          "command": "ppz-plus.openPostgreSqlSqlTerminal",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlTable",
+          "group": "inline@3"
+        },
+        {
+          "command": "ppz-plus.exportPostgreSqlTableDdl",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlTable",
+          "group": "export@1"
+        },
+        {
+          "command": "ppz-plus.exportPostgreSqlTableDml",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlTable",
+          "group": "export@2"
+        },
+        {
+          "command": "ppz-plus.exportPostgreSqlTableBoth",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlTable",
+          "group": "export@3"
         },
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",

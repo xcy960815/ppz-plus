@@ -53,7 +53,7 @@ export const MYSQL_MVP_CAPABILITY_DECLARATION = {
 } satisfies DatabaseCapabilityDeclaration;
 
 /**
- * 声明 PostgreSQL 当前已开放的连接与资源树能力。
+ * 声明 PostgreSQL 当前已开放的 MVP 能力。
  */
 export const POSTGRESQL_TREE_CAPABILITY_DECLARATION = {
 	engine: 'postgresql',
@@ -62,12 +62,12 @@ export const POSTGRESQL_TREE_CAPABILITY_DECLARATION = {
 		connectionTest: 'supported',
 		treeExplorer: 'supported',
 		schemaBrowse: 'supported',
-		tableRead: 'planned',
-		tablePagination: 'planned',
-		tableSort: 'planned',
-		tableFilter: 'planned',
-		sqlExecute: 'planned',
-		exportDdl: 'planned',
-		exportDml: 'planned',
+		tableRead: 'supported',
+		tablePagination: 'supported',
+		tableSort: 'supported',
+		tableFilter: 'supported',
+		sqlExecute: 'supported',
+		exportDdl: 'supported',
+		exportDml: 'supported',
 	},
 } satisfies DatabaseCapabilityDeclaration;

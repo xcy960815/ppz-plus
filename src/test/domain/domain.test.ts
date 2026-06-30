@@ -122,8 +122,20 @@ suite('Domain — DatabaseCapabilityDeclaration', () => {
 		);
 	});
 
-	test('POSTGRESQL_TREE_CAPABILITY_DECLARATION 其他能力均为 planned', () => {
-		const plannedCapabilities = ['tableRead', 'tablePagination', 'tableSort', 'tableFilter', 'sqlExecute', 'exportDdl', 'exportDml'] as const;
+	test('POSTGRESQL_TREE_CAPABILITY_DECLARATION 已迁移能力为 supported', () => {
+		const supportedCapabilities = ['tableRead', 'tablePagination', 'tableSort', 'tableFilter', 'sqlExecute', 'exportDml'] as const;
+
+		for (const key of supportedCapabilities) {
+			assert.strictEqual(
+				POSTGRESQL_TREE_CAPABILITY_DECLARATION.capabilities[key],
+				'supported',
+				`PostgreSQL 能力“${key}”应为 supported`
+			);
+		}
+	});
+
+	test('POSTGRESQL_TREE_CAPABILITY_DECLARATION DDL 导出仍为 planned', () => {
+		const plannedCapabilities = ['exportDdl'] as const;
 
 		for (const key of plannedCapabilities) {
 			assert.strictEqual(

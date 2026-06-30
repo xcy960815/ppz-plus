@@ -21,9 +21,19 @@ export interface SqlExportSchemaTarget {
 }
 
 /**
+ * 描述 database 级 SQL 导出目标。
+ */
+export interface SqlExportDatabaseTarget {
+	readonly databaseName: string;
+}
+
+/**
  * 描述 SQL 导出目标。
  */
-export type SqlExportTarget = SqlExportTableTarget | SqlExportSchemaTarget;
+export type SqlExportTarget =
+	| SqlExportTableTarget
+	| SqlExportSchemaTarget
+	| SqlExportDatabaseTarget;
 
 /**
  * 描述一次 SQL 导出生成的文档内容。
