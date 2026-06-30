@@ -23,9 +23,13 @@ import { ListPostgreSqlTablesUseCase } from '../../application/useCases/ListPost
 import { ListSqlExportTaskLogsUseCase } from '../../application/useCases/ListSqlExportTaskLogsUseCase';
 import { CreateImportErrorReportUseCase } from '../../application/useCases/CreateImportErrorReportUseCase';
 import { ExecuteMySqlSqlUseCase } from '../../application/useCases/ExecuteMySqlSqlUseCase';
+import { ExecutePostgreSqlSqlUseCase } from '../../application/useCases/ExecutePostgreSqlSqlUseCase';
 import { ExportMySqlSchemaUseCase } from '../../application/useCases/ExportMySqlSchemaUseCase';
 import { ExportMySqlTableUseCase } from '../../application/useCases/ExportMySqlTableUseCase';
 import { ExportMySqlTablesBatchUseCase } from '../../application/useCases/ExportMySqlTablesBatchUseCase';
+import { ExportPostgreSqlDatabaseUseCase } from '../../application/useCases/ExportPostgreSqlDatabaseUseCase';
+import { ExportPostgreSqlSchemaUseCase } from '../../application/useCases/ExportPostgreSqlSchemaUseCase';
+import { ExportPostgreSqlTableUseCase } from '../../application/useCases/ExportPostgreSqlTableUseCase';
 import { InsertMySqlTableRowUseCase } from '../../application/useCases/InsertMySqlTableRowUseCase';
 import { PrepareMySqlCsvImportMappingUseCase } from '../../application/useCases/PrepareMySqlCsvImportMappingUseCase';
 import { PrepareMySqlJsonImportMappingUseCase } from '../../application/useCases/PrepareMySqlJsonImportMappingUseCase';
@@ -55,7 +59,9 @@ import { MySqlRuntimeLoader } from '../../infrastructure/mysql/MySqlRuntimeLoade
 import { Mysql2SqlExecutor } from '../../infrastructure/mysql/Mysql2SqlExecutor';
 import { Mysql2TableImportProvider } from '../../infrastructure/mysql/Mysql2TableImportProvider';
 import { Mysql2TableDataProvider } from '../../infrastructure/mysql/Mysql2TableDataProvider';
+import { PgPostgreSqlExportProvider } from '../../infrastructure/postgresql/PgPostgreSqlExportProvider';
 import { PgPostgreSqlMetadataProvider } from '../../infrastructure/postgresql/PgPostgreSqlMetadataProvider';
+import { PgPostgreSqlSqlExecutor } from '../../infrastructure/postgresql/PgPostgreSqlSqlExecutor';
 import { PgPostgreSqlTableDataProvider } from '../../infrastructure/postgresql/PgPostgreSqlTableDataProvider';
 import { PostgreSqlConnectionAdapter } from '../../infrastructure/postgresql/PostgreSqlConnectionAdapter';
 import { PostgreSqlRuntimeLoader } from '../../infrastructure/postgresql/PostgreSqlRuntimeLoader';
@@ -65,12 +71,16 @@ import { AddMySqlConnectionCommand } from '../commands/AddMySqlConnectionCommand
 import { ExportMySqlSchemaSqlCommand } from '../commands/ExportMySqlSchemaSqlCommand';
 import { ExportMySqlTableSqlCommand } from '../commands/ExportMySqlTableSqlCommand';
 import { ExportMySqlTablesBatchSqlCommand } from '../commands/ExportMySqlTablesBatchSqlCommand';
+import { ExportPostgreSqlDatabaseSqlCommand } from '../commands/ExportPostgreSqlDatabaseSqlCommand';
+import { ExportPostgreSqlSchemaSqlCommand } from '../commands/ExportPostgreSqlSchemaSqlCommand';
+import { ExportPostgreSqlTableSqlCommand } from '../commands/ExportPostgreSqlTableSqlCommand';
 import { ImportMySqlCsvFileCommand } from '../commands/ImportMySqlCsvFileCommand';
 import { ImportMySqlJsonFileCommand } from '../commands/ImportMySqlJsonFileCommand';
 import { ImportMySqlSqlFileCommand } from '../commands/ImportMySqlSqlFileCommand';
 import { ManageMySqlConnectionsCommand } from '../commands/ManageMySqlConnectionsCommand';
 import { OpenMySqlTableDataCommand } from '../commands/OpenMySqlTableDataCommand';
 import { OpenMySqlSqlTerminalCommand } from '../commands/OpenMySqlSqlTerminalCommand';
+import { OpenPostgreSqlSqlTerminalCommand } from '../commands/OpenPostgreSqlSqlTerminalCommand';
 import { RefreshMySqlConnectionsTreeCommand } from '../commands/RefreshMySqlConnectionsTreeCommand';
 import { ShowSqlExportTaskLogsCommand } from '../commands/ShowSqlExportTaskLogsCommand';
 import { ShowProjectStatusCommand } from '../commands/ShowProjectStatusCommand';
@@ -79,6 +89,7 @@ import { ExtensionBootstrap } from './ExtensionBootstrap';
 import { MySqlConnectionsTreeDataProvider } from '../explorer/MySqlConnectionsTreeDataProvider';
 import { MySqlConnectionsView } from '../explorer/MySqlConnectionsView';
 import { MySqlSqlTerminalPanel } from '../sql/MySqlSqlTerminalPanel';
+import { PostgreSqlSqlTerminalPanel } from '../sql/PostgreSqlSqlTerminalPanel';
 import { MySqlTableDataPanel } from '../tableData/MySqlTableDataPanel';
 
 /**
@@ -151,9 +162,17 @@ export function createExtensionBootstrap(
 		mySqlConnectionAdapter,
 		mySqlRuntimeLoader
 	);
+	const postgreSqlSqlExecutor = new PgPostgreSqlSqlExecutor(
+		postgreSqlConnectionAdapter,
+		postgreSqlRuntimeLoader
+	);
 	const mySqlExportProvider = new Mysql2ExportProvider(
 		mySqlConnectionAdapter,
 		mySqlRuntimeLoader
+	);
+	const postgreSqlExportProvider = new PgPostgreSqlExportProvider(
+		postgreSqlConnectionAdapter,
+		postgreSqlRuntimeLoader
 	);
 	const sqlFileReader = new NodeSqlFileReader();
 	const sqlExportFileWriter = new NodeSqlExportFileWriter();
@@ -223,6 +242,9 @@ export function createExtensionBootstrap(
 	const executeMySqlSqlUseCase = new ExecuteMySqlSqlUseCase(
 		mySqlSqlExecutor
 	);
+	const executePostgreSqlSqlUseCase = new ExecutePostgreSqlSqlUseCase(
+		postgreSqlSqlExecutor
+	);
 	const checkSqlExportCapabilityUseCase = new CheckSqlExportCapabilityUseCase(
 		capabilityCatalog
 	);
@@ -231,6 +253,14 @@ export function createExtensionBootstrap(
 	);
 	const exportMySqlSchemaUseCase = new ExportMySqlSchemaUseCase(
 		mySqlExportProvider
+	);
+	const exportPostgreSqlDatabaseUseCase =
+		new ExportPostgreSqlDatabaseUseCase(postgreSqlExportProvider);
+	const exportPostgreSqlTableUseCase = new ExportPostgreSqlTableUseCase(
+		postgreSqlExportProvider
+	);
+	const exportPostgreSqlSchemaUseCase = new ExportPostgreSqlSchemaUseCase(
+		postgreSqlExportProvider
 	);
 	const saveSqlExportDocumentUseCase = new SaveSqlExportDocumentUseCase(
 		sqlExportFileWriter
@@ -316,6 +346,10 @@ export function createExtensionBootstrap(
 		listStoredConnectionsUseCase,
 		executeMySqlSqlUseCase
 	);
+	const postgreSqlSqlTerminalPanel = new PostgreSqlSqlTerminalPanel(
+		listStoredConnectionsUseCase,
+		executePostgreSqlSqlUseCase
+	);
 
 	return new ExtensionBootstrap([
 		new AddMySqlConnectionCommand(
@@ -337,6 +371,7 @@ export function createExtensionBootstrap(
 		),
 		new OpenMySqlTableDataCommand(mySqlTableDataPanel),
 		new OpenMySqlSqlTerminalCommand(mySqlSqlTerminalPanel),
+		new OpenPostgreSqlSqlTerminalCommand(postgreSqlSqlTerminalPanel),
 		new ImportMySqlSqlFileCommand(
 			listStoredConnectionsUseCase,
 			createImportErrorReportUseCase,
@@ -427,11 +462,102 @@ export function createExtensionBootstrap(
 			exportMySqlTablesBatchUseCase,
 			recordSqlExportTaskLogUseCase
 		),
+		new ExportPostgreSqlDatabaseSqlCommand(
+			{
+				id: ExportPostgreSqlDatabaseSqlCommand.exportDdlId,
+				kind: 'ddl',
+			},
+			checkSqlExportCapabilityUseCase,
+			exportPostgreSqlDatabaseUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
+		),
+		new ExportPostgreSqlDatabaseSqlCommand(
+			{
+				id: ExportPostgreSqlDatabaseSqlCommand.exportDmlId,
+				kind: 'dml',
+			},
+			checkSqlExportCapabilityUseCase,
+			exportPostgreSqlDatabaseUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
+		),
+		new ExportPostgreSqlDatabaseSqlCommand(
+			{
+				id: ExportPostgreSqlDatabaseSqlCommand.exportBothId,
+				kind: 'both',
+			},
+			checkSqlExportCapabilityUseCase,
+			exportPostgreSqlDatabaseUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
+		),
+		new ExportPostgreSqlTableSqlCommand(
+			{
+				id: ExportPostgreSqlTableSqlCommand.exportDdlId,
+				kind: 'ddl',
+			},
+			checkSqlExportCapabilityUseCase,
+			exportPostgreSqlTableUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
+		),
+		new ExportPostgreSqlTableSqlCommand(
+			{
+				id: ExportPostgreSqlTableSqlCommand.exportDmlId,
+				kind: 'dml',
+			},
+			checkSqlExportCapabilityUseCase,
+			exportPostgreSqlTableUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
+		),
+		new ExportPostgreSqlTableSqlCommand(
+			{
+				id: ExportPostgreSqlTableSqlCommand.exportBothId,
+				kind: 'both',
+			},
+			checkSqlExportCapabilityUseCase,
+			exportPostgreSqlTableUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
+		),
+		new ExportPostgreSqlSchemaSqlCommand(
+			{
+				id: ExportPostgreSqlSchemaSqlCommand.exportDdlId,
+				kind: 'ddl',
+			},
+			checkSqlExportCapabilityUseCase,
+			exportPostgreSqlSchemaUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
+		),
+		new ExportPostgreSqlSchemaSqlCommand(
+			{
+				id: ExportPostgreSqlSchemaSqlCommand.exportDmlId,
+				kind: 'dml',
+			},
+			checkSqlExportCapabilityUseCase,
+			exportPostgreSqlSchemaUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
+		),
+		new ExportPostgreSqlSchemaSqlCommand(
+			{
+				id: ExportPostgreSqlSchemaSqlCommand.exportBothId,
+				kind: 'both',
+			},
+			checkSqlExportCapabilityUseCase,
+			exportPostgreSqlSchemaUseCase,
+			saveSqlExportDocumentUseCase,
+			recordSqlExportTaskLogUseCase
+		),
 		new ShowSqlExportTaskLogsCommand(listSqlExportTaskLogsUseCase),
 		new ShowProjectStatusCommand(getBootstrapStatusUseCase),
 	], [
 		new MySqlConnectionsView(mySqlConnectionsTreeDataProvider),
 		mySqlTableDataPanel,
 		mySqlSqlTerminalPanel,
+		postgreSqlSqlTerminalPanel,
 	]);
 }

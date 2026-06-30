@@ -10,6 +10,7 @@ import type { ConnectionTester } from '../../application/connections/ConnectionT
 import type {
 	ConnectionConfig,
 	MysqlConnectionConfig,
+	PostgreSqlConnectionConfig,
 } from '../../domain/connections/ConnectionConfig';
 import { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
 import { DeleteStoredConnectionUseCase } from '../../application/useCases/DeleteStoredConnectionUseCase';
@@ -19,6 +20,12 @@ import { GetBootstrapStatusUseCase } from '../../application/useCases/GetBootstr
 import { CheckSqlExportCapabilityUseCase } from '../../application/useCases/CheckSqlExportCapabilityUseCase';
 import { ExecuteMySqlSqlUseCase } from '../../application/useCases/ExecuteMySqlSqlUseCase';
 import type { MySqlSqlExecutor } from '../../application/mysql/MySqlSqlExecutor';
+import { ExecutePostgreSqlSqlUseCase } from '../../application/useCases/ExecutePostgreSqlSqlUseCase';
+import { ExportPostgreSqlDatabaseUseCase } from '../../application/useCases/ExportPostgreSqlDatabaseUseCase';
+import { ExportPostgreSqlSchemaUseCase } from '../../application/useCases/ExportPostgreSqlSchemaUseCase';
+import { ExportPostgreSqlTableUseCase } from '../../application/useCases/ExportPostgreSqlTableUseCase';
+import type { PostgreSqlExportProvider } from '../../application/postgresql/PostgreSqlExportProvider';
+import type { PostgreSqlSqlExecutor } from '../../application/postgresql/PostgreSqlSqlExecutor';
 import { ExportMySqlTableUseCase } from '../../application/useCases/ExportMySqlTableUseCase';
 import { ExportMySqlSchemaUseCase } from '../../application/useCases/ExportMySqlSchemaUseCase';
 import type { MySqlExportProvider } from '../../application/mysql/MySqlExportProvider';
@@ -44,6 +51,25 @@ function makeMysqlConfig(overrides: Partial<MysqlConnectionConfig> = {}): MysqlC
 		username: 'root',
 		...overrides,
 	} as MysqlConnectionConfig;
+}
+
+/**
+ * 构建测试用的 PostgreSQL 参数连接配置。
+ */
+function makePostgreSqlConfig(
+	overrides: Partial<PostgreSqlConnectionConfig> = {}
+): PostgreSqlConnectionConfig {
+	return {
+		id: 'test-pg-conn-1',
+		name: '测试 PostgreSQL 连接',
+		engine: 'postgresql',
+		mode: 'parameters',
+		host: '127.0.0.1',
+		port: 5432,
+		username: 'postgres',
+		database: 'postgres',
+		...overrides,
+	} as PostgreSqlConnectionConfig;
 }
 
 /**
@@ -267,12 +293,28 @@ suite('Application — CheckSqlExportCapabilityUseCase', () => {
 		assert.strictEqual(result.requirements.length, 2);
 	});
 
-	test('PostgreSQL + ddl 不为 supported', () => {
+	test('PostgreSQL + ddl 为 supported', () => {
 		const useCase = createUseCase();
 		const result = useCase.execute('postgresql', 'ddl');
-		assert.strictEqual(result.supported, false);
+		assert.strictEqual(result.supported, true);
 		assert.strictEqual(result.declarationFound, true);
-		assert.strictEqual(result.requirements[0].support, 'planned');
+		assert.strictEqual(result.requirements[0].support, 'supported');
+	});
+
+	test('PostgreSQL + dml 为 supported', () => {
+		const useCase = createUseCase();
+		const result = useCase.execute('postgresql', 'dml');
+		assert.strictEqual(result.supported, true);
+		assert.strictEqual(result.declarationFound, true);
+		assert.strictEqual(result.requirements[0].key, 'exportDml');
+		assert.strictEqual(result.requirements[0].support, 'supported');
+	});
+
+	test('PostgreSQL + both 为 supported', () => {
+		const useCase = createUseCase();
+		const result = useCase.execute('postgresql', 'both');
+		assert.strictEqual(result.supported, true);
+		assert.strictEqual(result.requirements.length, 2);
 	});
 
 	test('不存在的 engine declarationFound 为 false', () => {
@@ -324,6 +366,56 @@ suite('Application — ExecuteMySqlSqlUseCase', () => {
 		assert.strictEqual(result.success, true);
 		assert.strictEqual(executor.executedSqls.length, 1);
 		assert.strictEqual(executor.executedSqls[0], 'SELECT 1');
+	});
+});
+
+suite('Application — ExecutePostgreSqlSqlUseCase', () => {
+	function createMockExecutor(): PostgreSqlSqlExecutor & {
+		executedSqls: string[];
+		databaseNames: (string | undefined)[];
+	} {
+		return {
+			executedSqls: [],
+			databaseNames: [],
+			async executeSql(_connection, databaseName, sql) {
+				this.executedSqls.push(sql);
+				this.databaseNames.push(databaseName);
+				return {
+					sql,
+					success: true,
+					isQuery: true,
+					fields: [{ name: 'id' }],
+					rows: [{ id: 1 }],
+					affectedRows: null,
+					durationMs: 12,
+					resultSets: [],
+				};
+			},
+		};
+	}
+
+	test('空 SQL 返回错误结果，不调 executor', async () => {
+		const executor = createMockExecutor();
+		const useCase = new ExecutePostgreSqlSqlUseCase(executor);
+
+		const result = await useCase.execute(makePostgreSqlConfig(), 'postgres', '   ');
+
+		assert.strictEqual(result.success, false);
+		assert.ok(result.errorMessage);
+		assert.strictEqual(executor.executedSqls.length, 0);
+	});
+
+	test('正常 SQL 透传到 executor 并归一化 database', async () => {
+		const executor = createMockExecutor();
+		const useCase = new ExecutePostgreSqlSqlUseCase(executor);
+		const config = makePostgreSqlConfig();
+
+		const result = await useCase.execute(config, ' app_db ', 'SELECT 1');
+
+		assert.strictEqual(result.success, true);
+		assert.strictEqual(executor.executedSqls.length, 1);
+		assert.strictEqual(executor.executedSqls[0], 'SELECT 1');
+		assert.strictEqual(executor.databaseNames[0], 'app_db');
 	});
 });
 
@@ -381,7 +473,10 @@ suite('Application — ExportMySqlTableUseCase', () => {
 		);
 
 		assert.strictEqual(doc.kind, 'dml');
-		assert.strictEqual(doc.target.schemaName, 'test_db');
+		assert.strictEqual('schemaName' in doc.target, true);
+		if ('schemaName' in doc.target) {
+			assert.strictEqual(doc.target.schemaName, 'test_db');
+		}
 		if ('tableName' in doc.target) {
 			assert.strictEqual((doc.target as SqlExportTableTarget).tableName, 'users');
 		}
@@ -425,7 +520,217 @@ suite('Application — ExportMySqlSchemaUseCase', () => {
 		);
 
 		assert.strictEqual(doc.kind, 'ddl');
-		assert.strictEqual(doc.target.schemaName, 'test_db');
+		assert.strictEqual('schemaName' in doc.target, true);
+		if ('schemaName' in doc.target) {
+			assert.strictEqual(doc.target.schemaName, 'test_db');
+		}
+	});
+});
+
+suite('Application — ExportPostgreSqlTableUseCase', () => {
+	function createMockProvider(): PostgreSqlExportProvider {
+		return {
+			async exportTable(_conn, target, kind) {
+				return {
+					title: `${target.databaseName}.${target.schemaName}.${target.tableName}.${kind}.sql`,
+					format: 'sql',
+					kind,
+					target,
+					content: '-- pg table dml',
+				};
+			},
+			async exportSchema(_conn, target, kind) {
+				return {
+					title: `${target.databaseName}.${target.schemaName}.${kind}.sql`,
+					format: 'sql',
+					kind,
+					target,
+					content: '-- pg schema dml',
+				};
+			},
+			async exportDatabase(_conn, target, kind) {
+				return {
+					title: `${target.databaseName}.${kind}.sql`,
+					format: 'sql',
+					kind,
+					target,
+					content: '-- pg database dml',
+				};
+			},
+		};
+	}
+
+	test('有效参数返回 DDL 文档', async () => {
+		const useCase = new ExportPostgreSqlTableUseCase(createMockProvider());
+
+		const doc = await useCase.execute(
+			makePostgreSqlConfig(),
+			{ databaseName: 'app', schemaName: 'public', tableName: 'users' },
+			'ddl'
+		);
+
+		assert.strictEqual(doc.kind, 'ddl');
+	});
+
+	test('空 databaseName 抛错', async () => {
+		const useCase = new ExportPostgreSqlTableUseCase(createMockProvider());
+
+		await assert.rejects(
+			() =>
+				useCase.execute(
+					makePostgreSqlConfig(),
+					{ databaseName: ' ', schemaName: 'public', tableName: 'users' },
+					'dml'
+				),
+			/需要提供 database 名称/
+		);
+	});
+
+	test('有效参数返回 DML 文档', async () => {
+		const useCase = new ExportPostgreSqlTableUseCase(createMockProvider());
+
+		const doc = await useCase.execute(
+			makePostgreSqlConfig(),
+			{ databaseName: 'app', schemaName: 'public', tableName: 'users' },
+			'dml'
+		);
+
+		assert.strictEqual(doc.kind, 'dml');
+		assert.strictEqual('schemaName' in doc.target, true);
+		if ('schemaName' in doc.target) {
+			assert.strictEqual(doc.target.schemaName, 'public');
+		}
+	});
+});
+
+suite('Application — ExportPostgreSqlSchemaUseCase', () => {
+	function createMockProvider(): PostgreSqlExportProvider {
+		return {
+			async exportTable() {
+				throw new Error('不应调用');
+			},
+			async exportSchema(_conn, target, kind) {
+				return {
+					title: `${target.databaseName}.${target.schemaName}.${kind}.sql`,
+					format: 'sql',
+					kind,
+					target,
+					content: '-- pg schema dml',
+				};
+			},
+			async exportDatabase(_conn, target, kind) {
+				return {
+					title: `${target.databaseName}.${kind}.sql`,
+					format: 'sql',
+					kind,
+					target,
+					content: '-- pg database dml',
+				};
+			},
+		};
+	}
+
+	test('有效参数返回 DDL + DML 文档', async () => {
+		const useCase = new ExportPostgreSqlSchemaUseCase(createMockProvider());
+
+		const doc = await useCase.execute(
+			makePostgreSqlConfig(),
+			{ databaseName: 'app', schemaName: 'public' },
+			'both'
+		);
+
+		assert.strictEqual(doc.kind, 'both');
+	});
+
+	test('空 schemaName 抛错', async () => {
+		const useCase = new ExportPostgreSqlSchemaUseCase(createMockProvider());
+
+		await assert.rejects(
+			() =>
+				useCase.execute(
+					makePostgreSqlConfig(),
+					{ databaseName: 'app', schemaName: ' ' },
+					'dml'
+				),
+			/需要提供 schema 名称/
+		);
+	});
+
+	test('有效参数返回 DML 文档', async () => {
+		const useCase = new ExportPostgreSqlSchemaUseCase(createMockProvider());
+
+		const doc = await useCase.execute(
+			makePostgreSqlConfig(),
+			{ databaseName: 'app', schemaName: 'public' },
+			'dml'
+		);
+
+		assert.strictEqual(doc.kind, 'dml');
+		assert.strictEqual('schemaName' in doc.target, true);
+		if ('schemaName' in doc.target) {
+			assert.strictEqual(doc.target.schemaName, 'public');
+		}
+	});
+});
+
+suite('Application — ExportPostgreSqlDatabaseUseCase', () => {
+	function createMockProvider(): PostgreSqlExportProvider {
+		return {
+			async exportTable() {
+				throw new Error('不应调用');
+			},
+			async exportSchema() {
+				throw new Error('不应调用');
+			},
+			async exportDatabase(_conn, target, kind) {
+				return {
+					title: `${target.databaseName}.${kind}.sql`,
+					format: 'sql',
+					kind,
+					target,
+					content: '-- pg database dml',
+				};
+			},
+		};
+	}
+
+	test('有效参数返回 DDL + DML 文档', async () => {
+		const useCase = new ExportPostgreSqlDatabaseUseCase(createMockProvider());
+
+		const doc = await useCase.execute(
+			makePostgreSqlConfig(),
+			{ databaseName: 'app' },
+			'both'
+		);
+
+		assert.strictEqual(doc.kind, 'both');
+	});
+
+	test('空 databaseName 抛错', async () => {
+		const useCase = new ExportPostgreSqlDatabaseUseCase(createMockProvider());
+
+		await assert.rejects(
+			() =>
+				useCase.execute(
+					makePostgreSqlConfig(),
+					{ databaseName: ' ' },
+					'dml'
+				),
+			/需要提供 database 名称/
+		);
+	});
+
+	test('有效参数返回 DML 文档', async () => {
+		const useCase = new ExportPostgreSqlDatabaseUseCase(createMockProvider());
+
+		const doc = await useCase.execute(
+			makePostgreSqlConfig(),
+			{ databaseName: 'app' },
+			'dml'
+		);
+
+		assert.strictEqual(doc.kind, 'dml');
+		assert.strictEqual('databaseName' in doc.target, true);
 	});
 });
 

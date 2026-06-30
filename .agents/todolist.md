@@ -131,9 +131,9 @@ SQL 功能：
 - PostgreSQL 连接支持 `✅`
 - PostgreSQL database / schema 双层结构 `✅`
 - PostgreSQL 表数据读取 `✅`
-- PostgreSQL SQL 执行
-- PostgreSQL DML 导出
-- PostgreSQL DDL 导出补齐
+- PostgreSQL SQL 执行 `✅`
+- PostgreSQL DML 导出 `✅`
+- PostgreSQL DDL 导出补齐 `✅`
 
 第三优先级：
 

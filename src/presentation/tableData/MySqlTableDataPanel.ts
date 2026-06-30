@@ -27,6 +27,7 @@ import type { UpdateMySqlTableRowUseCase } from '../../application/useCases/Upda
 import type { ExtensionActivationParticipant } from '../bootstrap/ExtensionActivationParticipant';
 import { showUserErrorMessage } from '../commands/UserErrorPresenter';
 import { OpenMySqlSqlTerminalCommand } from '../commands/OpenMySqlSqlTerminalCommand';
+import { OpenPostgreSqlSqlTerminalCommand } from '../commands/OpenPostgreSqlSqlTerminalCommand';
 import type {
 	MySqlTableTreeNode,
 	PostgreSqlTableTreeNode,
@@ -530,8 +531,10 @@ export class MySqlTableDataPanel
 				return;
 			case 'openSqlTerminal':
 				if (this.isReadOnlyTableNode(state.tableNode)) {
-					await vscode.window.showInformationMessage(
-						'PostgreSQL SQL 终端尚未支持。'
+					await vscode.commands.executeCommand(
+						OpenPostgreSqlSqlTerminalCommand.id,
+						state.tableNode,
+						message.sql ?? state.currentSql
 					);
 					return;
 				}
