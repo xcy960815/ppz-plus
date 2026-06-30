@@ -1,12 +1,12 @@
 /**
  * 定义用户描述连接的方式。
  */
-export type ConnectionInputMode = 'parameters' | 'url';
+export type ConnectionInputMode = 'parameters' | 'url' | 'file';
 
 interface BaseConnectionConfig {
 	readonly id: string;
 	readonly name: string;
-	readonly engine: 'mysql' | 'postgresql';
+	readonly engine: 'mysql' | 'postgresql' | 'sqlite3';
 	readonly mode: ConnectionInputMode;
 }
 
@@ -16,6 +16,10 @@ interface MysqlBaseConnectionConfig extends BaseConnectionConfig {
 
 interface PostgreSqlBaseConnectionConfig extends BaseConnectionConfig {
 	readonly engine: 'postgresql';
+}
+
+interface Sqlite3BaseConnectionConfig extends BaseConnectionConfig {
+	readonly engine: 'sqlite3';
 }
 
 export interface MysqlParameterConnectionConfig
@@ -63,7 +67,15 @@ export type PostgreSqlConnectionConfig =
 	| PostgreSqlParameterConnectionConfig
 	| PostgreSqlUrlConnectionConfig;
 
+export interface Sqlite3ConnectionConfig extends Sqlite3BaseConnectionConfig {
+	readonly mode: 'file';
+	readonly dbPath: string;
+}
+
 /**
  * 表示应用当前支持的连接配置联合类型。
  */
-export type ConnectionConfig = MysqlConnectionConfig | PostgreSqlConnectionConfig;
+export type ConnectionConfig =
+	| MysqlConnectionConfig
+	| PostgreSqlConnectionConfig
+	| Sqlite3ConnectionConfig;

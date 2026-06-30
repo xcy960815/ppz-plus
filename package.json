@@ -13,9 +13,11 @@
   "activationEvents": [
     "onWebviewPanel:ppzPlus.mysqlSqlTerminal",
     "onWebviewPanel:ppzPlus.postgreSqlSqlTerminal",
+    "onWebviewPanel:ppzPlus.sqlite3SqlTerminal",
     "onWebviewPanel:ppzPlus.mysqlTableData"
   ],
   "dependencies": {
+    "@vscode/sqlite3": "^5.1.14-vscode",
     "mysql2": "^3.11.3",
     "pg": "^8.22.0"
   },
@@ -35,6 +37,10 @@
         {
           "id": "ppzPlus.mysqlConnections",
           "name": "数据库连接"
+        },
+        {
+          "id": "ppzPlus.sqlite3Connections",
+          "name": "SQLite3 连接"
         }
       ]
     },
@@ -73,6 +79,46 @@
         "command": "ppz-plus.openPostgreSqlSqlTerminal",
         "title": "PPZ Plus: 打开 PostgreSQL SQL 终端",
         "icon": "$(terminal)"
+      },
+      {
+        "command": "ppz-plus.addSqlite3Connection",
+        "title": "PPZ Plus: 新增 SQLite3 连接",
+        "icon": "$(add)"
+      },
+      {
+        "command": "ppz-plus.manageSqlite3Connections",
+        "title": "PPZ Plus: 管理 SQLite3 连接",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "ppz-plus.refreshSqlite3ConnectionsTree",
+        "title": "PPZ Plus: 刷新 SQLite3 连接",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "ppz-plus.testStoredSqlite3Connection",
+        "title": "PPZ Plus: 测试已保存的 SQLite3 连接",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "ppz-plus.openSqlite3SqlTerminal",
+        "title": "PPZ Plus: 打开 SQLite3 SQL 终端",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "ppz-plus.exportSqlite3TableDdl",
+        "title": "PPZ Plus: 导出 SQLite3 表 DDL",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportSqlite3TableDml",
+        "title": "PPZ Plus: 导出 SQLite3 表 DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportSqlite3TableBoth",
+        "title": "PPZ Plus: 导出 SQLite3 表 DDL + DML",
+        "icon": "$(save)"
       },
       {
         "command": "ppz-plus.importMySqlSqlFile",
@@ -201,23 +247,68 @@
           "command": "ppz-plus.showSqlExportTaskLogs",
           "when": "view == ppzPlus.mysqlConnections",
           "group": "navigation@4"
+        },
+        {
+          "command": "ppz-plus.addSqlite3Connection",
+          "when": "view == ppzPlus.sqlite3Connections",
+          "group": "navigation@1"
+        },
+        {
+          "command": "ppz-plus.refreshSqlite3ConnectionsTree",
+          "when": "view == ppzPlus.sqlite3Connections",
+          "group": "navigation@2"
+        },
+        {
+          "command": "ppz-plus.openSqlite3SqlTerminal",
+          "when": "view == ppzPlus.sqlite3Connections",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
         {
           "command": "ppz-plus.manageMySqlConnections",
-          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection)",
+          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection || viewItem == ppzPlus.sqlite3Connection)",
           "group": "inline@1"
         },
         {
           "command": "ppz-plus.testStoredMySqlConnection",
-          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection)",
+          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection || viewItem == ppzPlus.sqlite3Connection)",
           "group": "inline@2"
         },
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
-          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection)",
+          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection || viewItem == ppzPlus.sqlite3Connection)",
           "group": "inline@3"
+        },
+        {
+          "command": "ppz-plus.openSqlite3SqlTerminal",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.sqlite3Connection",
+          "group": "inline@4"
+        },
+        {
+          "command": "ppz-plus.openMySqlTableData",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.sqlite3Table",
+          "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.openSqlite3SqlTerminal",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.sqlite3Table",
+          "group": "inline@2"
+        },
+        {
+          "command": "ppz-plus.exportSqlite3TableDdl",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.sqlite3Table",
+          "group": "export@1"
+        },
+        {
+          "command": "ppz-plus.exportSqlite3TableDml",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.sqlite3Table",
+          "group": "export@2"
+        },
+        {
+          "command": "ppz-plus.exportSqlite3TableBoth",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.sqlite3Table",
+          "group": "export@3"
         },
         {
           "command": "ppz-plus.openPostgreSqlSqlTerminal",
@@ -392,6 +483,51 @@
         {
           "command": "ppz-plus.exportMySqlTableBoth",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
+          "group": "export@3"
+        },
+        {
+          "command": "ppz-plus.manageSqlite3Connections",
+          "when": "view == ppzPlus.sqlite3Connections && viewItem == ppzPlus.sqlite3Connection",
+          "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.testStoredSqlite3Connection",
+          "when": "view == ppzPlus.sqlite3Connections && viewItem == ppzPlus.sqlite3Connection",
+          "group": "inline@2"
+        },
+        {
+          "command": "ppz-plus.refreshSqlite3ConnectionsTree",
+          "when": "view == ppzPlus.sqlite3Connections && viewItem == ppzPlus.sqlite3Connection",
+          "group": "inline@3"
+        },
+        {
+          "command": "ppz-plus.openSqlite3SqlTerminal",
+          "when": "view == ppzPlus.sqlite3Connections && viewItem == ppzPlus.sqlite3Connection",
+          "group": "inline@4"
+        },
+        {
+          "command": "ppz-plus.openMySqlTableData",
+          "when": "view == ppzPlus.sqlite3Connections && viewItem == ppzPlus.sqlite3Table",
+          "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.openSqlite3SqlTerminal",
+          "when": "view == ppzPlus.sqlite3Connections && viewItem == ppzPlus.sqlite3Table",
+          "group": "inline@2"
+        },
+        {
+          "command": "ppz-plus.exportSqlite3TableDdl",
+          "when": "view == ppzPlus.sqlite3Connections && viewItem == ppzPlus.sqlite3Table",
+          "group": "export@1"
+        },
+        {
+          "command": "ppz-plus.exportSqlite3TableDml",
+          "when": "view == ppzPlus.sqlite3Connections && viewItem == ppzPlus.sqlite3Table",
+          "group": "export@2"
+        },
+        {
+          "command": "ppz-plus.exportSqlite3TableBoth",
+          "when": "view == ppzPlus.sqlite3Connections && viewItem == ppzPlus.sqlite3Table",
           "group": "export@3"
         }
       ]

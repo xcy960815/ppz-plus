@@ -6,6 +6,7 @@ import type { ListMySqlTablesUseCase } from '../../application/useCases/ListMySq
 import type { ListPostgreSqlDatabasesUseCase } from '../../application/useCases/ListPostgreSqlDatabasesUseCase';
 import type { ListPostgreSqlSchemasUseCase } from '../../application/useCases/ListPostgreSqlSchemasUseCase';
 import type { ListPostgreSqlTablesUseCase } from '../../application/useCases/ListPostgreSqlTablesUseCase';
+import type { ListSqlite3TablesUseCase } from '../../application/useCases/ListSqlite3TablesUseCase';
 import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
 import type { ConnectionConfig } from '../../domain/connections/ConnectionConfig';
 import type {
@@ -16,6 +17,7 @@ import type {
 	PostgreSqlDatabaseTreeNode,
 	PostgreSqlSchemaTreeNode,
 	PostgreSqlTableTreeNode,
+	Sqlite3TableTreeNode,
 } from './MySqlConnectionsTreeNode';
 import { showUserErrorMessage } from '../commands/UserErrorPresenter';
 
@@ -70,6 +72,17 @@ export class MySqlConnectionsTreeDataProvider
 		'ppzPlus.postgresqlTable';
 
 	/**
+	 * 保存 Tree 菜单使用的 SQLite3 连接节点上下文值。
+	 */
+	public static readonly sqlite3ConnectionContextValue =
+		'ppzPlus.sqlite3Connection';
+
+	/**
+	 * 保存 Tree 菜单使用的 SQLite3 表节点上下文值。
+	 */
+	public static readonly sqlite3TableContextValue = 'ppzPlus.sqlite3Table';
+
+	/**
 	 * 为资源视图发出 Tree 刷新事件。
 	 */
 	private readonly onDidChangeTreeDataEmitter =
@@ -90,6 +103,7 @@ export class MySqlConnectionsTreeDataProvider
 	 * @param listPostgreSqlDatabasesUseCase 用于加载 PostgreSQL database 的用例。
 	 * @param listPostgreSqlSchemasUseCase 用于加载 PostgreSQL schema 的用例。
 	 * @param listPostgreSqlTablesUseCase 用于加载 PostgreSQL 表的用例。
+	 * @param listSqlite3TablesUseCase 用于加载 SQLite3 表的用例。
 	 */
 	public constructor(
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
@@ -97,7 +111,8 @@ export class MySqlConnectionsTreeDataProvider
 		private readonly listMySqlTablesUseCase: ListMySqlTablesUseCase,
 		private readonly listPostgreSqlDatabasesUseCase: ListPostgreSqlDatabasesUseCase,
 		private readonly listPostgreSqlSchemasUseCase: ListPostgreSqlSchemasUseCase,
-		private readonly listPostgreSqlTablesUseCase: ListPostgreSqlTablesUseCase
+		private readonly listPostgreSqlTablesUseCase: ListPostgreSqlTablesUseCase,
+		private readonly listSqlite3TablesUseCase: ListSqlite3TablesUseCase
 	) {}
 
 	/**
@@ -136,7 +151,11 @@ export class MySqlConnectionsTreeDataProvider
 			return this.createPostgreSqlSchemaTreeItem(element);
 		}
 
-		return this.createPostgreSqlTableTreeItem(element);
+		if (element.kind === 'postgresqlTable') {
+			return this.createPostgreSqlTableTreeItem(element);
+		}
+
+		return this.createSqlite3TableTreeItem(element);
 	}
 
 	/**
@@ -171,6 +190,19 @@ export class MySqlConnectionsTreeDataProvider
 						isDefault:
 							connection.mode === 'parameters' &&
 							connection.database === database.name,
+					}));
+				}
+
+				if (connection.engine === 'sqlite3') {
+					const tables = await this.listSqlite3TablesUseCase.execute(
+						connection
+					);
+					return tables.map((table) => ({
+						kind: 'sqlite3Table',
+						connection,
+						schemaName: 'main',
+						tableName: table.name,
+						tableType: table.type,
 					}));
 				}
 
@@ -253,7 +285,9 @@ export class MySqlConnectionsTreeDataProvider
 			vscode.TreeItemCollapsibleState.Collapsed
 		);
 		treeItem.contextValue =
-			element.connection.engine === 'postgresql'
+			element.connection.engine === 'sqlite3'
+				? MySqlConnectionsTreeDataProvider.sqlite3ConnectionContextValue
+				: element.connection.engine === 'postgresql'
 				? MySqlConnectionsTreeDataProvider.postgreSqlConnectionContextValue
 				: MySqlConnectionsTreeDataProvider.connectionContextValue;
 		treeItem.description = description;
@@ -349,6 +383,34 @@ export class MySqlConnectionsTreeDataProvider
 	}
 
 	/**
+	 * 创建 SQLite3 表节点的可视化表示。
+	 *
+	 * @param element SQLite3 表 Tree 节点。
+	 * @returns SQLite3 表节点对应的 TreeItem。
+	 */
+	private createSqlite3TableTreeItem(
+		element: Sqlite3TableTreeNode
+	): vscode.TreeItem {
+		const treeItem = new vscode.TreeItem(
+			element.tableName,
+			vscode.TreeItemCollapsibleState.None
+		);
+		treeItem.contextValue =
+			MySqlConnectionsTreeDataProvider.sqlite3TableContextValue;
+		treeItem.id = `${element.connection.id}.main.${element.tableName}`;
+		treeItem.description = element.tableType === 'view' ? 'view' : undefined;
+		treeItem.iconPath = new vscode.ThemeIcon(
+			element.tableType === 'view' ? 'eye' : 'table'
+		);
+		treeItem.command = {
+			command: OpenMySqlTableDataCommand.id,
+			title: '打开表数据',
+			arguments: [element],
+		};
+		return treeItem;
+	}
+
+	/**
 	 * 创建表节点的可视化表示。
 	 *
 	 * @param element 表 Tree 节点。
@@ -382,6 +444,10 @@ export class MySqlConnectionsTreeDataProvider
 	private describeConnection(connection: ConnectionConfig): string {
 		if (connection.mode === 'parameters') {
 			return `${connection.host}:${connection.port}`;
+		}
+
+		if (connection.mode === 'file') {
+			return connection.dbPath;
 		}
 
 		return connection.url;

@@ -2,6 +2,7 @@ import type {
 	ConnectionConfig,
 	MysqlConnectionConfig,
 	PostgreSqlConnectionConfig,
+	Sqlite3ConnectionConfig,
 } from '../../domain/connections/ConnectionConfig';
 
 /**
@@ -63,6 +64,17 @@ export interface PostgreSqlTableTreeNode {
 }
 
 /**
+ * 表示 SQLite3 连接下渲染的表节点。
+ */
+export interface Sqlite3TableTreeNode {
+	readonly kind: 'sqlite3Table';
+	readonly connection: Sqlite3ConnectionConfig;
+	readonly schemaName: 'main';
+	readonly tableName: string;
+	readonly tableType: 'table' | 'view';
+}
+
+/**
  * 表示 MySQL 资源视图中渲染的全部 Tree 节点类型。
  */
 export type MySqlConnectionsTreeNode =
@@ -71,4 +83,5 @@ export type MySqlConnectionsTreeNode =
 	| MySqlTableTreeNode
 	| PostgreSqlDatabaseTreeNode
 	| PostgreSqlSchemaTreeNode
-	| PostgreSqlTableTreeNode;
+	| PostgreSqlTableTreeNode
+	| Sqlite3TableTreeNode;

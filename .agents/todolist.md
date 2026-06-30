@@ -1,6 +1,6 @@
 # ppz-plus Todo List
 
-更新时间：2026-06-29
+更新时间：2026-06-30
 
 说明：
 
@@ -137,11 +137,11 @@ SQL 功能：
 
 第三优先级：
 
-- SQLite3 连接支持
-- SQLite3 驱动分发 / 安装方案
-- SQLite3 表数据读取
-- SQLite3 SQL 执行
-- SQLite3 DDL / DML 导出
+- SQLite3 连接支持 `✅`
+- SQLite3 驱动分发 / 安装方案 `✅`
+- SQLite3 表数据读取 `✅`
+- SQLite3 SQL 执行 `✅`
+- SQLite3 DDL / DML 导出 `✅`
 
 第四优先级：
 

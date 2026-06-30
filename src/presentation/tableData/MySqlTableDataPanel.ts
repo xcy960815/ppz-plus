@@ -2,8 +2,6 @@ import * as vscode from 'vscode';
 
 import type {
 	ConnectionConfig,
-	MysqlConnectionConfig,
-	PostgreSqlConnectionConfig,
 } from '../../domain/connections/ConnectionConfig';
 import type {
 	MySqlTableCellValue,
@@ -23,21 +21,31 @@ import type { ListMySqlTableColumnsUseCase } from '../../application/useCases/Li
 import type { ListMySqlTableRowPageUseCase } from '../../application/useCases/ListMySqlTableRowPageUseCase';
 import type { ListPostgreSqlTableColumnsUseCase } from '../../application/useCases/ListPostgreSqlTableColumnsUseCase';
 import type { ListPostgreSqlTableRowPageUseCase } from '../../application/useCases/ListPostgreSqlTableRowPageUseCase';
+import type { DeleteSqlite3TableRowUseCase } from '../../application/useCases/DeleteSqlite3TableRowUseCase';
+import type { InsertSqlite3TableRowUseCase } from '../../application/useCases/InsertSqlite3TableRowUseCase';
+import type { ListSqlite3TableColumnsUseCase } from '../../application/useCases/ListSqlite3TableColumnsUseCase';
+import type { ListSqlite3TableRowPageUseCase } from '../../application/useCases/ListSqlite3TableRowPageUseCase';
+import type { UpdateSqlite3TableRowUseCase } from '../../application/useCases/UpdateSqlite3TableRowUseCase';
 import type { UpdateMySqlTableRowUseCase } from '../../application/useCases/UpdateMySqlTableRowUseCase';
 import type { ExtensionActivationParticipant } from '../bootstrap/ExtensionActivationParticipant';
 import { showUserErrorMessage } from '../commands/UserErrorPresenter';
 import { OpenMySqlSqlTerminalCommand } from '../commands/OpenMySqlSqlTerminalCommand';
 import { OpenPostgreSqlSqlTerminalCommand } from '../commands/OpenPostgreSqlSqlTerminalCommand';
+import { OpenSqlite3SqlTerminalCommand } from '../commands/OpenSqlite3SqlTerminalCommand';
 import type {
 	MySqlTableTreeNode,
 	PostgreSqlTableTreeNode,
+	Sqlite3TableTreeNode,
 } from '../explorer/MySqlConnectionsTreeNode';
 import type { MySqlTableDataWebviewMessage } from './MySqlTableDataWebviewMessage';
 
 /**
  * 表示当前表数据页可打开的表节点。
  */
-type TableDataTreeNode = MySqlTableTreeNode | PostgreSqlTableTreeNode;
+type TableDataTreeNode =
+	| MySqlTableTreeNode
+	| PostgreSqlTableTreeNode
+	| Sqlite3TableTreeNode;
 
 /**
  * 保存单个 MySQL 表数据面板的可变状态。
@@ -61,7 +69,7 @@ interface MySqlTablePanelState {
  * 保存表数据页可由 VS Code 恢复的轻量状态。
  */
 interface MySqlTablePanelSerializedState {
-	readonly engine: 'mysql' | 'postgresql';
+	readonly engine: 'mysql' | 'postgresql' | 'sqlite3';
 	readonly connectionId: string;
 	readonly databaseName?: string;
 	readonly schemaName: string;
@@ -107,6 +115,11 @@ export class MySqlTableDataPanel
 	 * @param deleteMySqlTableRowUseCase 用于删除单条表记录的用例。
 	 * @param listPostgreSqlTableColumnsUseCase 用于加载 PostgreSQL 表字段的用例。
 	 * @param listPostgreSqlTableRowPageUseCase 用于加载 PostgreSQL 分页表数据的用例。
+	 * @param listSqlite3TableColumnsUseCase 用于加载 SQLite3 表字段的用例。
+	 * @param listSqlite3TableRowPageUseCase 用于加载 SQLite3 分页表数据的用例。
+	 * @param insertSqlite3TableRowUseCase 用于新增 SQLite3 表记录的用例。
+	 * @param updateSqlite3TableRowUseCase 用于更新 SQLite3 表记录的用例。
+	 * @param deleteSqlite3TableRowUseCase 用于删除 SQLite3 表记录的用例。
 	 */
 	public constructor(
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
@@ -116,7 +129,12 @@ export class MySqlTableDataPanel
 		private readonly updateMySqlTableRowUseCase: UpdateMySqlTableRowUseCase,
 		private readonly deleteMySqlTableRowUseCase: DeleteMySqlTableRowUseCase,
 		private readonly listPostgreSqlTableColumnsUseCase: ListPostgreSqlTableColumnsUseCase,
-		private readonly listPostgreSqlTableRowPageUseCase: ListPostgreSqlTableRowPageUseCase
+		private readonly listPostgreSqlTableRowPageUseCase: ListPostgreSqlTableRowPageUseCase,
+		private readonly listSqlite3TableColumnsUseCase: ListSqlite3TableColumnsUseCase,
+		private readonly listSqlite3TableRowPageUseCase: ListSqlite3TableRowPageUseCase,
+		private readonly insertSqlite3TableRowUseCase: InsertSqlite3TableRowUseCase,
+		private readonly updateSqlite3TableRowUseCase: UpdateSqlite3TableRowUseCase,
+		private readonly deleteSqlite3TableRowUseCase: DeleteSqlite3TableRowUseCase
 	) {}
 
 	/**
@@ -288,7 +306,12 @@ export class MySqlTableDataPanel
 		const databaseName = serializedState.databaseName;
 
 		return {
-			engine: serializedState.engine === 'postgresql' ? 'postgresql' : 'mysql',
+			engine:
+				serializedState.engine === 'postgresql'
+					? 'postgresql'
+					: serializedState.engine === 'sqlite3'
+						? 'sqlite3'
+						: 'mysql',
 			connectionId,
 			databaseName: typeof databaseName === 'string' ? databaseName : undefined,
 			schemaName,
@@ -410,7 +433,7 @@ export class MySqlTableDataPanel
 	 */
 	private async findRestoredConnection(
 		connectionId: string,
-		engine: 'mysql' | 'postgresql'
+		engine: 'mysql' | 'postgresql' | 'sqlite3'
 	): Promise<ConnectionConfig | undefined> {
 		const connections = await this.listStoredConnectionsUseCase.execute();
 		const connection = connections.find((item) => item.id === connectionId);
@@ -447,36 +470,22 @@ export class MySqlTableDataPanel
 			};
 		}
 
+		if (connection.engine === 'sqlite3') {
+			return {
+				kind: 'sqlite3Table',
+				connection,
+				schemaName: 'main',
+				tableName: restoredState.tableName,
+				tableType: 'table',
+			};
+		}
+
 		return {
 			kind: 'table',
 			connection,
 			schemaName: restoredState.schemaName,
 			tableName: restoredState.tableName,
 		};
-	}
-
-	/**
-	 * 判断连接配置是否为 MySQL 连接。
-	 *
-	 * @param connection 待检查的连接配置。
-	 * @returns 是否为 MySQL 连接。
-	 */
-	private isMySqlConnection(
-		connection: ConnectionConfig
-	): connection is MysqlConnectionConfig {
-		return connection.engine === 'mysql';
-	}
-
-	/**
-	 * 判断连接配置是否为 PostgreSQL 连接。
-	 *
-	 * @param connection 待检查的连接配置。
-	 * @returns 是否为 PostgreSQL 连接。
-	 */
-	private isPostgreSqlConnection(
-		connection: ConnectionConfig
-	): connection is PostgreSqlConnectionConfig {
-		return connection.engine === 'postgresql';
 	}
 
 	/**
@@ -533,6 +542,14 @@ export class MySqlTableDataPanel
 				if (this.isReadOnlyTableNode(state.tableNode)) {
 					await vscode.commands.executeCommand(
 						OpenPostgreSqlSqlTerminalCommand.id,
+						state.tableNode,
+						message.sql ?? state.currentSql
+					);
+					return;
+				}
+				if (state.tableNode.kind === 'sqlite3Table') {
+					await vscode.commands.executeCommand(
+						OpenSqlite3SqlTerminalCommand.id,
 						state.tableNode,
 						message.sql ?? state.currentSql
 					);
@@ -611,6 +628,20 @@ export class MySqlTableDataPanel
 	}
 
 	/**
+	 * 从当前面板状态中读取可写的 SQLite3 表节点。
+	 *
+	 * @param state 当前表数据面板状态。
+	 * @returns SQLite3 表节点；非 SQLite3 表时返回 undefined。
+	 */
+	private getSqlite3TableNode(
+		state: MySqlTablePanelState
+	): Sqlite3TableTreeNode | undefined {
+		return state.tableNode.kind === 'sqlite3Table'
+			? state.tableNode
+			: undefined;
+	}
+
+	/**
 	 * 展示只读表页提示。
 	 */
 	private async showReadOnlyTableMessage(): Promise<void> {
@@ -656,17 +687,23 @@ export class MySqlTableDataPanel
 	): Promise<void> {
 		try {
 			const tableNode = this.getMySqlTableNode(state);
+			const sqlite3TableNode = this.getSqlite3TableNode(state);
 
-			if (!tableNode) {
+			if (!tableNode && !sqlite3TableNode) {
 				await this.showReadOnlyTableMessage();
 				return;
 			}
 
-			const columns = await this.listMySqlTableColumnsUseCase.execute(
-				tableNode.connection,
-				tableNode.schemaName,
-				tableNode.tableName
-			);
+			const columns = tableNode
+				? await this.listMySqlTableColumnsUseCase.execute(
+						tableNode.connection,
+						tableNode.schemaName,
+						tableNode.tableName
+					)
+				: await this.listSqlite3TableColumnsUseCase.execute(
+						sqlite3TableNode!.connection,
+						sqlite3TableNode!.tableName
+					);
 			const values = await this.promptInsertValues(columns, sourceRow);
 
 			if (values === undefined) {
@@ -681,12 +718,18 @@ export class MySqlTableDataPanel
 				return;
 			}
 
-			const result = await this.insertMySqlTableRowUseCase.execute(
-				tableNode.connection,
-				tableNode.schemaName,
-				tableNode.tableName,
-				values
-			);
+			const result = tableNode
+				? await this.insertMySqlTableRowUseCase.execute(
+						tableNode.connection,
+						tableNode.schemaName,
+						tableNode.tableName,
+						values
+					)
+				: await this.insertSqlite3TableRowUseCase.execute(
+						sqlite3TableNode!.connection,
+						sqlite3TableNode!.tableName,
+						values
+					);
 
 			state.pageIndex = 0;
 			await vscode.window.showInformationMessage(
@@ -695,7 +738,7 @@ export class MySqlTableDataPanel
 			await this.renderTableData(state);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: '新增 MySQL 表记录',
+				operation: '新增表记录',
 				error,
 			});
 		}
@@ -774,8 +817,9 @@ export class MySqlTableDataPanel
 	): Promise<void> {
 		try {
 			const tableNode = this.getMySqlTableNode(state);
+			const sqlite3TableNode = this.getSqlite3TableNode(state);
 
-			if (!tableNode) {
+			if (!tableNode && !sqlite3TableNode) {
 				await this.showReadOnlyTableMessage();
 				return;
 			}
@@ -794,7 +838,7 @@ export class MySqlTableDataPanel
 
 			if (primaryKeyColumns.length === 0) {
 				await vscode.window.showWarningMessage(
-					`${tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
+					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
 				);
 				return;
 			}
@@ -819,13 +863,20 @@ export class MySqlTableDataPanel
 				return;
 			}
 
-			const result = await this.updateMySqlTableRowUseCase.execute(
-				tableNode.connection,
-				tableNode.schemaName,
-				tableNode.tableName,
-				identityValues,
-				values
-			);
+			const result = tableNode
+				? await this.updateMySqlTableRowUseCase.execute(
+						tableNode.connection,
+						tableNode.schemaName,
+						tableNode.tableName,
+						identityValues,
+						values
+					)
+				: await this.updateSqlite3TableRowUseCase.execute(
+						sqlite3TableNode!.connection,
+						sqlite3TableNode!.tableName,
+						identityValues,
+						values
+					);
 
 			await vscode.window.showInformationMessage(
 				`已保存 ${result.affectedRows} 条记录。`
@@ -833,7 +884,7 @@ export class MySqlTableDataPanel
 			await this.renderTableData(state);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: '编辑 MySQL 表记录',
+				operation: '编辑表记录',
 				error,
 			});
 		}
@@ -854,8 +905,9 @@ export class MySqlTableDataPanel
 	): Promise<void> {
 		try {
 			const tableNode = this.getMySqlTableNode(state);
+			const sqlite3TableNode = this.getSqlite3TableNode(state);
 
-			if (!tableNode) {
+			if (!tableNode && !sqlite3TableNode) {
 				await this.showReadOnlyTableMessage();
 				return;
 			}
@@ -866,7 +918,7 @@ export class MySqlTableDataPanel
 
 			if (primaryKeyColumns.length === 0) {
 				await vscode.window.showWarningMessage(
-					`${tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
+					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
 				);
 				return;
 			}
@@ -907,13 +959,20 @@ export class MySqlTableDataPanel
 
 			let affectedRows = 0;
 			for (const edit of normalizedEdits) {
-				const result = await this.updateMySqlTableRowUseCase.execute(
-					tableNode.connection,
-					tableNode.schemaName,
-					tableNode.tableName,
-					this.createIdentityValues(primaryKeyColumns, edit.row),
-					edit.values
-				);
+				const result = tableNode
+					? await this.updateMySqlTableRowUseCase.execute(
+							tableNode.connection,
+							tableNode.schemaName,
+							tableNode.tableName,
+							this.createIdentityValues(primaryKeyColumns, edit.row),
+							edit.values
+						)
+					: await this.updateSqlite3TableRowUseCase.execute(
+							sqlite3TableNode!.connection,
+							sqlite3TableNode!.tableName,
+							this.createIdentityValues(primaryKeyColumns, edit.row),
+							edit.values
+						);
 				affectedRows += result.affectedRows;
 			}
 
@@ -923,7 +982,7 @@ export class MySqlTableDataPanel
 			await this.renderTableData(state);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: '保存 MySQL 表记录修改',
+				operation: '保存表记录修改',
 				error,
 			});
 		}
@@ -988,8 +1047,9 @@ export class MySqlTableDataPanel
 	): Promise<void> {
 		try {
 			const tableNode = this.getMySqlTableNode(state);
+			const sqlite3TableNode = this.getSqlite3TableNode(state);
 
-			if (!tableNode) {
+			if (!tableNode && !sqlite3TableNode) {
 				await this.showReadOnlyTableMessage();
 				return;
 			}
@@ -1008,7 +1068,7 @@ export class MySqlTableDataPanel
 
 			if (primaryKeyColumns.length === 0) {
 				await vscode.window.showWarningMessage(
-					`${tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
+					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
 				);
 				return;
 			}
@@ -1029,12 +1089,18 @@ export class MySqlTableDataPanel
 				return;
 			}
 
-			const result = await this.deleteMySqlTableRowUseCase.execute(
-				tableNode.connection,
-				tableNode.schemaName,
-				tableNode.tableName,
-				this.createIdentityValues(primaryKeyColumns, row)
-			);
+			const result = tableNode
+				? await this.deleteMySqlTableRowUseCase.execute(
+						tableNode.connection,
+						tableNode.schemaName,
+						tableNode.tableName,
+						this.createIdentityValues(primaryKeyColumns, row)
+					)
+				: await this.deleteSqlite3TableRowUseCase.execute(
+						sqlite3TableNode!.connection,
+						sqlite3TableNode!.tableName,
+						this.createIdentityValues(primaryKeyColumns, row)
+					);
 
 			await vscode.window.showInformationMessage(
 				`已删除 ${result.affectedRows} 条记录。`
@@ -1042,7 +1108,7 @@ export class MySqlTableDataPanel
 			await this.renderTableData(state);
 		} catch (error) {
 			await showUserErrorMessage({
-				operation: '删除 MySQL 表记录',
+				operation: '删除表记录',
 				error,
 			});
 		}
@@ -1210,6 +1276,22 @@ export class MySqlTableDataPanel
 			]);
 		}
 
+		if (state.tableNode.kind === 'sqlite3Table') {
+			return Promise.all([
+				this.listSqlite3TableColumnsUseCase.execute(
+					state.tableNode.connection,
+					state.tableNode.tableName
+				),
+				this.listSqlite3TableRowPageUseCase.execute(
+					state.tableNode.connection,
+					state.tableNode.tableName,
+					state.pageIndex,
+					state.pageSize,
+					this.createQueryOptions(state)
+				),
+			]);
+		}
+
 		return Promise.all([
 			this.listMySqlTableColumnsUseCase.execute(
 				state.tableNode.connection,
@@ -1266,6 +1348,10 @@ export class MySqlTableDataPanel
 			return `${tableNode.connection.id}:${tableNode.databaseName}:${tableNode.schemaName}:${tableNode.tableName}`;
 		}
 
+		if (tableNode.kind === 'sqlite3Table') {
+			return `${tableNode.connection.id}:main:${tableNode.tableName}`;
+		}
+
 		return `${tableNode.connection.id}:${tableNode.schemaName}:${tableNode.tableName}`;
 	}
 
@@ -1279,7 +1365,12 @@ export class MySqlTableDataPanel
 		state: MySqlTablePanelState
 	): MySqlTablePanelSerializedState {
 		return {
-			engine: state.tableNode.kind === 'postgresqlTable' ? 'postgresql' : 'mysql',
+			engine:
+				state.tableNode.kind === 'postgresqlTable'
+					? 'postgresql'
+					: state.tableNode.kind === 'sqlite3Table'
+						? 'sqlite3'
+						: 'mysql',
 			connectionId: state.tableNode.connection.id,
 			databaseName:
 				state.tableNode.kind === 'postgresqlTable'
@@ -1307,6 +1398,8 @@ export class MySqlTableDataPanel
 		const qualifiedName =
 			tableNode.kind === 'postgresqlTable'
 				? `${tableNode.databaseName}.${tableNode.schemaName}.${tableNode.tableName}`
+				: tableNode.kind === 'sqlite3Table'
+					? `${tableNode.connection.name}.${tableNode.tableName}`
 				: `${tableNode.schemaName}.${tableNode.tableName}`;
 		return `<!DOCTYPE html>
 <html lang="en">
@@ -1424,6 +1517,8 @@ export class MySqlTableDataPanel
 		const breadcrumbTitle =
 			tableNode.kind === 'postgresqlTable'
 				? `${tableNode.connection.name} / ${tableNode.databaseName} / ${tableNode.schemaName} / ${tableNode.tableName}`
+				: tableNode.kind === 'sqlite3Table'
+					? `${tableNode.connection.name} / ${tableNode.tableName}`
 				: `${tableNode.connection.name} / ${tableNode.schemaName} / ${tableNode.tableName}`;
 		const databaseBreadcrumb =
 			tableNode.kind === 'postgresqlTable'

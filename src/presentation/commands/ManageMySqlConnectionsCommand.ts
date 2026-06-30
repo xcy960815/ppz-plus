@@ -14,11 +14,14 @@ import type {
 	ConnectionConfig,
 	MysqlConnectionConfig,
 	PostgreSqlConnectionConfig,
+	Sqlite3ConnectionConfig,
 } from '../../domain/connections/ConnectionConfig';
 import type { ExtensionCommand } from './ExtensionCommand';
 import { AddMySqlConnectionCommand } from './AddMySqlConnectionCommand';
+import { AddSqlite3ConnectionCommand } from './AddSqlite3ConnectionCommand';
 import type { MySqlConnectionTreeNode } from '../explorer/MySqlConnectionsTreeNode';
 import { MySqlConnectionsTreeDataProvider } from '../explorer/MySqlConnectionsTreeDataProvider';
+import { Sqlite3ConnectionsTreeDataProvider } from '../explorer/Sqlite3ConnectionsTreeDataProvider';
 
 /**
  * 通过操作选择器管理已保存的数据库连接。
@@ -41,13 +44,16 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	 * @param saveConnectionConfigUseCase 用于持久化连接编辑结果的用例。
 	 * @param deleteStoredConnectionUseCase 用于删除连接的用例。
 	 * @param testConnectionUseCase 用于测试所选连接的用例。
+	 * @param treeDataProvider 用于刷新混合数据库连接树。
+	 * @param sqlite3TreeDataProvider 用于刷新 SQLite3 连接树。
 	 */
 	public constructor(
 		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
 		private readonly saveConnectionConfigUseCase: SaveConnectionConfigUseCase,
 		private readonly deleteStoredConnectionUseCase: DeleteStoredConnectionUseCase,
 		private readonly testConnectionUseCase: TestConnectionUseCase,
-		private readonly treeDataProvider: MySqlConnectionsTreeDataProvider
+		private readonly treeDataProvider: MySqlConnectionsTreeDataProvider,
+		private readonly sqlite3TreeDataProvider: Sqlite3ConnectionsTreeDataProvider
 	) {}
 
 	/**
@@ -119,10 +125,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 			connections.map((connection) => ({
 				label: connection.name,
 				detail: describeConnectionEngine(connection),
-				description:
-					connection.mode === 'parameters'
-						? `${connection.host}:${connection.port}`
-						: connection.url,
+				description: this.describeConnectionTarget(connection),
 				connection,
 			})),
 			{
@@ -156,6 +159,13 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 						`User：${connection.username}`,
 						`Database：${connection.database ?? '（无）'}`,
 					].join('\n')
+				: connection.mode === 'file'
+					? [
+							`名称：${connection.name}`,
+							`类型：${describeConnectionEngine(connection)}`,
+							`模式：文件`,
+							`文件：${connection.dbPath}`,
+						].join('\n')
 				: [
 						`名称：${connection.name}`,
 						`类型：${describeConnectionEngine(connection)}`,
@@ -177,7 +187,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 				this.testConnectionUseCase.execute(connection)
 			);
 			await vscode.window.showInformationMessage(
-				`已通过 TCP 连接到“${connection.name}”。`
+				`“${connection.name}”连接测试通过。`
 			);
 		} catch (error) {
 			await showUserErrorMessage({
@@ -193,6 +203,25 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 	 * @param connection 当前选中的连接。
 	 */
 	private async editConnection(connection: ConnectionConfig): Promise<void> {
+		if (connection.engine === 'sqlite3') {
+			const updatedConnection =
+				await AddSqlite3ConnectionCommand.collectSqlite3Config(
+					connection as Sqlite3ConnectionConfig
+				);
+
+			if (!updatedConnection) {
+				return;
+			}
+
+			await this.saveConnectionConfigUseCase.execute(updatedConnection);
+			this.treeDataProvider.refresh();
+			this.sqlite3TreeDataProvider.refresh();
+			await vscode.window.showInformationMessage(
+				`已更新 ${describeConnectionEngine(updatedConnection)} 连接“${updatedConnection.name}”。`
+			);
+			return;
+		}
+
 		const mode = await this.promptForMode(connection.mode);
 		if (!mode) {
 			return;
@@ -214,6 +243,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 
 		await this.saveConnectionConfigUseCase.execute(updatedConnection);
 		this.treeDataProvider.refresh();
+		this.sqlite3TreeDataProvider.refresh();
 		await vscode.window.showInformationMessage(
 			`已更新 ${describeConnectionEngine(updatedConnection)} 连接“${updatedConnection.name}”。`
 		);
@@ -238,6 +268,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 
 		await this.deleteStoredConnectionUseCase.execute(connection.id);
 		this.treeDataProvider.refresh();
+		this.sqlite3TreeDataProvider.refresh();
 		await vscode.window.showInformationMessage(
 			`已删除 ${describeConnectionEngine(connection)} 连接“${connection.name}”。`
 		);
@@ -273,5 +304,23 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
 		);
 
 		return modeChoice?.value;
+	}
+
+	/**
+	 * 描述连接目标地址。
+	 *
+	 * @param connection 当前连接配置。
+	 * @returns 连接目标描述。
+	 */
+	private describeConnectionTarget(connection: ConnectionConfig): string {
+		if (connection.mode === 'parameters') {
+			return `${connection.host}:${connection.port}`;
+		}
+
+		if (connection.mode === 'file') {
+			return connection.dbPath;
+		}
+
+		return connection.url;
 	}
 }
