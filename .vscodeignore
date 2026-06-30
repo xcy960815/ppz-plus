@@ -1,7 +1,15 @@
 .vscode/**
 .vscode-test/**
+.agents/**
+.github/**
+docs/**
+scripts/**
 src/**
+AGENTS.md
+README_CN.md
 .gitignore
+pnpm-lock.yaml
+pnpm-workspace.yaml
 .yarnrc
 vsc-extension-quickstart.md
 **/tsconfig.json
