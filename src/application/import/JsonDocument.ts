@@ -12,6 +12,6 @@ export type JsonDocumentRow = Readonly<Record<string, JsonDocumentValue>>;
  * 表示解析后的 JSON 导入文档。
  */
 export interface JsonDocument {
-	readonly headers: readonly string[];
-	readonly rows: readonly JsonDocumentRow[];
+  readonly headers: readonly string[];
+  readonly rows: readonly JsonDocumentRow[];
 }

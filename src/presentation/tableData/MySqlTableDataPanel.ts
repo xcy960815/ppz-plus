@@ -1,1407 +1,1309 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
+import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type {
-	ConnectionConfig,
-} from '../../domain/connections/ConnectionConfig';
+  MySqlTableCellValue,
+  MySqlTableColumnMetadata,
+  MySqlTableFilterCondition,
+  MySqlTableInsertValues,
+  MySqlTableQueryOptions,
+  MySqlTableRowIdentityValues,
+  MySqlTableSortDirection,
+  MySqlTableUpdateValues,
+  MySqlTableRowPage,
+} from "../../application/mysql/MySqlTableDataProvider";
+import type { DeleteMySqlTableRowUseCase } from "../../application/useCases/DeleteMySqlTableRowUseCase";
+import type { InsertMySqlTableRowUseCase } from "../../application/useCases/InsertMySqlTableRowUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
+import type { ListMySqlTableColumnsUseCase } from "../../application/useCases/ListMySqlTableColumnsUseCase";
+import type { ListMySqlTableRowPageUseCase } from "../../application/useCases/ListMySqlTableRowPageUseCase";
+import type { ListPostgreSqlTableColumnsUseCase } from "../../application/useCases/ListPostgreSqlTableColumnsUseCase";
+import type { ListPostgreSqlTableRowPageUseCase } from "../../application/useCases/ListPostgreSqlTableRowPageUseCase";
+import type { DeleteSqlite3TableRowUseCase } from "../../application/useCases/DeleteSqlite3TableRowUseCase";
+import type { InsertSqlite3TableRowUseCase } from "../../application/useCases/InsertSqlite3TableRowUseCase";
+import type { ListSqlite3TableColumnsUseCase } from "../../application/useCases/ListSqlite3TableColumnsUseCase";
+import type { ListSqlite3TableRowPageUseCase } from "../../application/useCases/ListSqlite3TableRowPageUseCase";
+import type { UpdateSqlite3TableRowUseCase } from "../../application/useCases/UpdateSqlite3TableRowUseCase";
+import type { UpdateMySqlTableRowUseCase } from "../../application/useCases/UpdateMySqlTableRowUseCase";
+import type { ExtensionActivationParticipant } from "../bootstrap/ExtensionActivationParticipant";
+import { showUserErrorMessage } from "../commands/UserErrorPresenter";
+import { OpenMySqlSqlTerminalCommand } from "../commands/OpenMySqlSqlTerminalCommand";
+import { OpenPostgreSqlSqlTerminalCommand } from "../commands/OpenPostgreSqlSqlTerminalCommand";
+import { OpenSqlite3SqlTerminalCommand } from "../commands/OpenSqlite3SqlTerminalCommand";
 import type {
-	MySqlTableCellValue,
-	MySqlTableColumnMetadata,
-	MySqlTableFilterCondition,
-	MySqlTableInsertValues,
-	MySqlTableQueryOptions,
-	MySqlTableRowIdentityValues,
-	MySqlTableSortDirection,
-	MySqlTableUpdateValues,
-	MySqlTableRowPage,
-} from '../../application/mysql/MySqlTableDataProvider';
-import type { DeleteMySqlTableRowUseCase } from '../../application/useCases/DeleteMySqlTableRowUseCase';
-import type { InsertMySqlTableRowUseCase } from '../../application/useCases/InsertMySqlTableRowUseCase';
-import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
-import type { ListMySqlTableColumnsUseCase } from '../../application/useCases/ListMySqlTableColumnsUseCase';
-import type { ListMySqlTableRowPageUseCase } from '../../application/useCases/ListMySqlTableRowPageUseCase';
-import type { ListPostgreSqlTableColumnsUseCase } from '../../application/useCases/ListPostgreSqlTableColumnsUseCase';
-import type { ListPostgreSqlTableRowPageUseCase } from '../../application/useCases/ListPostgreSqlTableRowPageUseCase';
-import type { DeleteSqlite3TableRowUseCase } from '../../application/useCases/DeleteSqlite3TableRowUseCase';
-import type { InsertSqlite3TableRowUseCase } from '../../application/useCases/InsertSqlite3TableRowUseCase';
-import type { ListSqlite3TableColumnsUseCase } from '../../application/useCases/ListSqlite3TableColumnsUseCase';
-import type { ListSqlite3TableRowPageUseCase } from '../../application/useCases/ListSqlite3TableRowPageUseCase';
-import type { UpdateSqlite3TableRowUseCase } from '../../application/useCases/UpdateSqlite3TableRowUseCase';
-import type { UpdateMySqlTableRowUseCase } from '../../application/useCases/UpdateMySqlTableRowUseCase';
-import type { ExtensionActivationParticipant } from '../bootstrap/ExtensionActivationParticipant';
-import { showUserErrorMessage } from '../commands/UserErrorPresenter';
-import { OpenMySqlSqlTerminalCommand } from '../commands/OpenMySqlSqlTerminalCommand';
-import { OpenPostgreSqlSqlTerminalCommand } from '../commands/OpenPostgreSqlSqlTerminalCommand';
-import { OpenSqlite3SqlTerminalCommand } from '../commands/OpenSqlite3SqlTerminalCommand';
-import type {
-	MySqlTableTreeNode,
-	PostgreSqlTableTreeNode,
-	Sqlite3TableTreeNode,
-} from '../explorer/MySqlConnectionsTreeNode';
-import type { MySqlTableDataWebviewMessage } from './MySqlTableDataWebviewMessage';
+  MySqlTableTreeNode,
+  PostgreSqlTableTreeNode,
+  Sqlite3TableTreeNode,
+} from "../explorer/MySqlConnectionsTreeNode";
+import type { MySqlTableDataWebviewMessage } from "./MySqlTableDataWebviewMessage";
 
 /**
  * 表示当前表数据页可打开的表节点。
  */
-type TableDataTreeNode =
-	| MySqlTableTreeNode
-	| PostgreSqlTableTreeNode
-	| Sqlite3TableTreeNode;
+type TableDataTreeNode = MySqlTableTreeNode | PostgreSqlTableTreeNode | Sqlite3TableTreeNode;
 
 /**
  * 保存单个 MySQL 表数据面板的可变状态。
  */
 interface MySqlTablePanelState {
-	readonly panel: vscode.WebviewPanel;
-	readonly tableNode: TableDataTreeNode;
-	pageIndex: number;
-	pageSize: number;
-	filterKeyword: string;
-	filterConditions: readonly MySqlTableFilterCondition[];
-	sortColumnName?: string;
-	sortDirection: MySqlTableSortDirection;
-	hiddenColumnNames: Set<string>;
-	currentSql?: string;
-	latestColumns: readonly MySqlTableColumnMetadata[];
-	latestRows: readonly Record<string, MySqlTableCellValue>[];
+  readonly panel: vscode.WebviewPanel;
+  readonly tableNode: TableDataTreeNode;
+  pageIndex: number;
+  pageSize: number;
+  filterKeyword: string;
+  filterConditions: readonly MySqlTableFilterCondition[];
+  sortColumnName?: string;
+  sortDirection: MySqlTableSortDirection;
+  hiddenColumnNames: Set<string>;
+  currentSql?: string;
+  latestColumns: readonly MySqlTableColumnMetadata[];
+  latestRows: readonly Record<string, MySqlTableCellValue>[];
 }
 
 /**
  * 保存表数据页可由 VS Code 恢复的轻量状态。
  */
 interface MySqlTablePanelSerializedState {
-	readonly engine: 'mysql' | 'postgresql' | 'sqlite3';
-	readonly connectionId: string;
-	readonly databaseName?: string;
-	readonly schemaName: string;
-	readonly tableName: string;
-	readonly pageIndex: number;
-	readonly pageSize: number;
-	readonly filterKeyword: string;
-	readonly filterConditions: readonly MySqlTableFilterCondition[];
-	readonly sortColumnName?: string;
-	readonly sortDirection: MySqlTableSortDirection;
-	readonly hiddenColumnNames: readonly string[];
+  readonly engine: "mysql" | "postgresql" | "sqlite3";
+  readonly connectionId: string;
+  readonly databaseName?: string;
+  readonly schemaName: string;
+  readonly tableName: string;
+  readonly pageIndex: number;
+  readonly pageSize: number;
+  readonly filterKeyword: string;
+  readonly filterConditions: readonly MySqlTableFilterCondition[];
+  readonly sortColumnName?: string;
+  readonly sortDirection: MySqlTableSortDirection;
+  readonly hiddenColumnNames: readonly string[];
 }
 
 /**
  * 管理 MySQL 表数据面板。
  */
 export class MySqlTableDataPanel
-	implements ExtensionActivationParticipant, vscode.WebviewPanelSerializer
+  implements ExtensionActivationParticipant, vscode.WebviewPanelSerializer
 {
-	/**
-	 * 保存表数据页 Webview 的 VS Code viewType。
-	 */
-	private static readonly viewType = 'ppzPlus.mysqlTableData';
-
-	/**
-	 * 保存表数据页使用的分页大小。
-	 */
-	private static readonly defaultPageSize = 30;
-
-	/**
-	 * 按完整表键保存已打开的表数据面板。
-	 */
-	private readonly panelStatesByKey = new Map<string, MySqlTablePanelState>();
-
-	/**
-	 * 创建表数据面板管理器。
-	 *
-	 * @param listStoredConnectionsUseCase 用于恢复 Webview 时按连接 ID 读取连接配置。
-	 * @param listMySqlTableColumnsUseCase 用于加载表字段的用例。
-	 * @param listMySqlTableRowPageUseCase 用于加载分页表数据的用例。
-	 * @param insertMySqlTableRowUseCase 用于新增单条表记录的用例。
-	 * @param updateMySqlTableRowUseCase 用于更新单条表记录的用例。
-	 * @param deleteMySqlTableRowUseCase 用于删除单条表记录的用例。
-	 * @param listPostgreSqlTableColumnsUseCase 用于加载 PostgreSQL 表字段的用例。
-	 * @param listPostgreSqlTableRowPageUseCase 用于加载 PostgreSQL 分页表数据的用例。
-	 * @param listSqlite3TableColumnsUseCase 用于加载 SQLite3 表字段的用例。
-	 * @param listSqlite3TableRowPageUseCase 用于加载 SQLite3 分页表数据的用例。
-	 * @param insertSqlite3TableRowUseCase 用于新增 SQLite3 表记录的用例。
-	 * @param updateSqlite3TableRowUseCase 用于更新 SQLite3 表记录的用例。
-	 * @param deleteSqlite3TableRowUseCase 用于删除 SQLite3 表记录的用例。
-	 */
-	public constructor(
-		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
-		private readonly listMySqlTableColumnsUseCase: ListMySqlTableColumnsUseCase,
-		private readonly listMySqlTableRowPageUseCase: ListMySqlTableRowPageUseCase,
-		private readonly insertMySqlTableRowUseCase: InsertMySqlTableRowUseCase,
-		private readonly updateMySqlTableRowUseCase: UpdateMySqlTableRowUseCase,
-		private readonly deleteMySqlTableRowUseCase: DeleteMySqlTableRowUseCase,
-		private readonly listPostgreSqlTableColumnsUseCase: ListPostgreSqlTableColumnsUseCase,
-		private readonly listPostgreSqlTableRowPageUseCase: ListPostgreSqlTableRowPageUseCase,
-		private readonly listSqlite3TableColumnsUseCase: ListSqlite3TableColumnsUseCase,
-		private readonly listSqlite3TableRowPageUseCase: ListSqlite3TableRowPageUseCase,
-		private readonly insertSqlite3TableRowUseCase: InsertSqlite3TableRowUseCase,
-		private readonly updateSqlite3TableRowUseCase: UpdateSqlite3TableRowUseCase,
-		private readonly deleteSqlite3TableRowUseCase: DeleteSqlite3TableRowUseCase
-	) {}
-
-	/**
-	 * 注册表数据页 Webview 恢复器。
-	 *
-	 * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
-	 */
-	public activate(context: vscode.ExtensionContext): void {
-		context.subscriptions.push(
-			vscode.window.registerWebviewPanelSerializer(
-				MySqlTableDataPanel.viewType,
-				this
-			)
-		);
-	}
-
-	/**
-	 * 从 VS Code 保存的 Webview 状态恢复表数据页。
-	 *
-	 * @param {vscode.WebviewPanel} panel VS Code 恢复出来的 Webview 面板。
-	 * @param {unknown} serializedState Webview 前端保存的轻量状态。
-	 */
-	public async deserializeWebviewPanel(
-		panel: vscode.WebviewPanel,
-		serializedState: unknown
-	): Promise<void> {
-		panel.webview.options = {
-			enableScripts: true,
-		};
-		const restoredState = this.parseSerializedState(serializedState);
-
-		if (!restoredState) {
-			panel.webview.html = this.renderRestoreErrorHtml(
-				'表数据页状态无效。'
-			);
-			return;
-		}
-
-		const connection = await this.findRestoredConnection(
-			restoredState.connectionId,
-			restoredState.engine
-		);
-
-		if (!connection) {
-			panel.webview.html = this.renderRestoreErrorHtml(
-				'未找到此表数据页对应的数据库连接。'
-			);
-			return;
-		}
-
-		const tableNode = this.createRestoredTableNode(connection, restoredState);
-		const state: MySqlTablePanelState = {
-			panel,
-			tableNode,
-			pageIndex: restoredState.pageIndex,
-			pageSize: restoredState.pageSize,
-			filterKeyword: restoredState.filterKeyword,
-			filterConditions: restoredState.filterConditions,
-			sortColumnName: restoredState.sortColumnName,
-			sortDirection: restoredState.sortDirection,
-			hiddenColumnNames: new Set(restoredState.hiddenColumnNames),
-			latestColumns: [],
-			latestRows: [],
-		};
-
-		this.panelStatesByKey.set(this.createPanelKey(tableNode), state);
-		this.registerPanelHandlers(state);
-		panel.webview.html = this.renderLoadingHtml(tableNode);
-		await this.renderTableData(state);
-	}
-
-	/**
-	 * 打开或显示选中表的数据页。
-	 *
-	 * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
-	 */
-	public async open(tableNode: TableDataTreeNode): Promise<void> {
-		const panelKey = this.createPanelKey(tableNode);
-		const existingState = this.panelStatesByKey.get(panelKey);
-
-		if (existingState) {
-			existingState.panel.reveal(vscode.ViewColumn.Active);
-			await this.renderTableData(existingState);
-			return;
-		}
-
-		const panel = vscode.window.createWebviewPanel(
-			MySqlTableDataPanel.viewType,
-			`${tableNode.tableName} 表数据`,
-			vscode.ViewColumn.Active,
-			{
-				enableScripts: true,
-				retainContextWhenHidden: true,
-			}
-		);
-
-		const state: MySqlTablePanelState = {
-			panel,
-			tableNode,
-			pageIndex: 0,
-			pageSize: MySqlTableDataPanel.defaultPageSize,
-			filterKeyword: '',
-			filterConditions: [],
-			sortDirection: 'asc',
-			hiddenColumnNames: new Set<string>(),
-			latestColumns: [],
-			latestRows: [],
-		};
-
-		this.panelStatesByKey.set(panelKey, state);
-		this.registerPanelHandlers(state);
-
-		panel.webview.html = this.renderLoadingHtml(tableNode);
-		await this.renderTableData(state);
-	}
-
-	/**
-	 * 为表数据页注册生命周期和消息处理。
-	 *
-	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
-	 */
-	private registerPanelHandlers(state: MySqlTablePanelState): void {
-		state.panel.onDidDispose(() => {
-			this.panelStatesByKey.delete(this.createPanelKey(state.tableNode));
-		});
-		state.panel.webview.onDidReceiveMessage(
-			async (message: MySqlTableDataWebviewMessage) => {
-				await this.handleWebviewMessage(state, message);
-			}
-		);
-	}
-
-	/**
-	 * 解析 VS Code 保存的表数据页 Webview 状态。
-	 *
-	 * @param {unknown} value 原始恢复状态。
-	 * @returns {MySqlTablePanelSerializedState | undefined} 可用于恢复表数据页的轻量状态；无效时为空。
-	 */
-	private parseSerializedState(
-		value: unknown
-	): MySqlTablePanelSerializedState | undefined {
-		if (!value || typeof value !== 'object' || Array.isArray(value)) {
-			return undefined;
-		}
-
-		const serializedState = value as Record<string, unknown>;
-		const connectionId = serializedState.connectionId;
-		const schemaName = serializedState.schemaName;
-		const tableName = serializedState.tableName;
-
-		if (
-			typeof connectionId !== 'string' ||
-			typeof schemaName !== 'string' ||
-			typeof tableName !== 'string' ||
-			connectionId.trim().length === 0 ||
-			schemaName.trim().length === 0 ||
-			tableName.trim().length === 0
-		) {
-			return undefined;
-		}
-
-		const pageIndex = serializedState.pageIndex;
-		const pageSize = serializedState.pageSize;
-		const filterKeyword = serializedState.filterKeyword;
-		const filterConditions = serializedState.filterConditions;
-		const sortColumnName = serializedState.sortColumnName;
-		const sortDirection = serializedState.sortDirection;
-		const hiddenColumnNames = serializedState.hiddenColumnNames;
-		const databaseName = serializedState.databaseName;
-
-		return {
-			engine:
-				serializedState.engine === 'postgresql'
-					? 'postgresql'
-					: serializedState.engine === 'sqlite3'
-						? 'sqlite3'
-						: 'mysql',
-			connectionId,
-			databaseName: typeof databaseName === 'string' ? databaseName : undefined,
-			schemaName,
-			tableName,
-			pageIndex:
-				typeof pageIndex === 'number' && Number.isFinite(pageIndex)
-					? Math.max(0, Math.floor(pageIndex))
-					: 0,
-			pageSize:
-				typeof pageSize === 'number' && Number.isFinite(pageSize)
-					? Math.max(1, Math.floor(pageSize))
-					: MySqlTableDataPanel.defaultPageSize,
-			filterKeyword: typeof filterKeyword === 'string' ? filterKeyword : '',
-			filterConditions: this.parseFilterConditions(filterConditions),
-			sortColumnName:
-				typeof sortColumnName === 'string' && sortColumnName.length > 0
-					? sortColumnName
-					: undefined,
-			sortDirection: sortDirection === 'desc' ? 'desc' : 'asc',
-			hiddenColumnNames: Array.isArray(hiddenColumnNames)
-				? hiddenColumnNames.filter(
-						(columnName): columnName is string =>
-							typeof columnName === 'string'
-					)
-				: [],
-		};
-	}
-
-	/**
-	 * 解析 Webview 状态中保存的字段过滤条件。
-	 *
-	 * @param {unknown} value 原始过滤条件值。
-	 * @returns {readonly MySqlTableFilterCondition[]} 可传给应用层的字段过滤条件列表。
-	 */
-	private parseFilterConditions(
-		value: unknown
-	): readonly MySqlTableFilterCondition[] {
-		if (!Array.isArray(value)) {
-			return [];
-		}
-
-		return value
-			.map((item) => this.parseFilterCondition(item))
-			.filter(
-				(
-					item
-				): item is MySqlTableFilterCondition => item !== undefined
-			);
-	}
-
-	/**
-	 * 解析单条字段过滤条件。
-	 *
-	 * @param {unknown} value 原始字段过滤条件值。
-	 * @returns {MySqlTableFilterCondition | undefined} 可用字段过滤条件；无效时为空。
-	 */
-	private parseFilterCondition(
-		value: unknown
-	): MySqlTableFilterCondition | undefined {
-		if (!value || typeof value !== 'object' || Array.isArray(value)) {
-			return undefined;
-		}
-
-		const filterCondition = value as Record<string, unknown>;
-		const columnName = filterCondition.columnName;
-		const operator = filterCondition.operator;
-		const rawConditionValue = filterCondition.value;
-
-		if (
-			typeof columnName !== 'string' ||
-			!this.isSupportedFilterOperator(operator)
-		) {
-			return undefined;
-		}
-
-		return {
-			columnName,
-			operator,
-			value: Array.isArray(rawConditionValue)
-				? rawConditionValue.filter(
-						(item): item is string => typeof item === 'string'
-					)
-				: typeof rawConditionValue === 'string'
-					? rawConditionValue
-					: undefined,
-		};
-	}
-
-	/**
-	 * 判断过滤操作符是否为表数据页支持的旧 PPZ 操作符。
-	 *
-	 * @param {unknown} value 待检查的操作符。
-	 * @returns {value is MySqlTableFilterCondition['operator']} 是否为支持的过滤操作符。
-	 */
-	private isSupportedFilterOperator(
-		value: unknown
-	): value is MySqlTableFilterCondition['operator'] {
-		return (
-			value === '=' ||
-			value === '!=' ||
-			value === '>' ||
-			value === '>=' ||
-			value === '<' ||
-			value === '<=' ||
-			value === 'like' ||
-			value === 'in' ||
-			value === 'not in' ||
-			value === 'null' ||
-			value === 'not null'
-		);
-	}
-
-	/**
-	 * 按连接 ID 和数据库引擎查找可恢复的连接配置。
-	 *
-	 * @param {string} connectionId 需要恢复的连接标识。
-	 * @param {'mysql' | 'postgresql' | 'sqlite3'} engine 需要恢复的数据库引擎。
-	 * @returns {Promise<ConnectionConfig | undefined>} 匹配的连接配置；不存在时为空。
-	 */
-	private async findRestoredConnection(
-		connectionId: string,
-		engine: 'mysql' | 'postgresql' | 'sqlite3'
-	): Promise<ConnectionConfig | undefined> {
-		const connections = await this.listStoredConnectionsUseCase.execute();
-		const connection = connections.find((item) => item.id === connectionId);
-
-		if (!connection || connection.engine !== engine) {
-			return undefined;
-		}
-
-		return connection;
-	}
-
-	/**
-	 * 根据恢复状态创建表节点。
-	 *
-	 * @param {ConnectionConfig} connection 已恢复的连接配置。
-	 * @param {MySqlTablePanelSerializedState} restoredState 已解析的 Webview 状态。
-	 * @returns {TableDataTreeNode} 可供表数据页使用的表节点。
-	 */
-	private createRestoredTableNode(
-		connection: ConnectionConfig,
-		restoredState: MySqlTablePanelSerializedState
-	): TableDataTreeNode {
-		if (connection.engine === 'postgresql') {
-			const databaseName =
-				restoredState.databaseName ??
-				(connection.mode === 'parameters' ? connection.database : undefined);
-
-			return {
-				kind: 'postgresqlTable',
-				connection,
-				databaseName: databaseName ?? '',
-				schemaName: restoredState.schemaName,
-				tableName: restoredState.tableName,
-			};
-		}
-
-		if (connection.engine === 'sqlite3') {
-			return {
-				kind: 'sqlite3Table',
-				connection,
-				schemaName: 'main',
-				tableName: restoredState.tableName,
-				tableType: 'table',
-			};
-		}
-
-		return {
-			kind: 'table',
-			connection,
-			schemaName: restoredState.schemaName,
-			tableName: restoredState.tableName,
-		};
-	}
-
-	/**
-	 * 处理分页和刷新的 Webview 动作。
-	 *
-	 * @param {MySqlTablePanelState} state 正在更新的面板状态。
-	 * @param {MySqlTableDataWebviewMessage} message Webview 发出的消息。
-	 */
-	private async handleWebviewMessage(
-		state: MySqlTablePanelState,
-		message: MySqlTableDataWebviewMessage
-	): Promise<void> {
-		switch (message.type) {
-			case 'previousPage':
-				state.pageIndex = Math.max(0, state.pageIndex - 1);
-				await this.renderTableData(state);
-				return;
-			case 'nextPage':
-				state.pageIndex += 1;
-				await this.renderTableData(state);
-				return;
-			case 'goToPage':
-				state.pageSize = Math.max(1, Math.floor(message.pageSize));
-				state.pageIndex = Math.max(0, Math.floor(message.pageIndex));
-				await this.renderTableData(state);
-				return;
-			case 'refresh':
-				await this.renderTableData(state);
-				return;
-			case 'applyQueryOptions':
-				state.filterKeyword = message.filterKeyword;
-				state.filterConditions = message.filterConditions ?? [];
-				state.sortColumnName =
-					message.sortColumnName.length > 0
-						? message.sortColumnName
-						: undefined;
-				state.sortDirection =
-					message.sortDirection === 'desc' ? 'desc' : 'asc';
-				state.pageIndex = 0;
-				await this.renderTableData(state);
-				return;
-			case 'clearQueryOptions':
-				state.filterKeyword = '';
-				state.filterConditions = [];
-				state.sortColumnName = undefined;
-				state.sortDirection = 'asc';
-				state.pageIndex = 0;
-				await this.renderTableData(state);
-				return;
-			case 'setVisibleColumns':
-				state.hiddenColumnNames = new Set(message.hiddenColumnNames);
-				return;
-			case 'openSqlTerminal':
-				if (this.isReadOnlyTableNode(state.tableNode)) {
-					await vscode.commands.executeCommand(
-						OpenPostgreSqlSqlTerminalCommand.id,
-						state.tableNode,
-						message.sql ?? state.currentSql
-					);
-					return;
-				}
-				if (state.tableNode.kind === 'sqlite3Table') {
-					await vscode.commands.executeCommand(
-						OpenSqlite3SqlTerminalCommand.id,
-						state.tableNode,
-						message.sql ?? state.currentSql
-					);
-					return;
-				}
-				await vscode.commands.executeCommand(
-					OpenMySqlSqlTerminalCommand.id,
-					state.tableNode,
-					message.sql ?? state.currentSql
-				);
-				return;
-			case 'copyCurrentSql':
-				await this.copyCurrentSql(message.sql);
-				return;
-			case 'openCurrentSqlDocument':
-				await this.openCurrentSqlDocument(message.sql);
-				return;
-			case 'insertRow':
-				if (this.isReadOnlyTableNode(state.tableNode)) {
-					await this.showReadOnlyTableMessage();
-					return;
-				}
-				await this.insertRow(state);
-				return;
-			case 'copyRow':
-				if (this.isReadOnlyTableNode(state.tableNode)) {
-					await this.showReadOnlyTableMessage();
-					return;
-				}
-				await this.copyRow(state, message.rowIndex);
-				return;
-			case 'editRow':
-				if (this.isReadOnlyTableNode(state.tableNode)) {
-					await this.showReadOnlyTableMessage();
-					return;
-				}
-				await this.editRow(state, message.rowIndex);
-				return;
-			case 'deleteRow':
-				if (this.isReadOnlyTableNode(state.tableNode)) {
-					await this.showReadOnlyTableMessage();
-					return;
-				}
-				await this.deleteRow(state, message.rowIndex);
-				return;
-			case 'saveEditedRows':
-				if (this.isReadOnlyTableNode(state.tableNode)) {
-					await this.showReadOnlyTableMessage();
-					return;
-				}
-				await this.saveEditedRows(state, message.edits);
-				return;
-		}
-	}
-
-	/**
-	 * 判断当前表节点是否只读。
-	 *
-	 * @param {TableDataTreeNode} tableNode 当前表节点。
-	 * @returns {boolean} 是否只开放只读能力。
-	 */
-	private isReadOnlyTableNode(tableNode: TableDataTreeNode): boolean {
-		return tableNode.kind === 'postgresqlTable';
-	}
-
-	/**
-	 * 从当前面板状态中读取可写的 MySQL 表节点。
-	 *
-	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
-	 * @returns {MySqlTableTreeNode | undefined} MySQL 表节点；非 MySQL 表时返回 undefined。
-	 */
-	private getMySqlTableNode(
-		state: MySqlTablePanelState
-	): MySqlTableTreeNode | undefined {
-		return state.tableNode.kind === 'table' ? state.tableNode : undefined;
-	}
-
-	/**
-	 * 从当前面板状态中读取可写的 SQLite3 表节点。
-	 *
-	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
-	 * @returns {Sqlite3TableTreeNode | undefined} SQLite3 表节点；非 SQLite3 表时返回 undefined。
-	 */
-	private getSqlite3TableNode(
-		state: MySqlTablePanelState
-	): Sqlite3TableTreeNode | undefined {
-		return state.tableNode.kind === 'sqlite3Table'
-			? state.tableNode
-			: undefined;
-	}
-
-	/**
-	 * 展示只读表页提示。
-	 */
-	private async showReadOnlyTableMessage(): Promise<void> {
-		await vscode.window.showInformationMessage(
-			'当前 PostgreSQL 表数据页暂时只支持读取。'
-		);
-	}
-
-	/**
-	 * 将当前查看的 SQL 写入系统剪贴板。
-	 *
-	 * @param {string} sql Webview 当前选择的 SQL 文本。
-	 */
-	private async copyCurrentSql(sql: string): Promise<void> {
-		await vscode.env.clipboard.writeText(sql);
-		await vscode.window.showInformationMessage('已复制到剪切板');
-	}
-
-	/**
-	 * 在 VS Code 临时 SQL 文档中打开当前查看的 SQL。
-	 *
-	 * @param {string} sql Webview 当前选择的 SQL 文本。
-	 */
-	private async openCurrentSqlDocument(sql: string): Promise<void> {
-		const document = await vscode.workspace.openTextDocument({
-			content: sql,
-			language: 'sql',
-		});
-
-		await vscode.window.showTextDocument(document, {
-			preview: false,
-		});
-	}
-
-	/**
-	 * 收集字段值并新增一条表记录。
-	 *
-	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
-	 */
-	private async insertRow(
-		state: MySqlTablePanelState,
-		sourceRow?: Record<string, MySqlTableCellValue>
-	): Promise<void> {
-		try {
-			const tableNode = this.getMySqlTableNode(state);
-			const sqlite3TableNode = this.getSqlite3TableNode(state);
-
-			if (!tableNode && !sqlite3TableNode) {
-				await this.showReadOnlyTableMessage();
-				return;
-			}
-
-			const columns = tableNode
-				? await this.listMySqlTableColumnsUseCase.execute(
-						tableNode.connection,
-						tableNode.schemaName,
-						tableNode.tableName
-					)
-				: await this.listSqlite3TableColumnsUseCase.execute(
-						sqlite3TableNode!.connection,
-						sqlite3TableNode!.tableName
-					);
-			const values = await this.promptInsertValues(columns, sourceRow);
-
-			if (values === undefined) {
-				return;
-			}
-
-			const shouldSave = await this.confirmPendingChange(
-				'保存新增记录？'
-			);
-
-			if (!shouldSave) {
-				return;
-			}
-
-			const result = tableNode
-				? await this.insertMySqlTableRowUseCase.execute(
-						tableNode.connection,
-						tableNode.schemaName,
-						tableNode.tableName,
-						values
-					)
-				: await this.insertSqlite3TableRowUseCase.execute(
-						sqlite3TableNode!.connection,
-						sqlite3TableNode!.tableName,
-						values
-					);
-
-			state.pageIndex = 0;
-			await vscode.window.showInformationMessage(
-				`已新增 ${result.affectedRows} 条记录。`
-			);
-			await this.renderTableData(state);
-		} catch (error) {
-			await showUserErrorMessage({
-				operation: '新增表记录',
-				error,
-			});
-		}
-	}
-
-	/**
-	 * 以当前聚焦行作为默认值新增一条表记录。
-	 *
-	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
-	 * @param {number} rowIndex 当前页行索引。
-	 */
-	private async copyRow(
-		state: MySqlTablePanelState,
-		rowIndex: number
-	): Promise<void> {
-		const row = state.latestRows[rowIndex];
-
-		if (!row) {
-			await vscode.window.showWarningMessage(
-				'当前选中的记录已不可用。'
-			);
-			return;
-		}
-
-		await this.insertRow(state, row);
-	}
-
-	/**
-	 * 通过 VS Code 输入框收集单条新增记录的字段值。
-	 *
-	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
-	 * @param {Record<string, MySqlTableCellValue>} sourceRow 作为新增默认值的来源行。
-	 * @returns {Promise<MySqlTableInsertValues | undefined>} 用户提交的字段值；取消时返回 undefined。
-	 */
-	private async promptInsertValues(
-		columns: readonly MySqlTableColumnMetadata[],
-		sourceRow?: Record<string, MySqlTableCellValue>
-	): Promise<MySqlTableInsertValues | undefined> {
-		const values: Record<string, string | number | boolean | null> = {};
-		const writableColumns = columns.filter(
-			(column) => !column.extra.toLowerCase().includes('auto_increment')
-		);
-
-		for (const column of writableColumns) {
-			const sourceValue = sourceRow?.[column.name] ?? null;
-			const value = await vscode.window.showInputBox({
-				title: `填写 ${column.name}`,
-				value: sourceValue === null ? '' : String(sourceValue),
-				prompt: `类型：${column.dataType}${column.nullable ? '，可为空' : ''}。留空使用 DEFAULT；输入 NULL 写入 NULL。`,
-				ignoreFocusOut: true,
-			});
-
-			if (value === undefined) {
-				return undefined;
-			}
-
-			if (value.length === 0) {
-				continue;
-			}
-
-			values[column.name] = value.toUpperCase() === 'NULL' ? null : value;
-		}
-
-		return values;
-	}
-
-	/**
-	 * 编辑当前页中的一条表记录。
-	 *
-	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
-	 * @param {number} rowIndex 当前页行索引。
-	 */
-	private async editRow(
-		state: MySqlTablePanelState,
-		rowIndex: number
-	): Promise<void> {
-		try {
-			const tableNode = this.getMySqlTableNode(state);
-			const sqlite3TableNode = this.getSqlite3TableNode(state);
-
-			if (!tableNode && !sqlite3TableNode) {
-				await this.showReadOnlyTableMessage();
-				return;
-			}
-
-			const row = state.latestRows[rowIndex];
-			const primaryKeyColumns = state.latestColumns.filter(
-				(column) => column.isPrimaryKey
-			);
-
-			if (!row) {
-				await vscode.window.showWarningMessage(
-					'当前选中的记录已不可用。'
-				);
-				return;
-			}
-
-			if (primaryKeyColumns.length === 0) {
-				await vscode.window.showWarningMessage(
-					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
-				);
-				return;
-			}
-
-			const identityValues = this.createIdentityValues(primaryKeyColumns, row);
-			const values = await this.promptUpdateValues(state.latestColumns, row);
-
-			if (values === undefined) {
-				return;
-			}
-
-			if (Object.keys(values).length === 0) {
-				await vscode.window.showInformationMessage('没有待保存的数据');
-				return;
-			}
-
-			const shouldSave = await this.confirmPendingChange(
-				'保存修改？'
-			);
-
-			if (!shouldSave) {
-				return;
-			}
-
-			const result = tableNode
-				? await this.updateMySqlTableRowUseCase.execute(
-						tableNode.connection,
-						tableNode.schemaName,
-						tableNode.tableName,
-						identityValues,
-						values
-					)
-				: await this.updateSqlite3TableRowUseCase.execute(
-						sqlite3TableNode!.connection,
-						sqlite3TableNode!.tableName,
-						identityValues,
-						values
-					);
-
-			await vscode.window.showInformationMessage(
-				`已保存 ${result.affectedRows} 条记录。`
-			);
-			await this.renderTableData(state);
-		} catch (error) {
-			await showUserErrorMessage({
-				operation: '编辑表记录',
-				error,
-			});
-		}
-	}
-
-	/**
-	 * 保存 Webview 表格中的内联编辑。
-	 *
-	 * @param state 当前表数据面板状态。
-	 * @param edits 前端收集的逐行字段修改。
-	 */
-	private async saveEditedRows(
-		state: MySqlTablePanelState,
-		edits: readonly {
-			readonly rowIndex: number;
-			readonly values: Record<string, string | number | boolean | null>;
-		}[]
-	): Promise<void> {
-		try {
-			const tableNode = this.getMySqlTableNode(state);
-			const sqlite3TableNode = this.getSqlite3TableNode(state);
-
-			if (!tableNode && !sqlite3TableNode) {
-				await this.showReadOnlyTableMessage();
-				return;
-			}
-
-			const primaryKeyColumns = state.latestColumns.filter(
-				(column) => column.isPrimaryKey
-			);
-
-			if (primaryKeyColumns.length === 0) {
-				await vscode.window.showWarningMessage(
-					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
-				);
-				return;
-			}
-
-			const normalizedEdits = edits
-				.map((edit) => {
-					const row = state.latestRows[edit.rowIndex];
-					if (!row) {
-						return undefined;
-					}
-
-					const values = this.normalizeInlineEditValues(
-						state.latestColumns,
-						edit.values
-					);
-					if (Object.keys(values).length === 0) {
-						return undefined;
-					}
-
-					return {
-						row,
-						values,
-					};
-				})
-				.filter(
-					(
-						edit
-					): edit is {
-						readonly row: Record<string, MySqlTableCellValue>;
-						readonly values: MySqlTableUpdateValues;
-					} => edit !== undefined
-				);
-
-			if (normalizedEdits.length === 0) {
-				await vscode.window.showInformationMessage('没有待保存的数据');
-				return;
-			}
-
-			let affectedRows = 0;
-			for (const edit of normalizedEdits) {
-				const result = tableNode
-					? await this.updateMySqlTableRowUseCase.execute(
-							tableNode.connection,
-							tableNode.schemaName,
-							tableNode.tableName,
-							this.createIdentityValues(primaryKeyColumns, edit.row),
-							edit.values
-						)
-					: await this.updateSqlite3TableRowUseCase.execute(
-							sqlite3TableNode!.connection,
-							sqlite3TableNode!.tableName,
-							this.createIdentityValues(primaryKeyColumns, edit.row),
-							edit.values
-						);
-				affectedRows += result.affectedRows;
-			}
-
-			await vscode.window.showInformationMessage(
-				`已保存 ${affectedRows} 条记录。`
-			);
-			await this.renderTableData(state);
-		} catch (error) {
-			await showUserErrorMessage({
-				operation: '保存表记录修改',
-				error,
-			});
-		}
-	}
-
-	/**
-	 * 归一化 Webview 内联编辑提交的字段值。
-	 *
-	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
-	 * @param {Record<string, string | number | boolean | null>} values Webview 提交的原始字段值。
-	 * @returns {MySqlTableUpdateValues} 可传入更新用例的字段值。
-	 */
-	private normalizeInlineEditValues(
-		columns: readonly MySqlTableColumnMetadata[],
-		values: Record<string, string | number | boolean | null>
-	): MySqlTableUpdateValues {
-		const editableColumnNames = new Set(
-			columns
-				.filter(
-					(column) =>
-						!column.isPrimaryKey &&
-						!column.extra.toLowerCase().includes('auto_increment')
-				)
-				.map((column) => column.name)
-		);
-		const normalizedValues: Record<string, MySqlTableCellValue> = {};
-
-		for (const [columnName, value] of Object.entries(values)) {
-			if (editableColumnNames.has(columnName)) {
-				normalizedValues[columnName] = value;
-			}
-		}
-
-		return normalizedValues;
-	}
-
-	/**
-	 * 根据主键字段从当前行创建原行定位值。
-	 *
-	 * @param {readonly MySqlTableColumnMetadata[]} primaryKeyColumns 主键字段列表。
-	 * @param {Record<string, MySqlTableCellValue>} row 当前页中的原始行。
-	 * @returns {MySqlTableRowIdentityValues} 原行定位值。
-	 */
-	private createIdentityValues(
-		primaryKeyColumns: readonly MySqlTableColumnMetadata[],
-		row: Record<string, MySqlTableCellValue>
-	): MySqlTableRowIdentityValues {
-		return Object.fromEntries(
-			primaryKeyColumns.map((column) => [column.name, row[column.name] ?? null])
-		);
-	}
-
-	/**
-	 * 删除当前页中的一条表记录。
-	 *
-	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
-	 * @param {number} rowIndex 当前页行索引。
-	 */
-	private async deleteRow(
-		state: MySqlTablePanelState,
-		rowIndex: number
-	): Promise<void> {
-		try {
-			const tableNode = this.getMySqlTableNode(state);
-			const sqlite3TableNode = this.getSqlite3TableNode(state);
-
-			if (!tableNode && !sqlite3TableNode) {
-				await this.showReadOnlyTableMessage();
-				return;
-			}
-
-			const row = state.latestRows[rowIndex];
-			const primaryKeyColumns = state.latestColumns.filter(
-				(column) => column.isPrimaryKey
-			);
-
-			if (!row) {
-				await vscode.window.showWarningMessage(
-					'当前选中的记录已不可用。'
-				);
-				return;
-			}
-
-			if (primaryKeyColumns.length === 0) {
-				await vscode.window.showWarningMessage(
-					`${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`
-				);
-				return;
-			}
-
-			const confirmation = await vscode.window.showWarningMessage(
-				'确定删除？',
-				{
-					modal: true,
-					detail: this.createDeleteWarningMessage(
-						primaryKeyColumns,
-						row
-					),
-				},
-				'确定'
-			);
-
-			if (confirmation !== '确定') {
-				return;
-			}
-
-			const result = tableNode
-				? await this.deleteMySqlTableRowUseCase.execute(
-						tableNode.connection,
-						tableNode.schemaName,
-						tableNode.tableName,
-						this.createIdentityValues(primaryKeyColumns, row)
-					)
-				: await this.deleteSqlite3TableRowUseCase.execute(
-						sqlite3TableNode!.connection,
-						sqlite3TableNode!.tableName,
-						this.createIdentityValues(primaryKeyColumns, row)
-					);
-
-			await vscode.window.showInformationMessage(
-				`已删除 ${result.affectedRows} 条记录。`
-			);
-			await this.renderTableData(state);
-		} catch (error) {
-			await showUserErrorMessage({
-				operation: '删除表记录',
-				error,
-			});
-		}
-	}
-
-	/**
-	 * 创建对齐旧 PPZ 的删除确认明细。
-	 *
-	 * @param {readonly MySqlTableColumnMetadata[]} primaryKeyColumns 当前表主键字段列表。
-	 * @param {Record<string, MySqlTableCellValue>} row 当前准备删除的记录。
-	 * @returns {string} 展示给用户确认的删除风险说明。
-	 */
-	private createDeleteWarningMessage(
-		primaryKeyColumns: readonly MySqlTableColumnMetadata[],
-		row: Record<string, MySqlTableCellValue>
-	): string {
-		const warning = primaryKeyColumns
-			.map(
-				(column) =>
-					`${column.name} 为 ${this.formatCellValueForMessage(
-						row[column.name] ?? null
-					)}`
-			)
-			.join(' 且 ');
-
-		return `您正在删除 ${warning} 的记录，删除后不可恢复`;
-	}
-
-	/**
-	 * 将单元格值转换为确认弹窗中的短文本。
-	 *
-	 * @param {MySqlTableCellValue} value 单元格原始展示值。
-	 * @returns {string} 可放入 VS Code 消息框的文本。
-	 */
-	private formatCellValueForMessage(value: MySqlTableCellValue): string {
-		if (value === null) {
-			return 'NULL';
-		}
-
-		return String(value);
-	}
-
-	/**
-	 * 通过 VS Code 输入框收集单条记录更新值。
-	 *
-	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
-	 * @param {Record<string, MySqlTableCellValue>} row 当前页中的原始行。
-	 * @returns {Promise<MySqlTableUpdateValues | undefined>} 用户提交的更新值；取消时返回 undefined。
-	 */
-	private async promptUpdateValues(
-		columns: readonly MySqlTableColumnMetadata[],
-		row: Record<string, MySqlTableCellValue>
-	): Promise<MySqlTableUpdateValues | undefined> {
-		const values: Record<string, MySqlTableCellValue> = {};
-		const editableColumns = columns.filter(
-			(column) =>
-				!column.isPrimaryKey &&
-				!column.extra.toLowerCase().includes('auto_increment')
-		);
-
-		for (const column of editableColumns) {
-			const currentValue = row[column.name] ?? null;
-			const value = await vscode.window.showInputBox({
-				title: `编辑 ${column.name}`,
-				value: currentValue === null ? '' : String(currentValue),
-				prompt: `类型：${column.dataType}${column.nullable ? '，可为空' : ''}。留空保持原值；输入 NULL 设置为 NULL。`,
-				ignoreFocusOut: true,
-			});
-
-			if (value === undefined) {
-				return undefined;
-			}
-
-			if (value.length === 0) {
-				continue;
-			}
-
-			const nextValue = value.toUpperCase() === 'NULL' ? null : value;
-
-			if (nextValue !== currentValue) {
-				values[column.name] = nextValue;
-			}
-		}
-
-		return values;
-	}
-
-	/**
-	 * 确认是否保存当前尚未写入数据库的修改。
-	 *
-	 * @param {string} message 确认弹窗消息。
-	 * @returns {Promise<boolean>} 用户选择保存时返回 true。
-	 */
-	private async confirmPendingChange(message: string): Promise<boolean> {
-		const confirmation = await vscode.window.showWarningMessage(
-			message,
-			{
-				modal: true,
-			},
-			'保存',
-			'放弃'
-		);
-
-		return confirmation === '保存';
-	}
-
-	/**
-	 * 加载表字段和行数据，并渲染当前面板状态。
-	 *
-	 * @param {MySqlTablePanelState} state 正在渲染的面板状态。
-	 */
-	private async renderTableData(state: MySqlTablePanelState): Promise<void> {
-		state.panel.title = `${state.tableNode.tableName} 表数据`;
-		state.panel.webview.html = this.renderLoadingHtml(state.tableNode);
-
-		try {
-			const [columns, rowPage] = await this.loadTableData(state);
-			state.currentSql = rowPage.sql;
-			state.latestColumns = columns;
-			state.latestRows = rowPage.rows;
-
-			state.panel.webview.html = this.renderTableHtml(
-				state,
-				columns,
-				rowPage
-			);
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			state.panel.webview.html = this.renderErrorHtml(state.tableNode, message);
-			await showUserErrorMessage({
-				operation: '加载表数据',
-				error,
-			});
-		}
-	}
-
-	/**
-	 * 根据表节点类型加载字段和分页行数据。
-	 *
-	 * @param {MySqlTablePanelState} state 正在渲染的面板状态。
-	 * @returns 字段和分页行数据。
-	 */
-	private async loadTableData(
-		state: MySqlTablePanelState
-	): Promise<
-		readonly [readonly MySqlTableColumnMetadata[], MySqlTableRowPage]
-	> {
-		if (state.tableNode.kind === 'postgresqlTable') {
-			return Promise.all([
-				this.listPostgreSqlTableColumnsUseCase.execute(
-					state.tableNode.connection,
-					state.tableNode.databaseName,
-					state.tableNode.schemaName,
-					state.tableNode.tableName
-				),
-				this.listPostgreSqlTableRowPageUseCase.execute(
-					state.tableNode.connection,
-					state.tableNode.databaseName,
-					state.tableNode.schemaName,
-					state.tableNode.tableName,
-					state.pageIndex,
-					state.pageSize,
-					this.createQueryOptions(state)
-				),
-			]);
-		}
-
-		if (state.tableNode.kind === 'sqlite3Table') {
-			return Promise.all([
-				this.listSqlite3TableColumnsUseCase.execute(
-					state.tableNode.connection,
-					state.tableNode.tableName
-				),
-				this.listSqlite3TableRowPageUseCase.execute(
-					state.tableNode.connection,
-					state.tableNode.tableName,
-					state.pageIndex,
-					state.pageSize,
-					this.createQueryOptions(state)
-				),
-			]);
-		}
-
-		return Promise.all([
-			this.listMySqlTableColumnsUseCase.execute(
-				state.tableNode.connection,
-				state.tableNode.schemaName,
-				state.tableNode.tableName
-			),
-			this.listMySqlTableRowPageUseCase.execute(
-				state.tableNode.connection,
-				state.tableNode.schemaName,
-				state.tableNode.tableName,
-				state.pageIndex,
-				state.pageSize,
-				this.createQueryOptions(state)
-			),
-		]);
-	}
-
-	/**
-	 * 将当前面板状态转换为表数据查询选项。
-	 *
-	 * @param {MySqlTablePanelState} state 当前面板状态。
-	 * @returns {MySqlTableQueryOptions} 排序和过滤查询选项。
-	 */
-	private createQueryOptions(
-		state: MySqlTablePanelState
-	): MySqlTableQueryOptions {
-		const filterKeyword = state.filterKeyword.trim();
-		const hasFilterConditions = state.filterConditions.length > 0;
-		return {
-			filter:
-				filterKeyword.length > 0 || hasFilterConditions
-					? {
-							keyword: filterKeyword,
-							conditions: state.filterConditions,
-						}
-					: undefined,
-			sort: state.sortColumnName
-				? {
-						columnName: state.sortColumnName,
-						direction: state.sortDirection,
-					}
-				: undefined,
-		};
-	}
-
-	/**
-	 * 为完整表名创建稳定的面板键。
-	 *
-	 * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
-	 * @returns {string} 唯一的面板键。
-	 */
-	private createPanelKey(tableNode: TableDataTreeNode): string {
-		if (tableNode.kind === 'postgresqlTable') {
-			return `${tableNode.connection.id}:${tableNode.databaseName}:${tableNode.schemaName}:${tableNode.tableName}`;
-		}
-
-		if (tableNode.kind === 'sqlite3Table') {
-			return `${tableNode.connection.id}:main:${tableNode.tableName}`;
-		}
-
-		return `${tableNode.connection.id}:${tableNode.schemaName}:${tableNode.tableName}`;
-	}
-
-	/**
-	 * 从当前面板状态创建可保存到 Webview 的轻量状态。
-	 *
-	 * @param {MySqlTablePanelState} state 当前表数据面板状态。
-	 * @returns {MySqlTablePanelSerializedState} 可由 VS Code 恢复的表数据页状态。
-	 */
-	private createSerializedState(
-		state: MySqlTablePanelState
-	): MySqlTablePanelSerializedState {
-		return {
-			engine:
-				state.tableNode.kind === 'postgresqlTable'
-					? 'postgresql'
-					: state.tableNode.kind === 'sqlite3Table'
-						? 'sqlite3'
-						: 'mysql',
-			connectionId: state.tableNode.connection.id,
-			databaseName:
-				state.tableNode.kind === 'postgresqlTable'
-					? state.tableNode.databaseName
-					: undefined,
-			schemaName: state.tableNode.schemaName,
-			tableName: state.tableNode.tableName,
-			pageIndex: state.pageIndex,
-			pageSize: state.pageSize,
-			filterKeyword: state.filterKeyword,
-			filterConditions: state.filterConditions,
-			sortColumnName: state.sortColumnName,
-			sortDirection: state.sortDirection,
-			hiddenColumnNames: Array.from(state.hiddenColumnNames),
-		};
-	}
-
-	/**
-	 * 在表数据加载期间渲染临时加载视图。
-	 *
-	 * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
-	 * @returns {string} 加载状态的 HTML 文档。
-	 */
-	private renderLoadingHtml(tableNode: TableDataTreeNode): string {
-		const qualifiedName =
-			tableNode.kind === 'postgresqlTable'
-				? `${tableNode.databaseName}.${tableNode.schemaName}.${tableNode.tableName}`
-				: tableNode.kind === 'sqlite3Table'
-					? `${tableNode.connection.name}.${tableNode.tableName}`
-				: `${tableNode.schemaName}.${tableNode.tableName}`;
-		return `<!DOCTYPE html>
+  /**
+   * 保存表数据页 Webview 的 VS Code viewType。
+   */
+  private static readonly viewType = "ppzPlus.mysqlTableData";
+
+  /**
+   * 保存表数据页使用的分页大小。
+   */
+  private static readonly defaultPageSize = 30;
+
+  /**
+   * 按完整表键保存已打开的表数据面板。
+   */
+  private readonly panelStatesByKey = new Map<string, MySqlTablePanelState>();
+
+  /**
+   * 创建表数据面板管理器。
+   *
+   * @param listStoredConnectionsUseCase 用于恢复 Webview 时按连接 ID 读取连接配置。
+   * @param listMySqlTableColumnsUseCase 用于加载表字段的用例。
+   * @param listMySqlTableRowPageUseCase 用于加载分页表数据的用例。
+   * @param insertMySqlTableRowUseCase 用于新增单条表记录的用例。
+   * @param updateMySqlTableRowUseCase 用于更新单条表记录的用例。
+   * @param deleteMySqlTableRowUseCase 用于删除单条表记录的用例。
+   * @param listPostgreSqlTableColumnsUseCase 用于加载 PostgreSQL 表字段的用例。
+   * @param listPostgreSqlTableRowPageUseCase 用于加载 PostgreSQL 分页表数据的用例。
+   * @param listSqlite3TableColumnsUseCase 用于加载 SQLite3 表字段的用例。
+   * @param listSqlite3TableRowPageUseCase 用于加载 SQLite3 分页表数据的用例。
+   * @param insertSqlite3TableRowUseCase 用于新增 SQLite3 表记录的用例。
+   * @param updateSqlite3TableRowUseCase 用于更新 SQLite3 表记录的用例。
+   * @param deleteSqlite3TableRowUseCase 用于删除 SQLite3 表记录的用例。
+   */
+  public constructor(
+    private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
+    private readonly listMySqlTableColumnsUseCase: ListMySqlTableColumnsUseCase,
+    private readonly listMySqlTableRowPageUseCase: ListMySqlTableRowPageUseCase,
+    private readonly insertMySqlTableRowUseCase: InsertMySqlTableRowUseCase,
+    private readonly updateMySqlTableRowUseCase: UpdateMySqlTableRowUseCase,
+    private readonly deleteMySqlTableRowUseCase: DeleteMySqlTableRowUseCase,
+    private readonly listPostgreSqlTableColumnsUseCase: ListPostgreSqlTableColumnsUseCase,
+    private readonly listPostgreSqlTableRowPageUseCase: ListPostgreSqlTableRowPageUseCase,
+    private readonly listSqlite3TableColumnsUseCase: ListSqlite3TableColumnsUseCase,
+    private readonly listSqlite3TableRowPageUseCase: ListSqlite3TableRowPageUseCase,
+    private readonly insertSqlite3TableRowUseCase: InsertSqlite3TableRowUseCase,
+    private readonly updateSqlite3TableRowUseCase: UpdateSqlite3TableRowUseCase,
+    private readonly deleteSqlite3TableRowUseCase: DeleteSqlite3TableRowUseCase,
+  ) {}
+
+  /**
+   * 注册表数据页 Webview 恢复器。
+   *
+   * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
+   */
+  public activate(context: vscode.ExtensionContext): void {
+    context.subscriptions.push(
+      vscode.window.registerWebviewPanelSerializer(MySqlTableDataPanel.viewType, this),
+    );
+  }
+
+  /**
+   * 从 VS Code 保存的 Webview 状态恢复表数据页。
+   *
+   * @param {vscode.WebviewPanel} panel VS Code 恢复出来的 Webview 面板。
+   * @param {unknown} serializedState Webview 前端保存的轻量状态。
+   */
+  public async deserializeWebviewPanel(
+    panel: vscode.WebviewPanel,
+    serializedState: unknown,
+  ): Promise<void> {
+    panel.webview.options = {
+      enableScripts: true,
+    };
+    const restoredState = this.parseSerializedState(serializedState);
+
+    if (!restoredState) {
+      panel.webview.html = this.renderRestoreErrorHtml("表数据页状态无效。");
+      return;
+    }
+
+    const connection = await this.findRestoredConnection(
+      restoredState.connectionId,
+      restoredState.engine,
+    );
+
+    if (!connection) {
+      panel.webview.html = this.renderRestoreErrorHtml("未找到此表数据页对应的数据库连接。");
+      return;
+    }
+
+    const tableNode = this.createRestoredTableNode(connection, restoredState);
+    const state: MySqlTablePanelState = {
+      panel,
+      tableNode,
+      pageIndex: restoredState.pageIndex,
+      pageSize: restoredState.pageSize,
+      filterKeyword: restoredState.filterKeyword,
+      filterConditions: restoredState.filterConditions,
+      sortColumnName: restoredState.sortColumnName,
+      sortDirection: restoredState.sortDirection,
+      hiddenColumnNames: new Set(restoredState.hiddenColumnNames),
+      latestColumns: [],
+      latestRows: [],
+    };
+
+    this.panelStatesByKey.set(this.createPanelKey(tableNode), state);
+    this.registerPanelHandlers(state);
+    panel.webview.html = this.renderLoadingHtml(tableNode);
+    await this.renderTableData(state);
+  }
+
+  /**
+   * 打开或显示选中表的数据页。
+   *
+   * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
+   */
+  public async open(tableNode: TableDataTreeNode): Promise<void> {
+    const panelKey = this.createPanelKey(tableNode);
+    const existingState = this.panelStatesByKey.get(panelKey);
+
+    if (existingState) {
+      existingState.panel.reveal(vscode.ViewColumn.Active);
+      await this.renderTableData(existingState);
+      return;
+    }
+
+    const panel = vscode.window.createWebviewPanel(
+      MySqlTableDataPanel.viewType,
+      `${tableNode.tableName} 表数据`,
+      vscode.ViewColumn.Active,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+      },
+    );
+
+    const state: MySqlTablePanelState = {
+      panel,
+      tableNode,
+      pageIndex: 0,
+      pageSize: MySqlTableDataPanel.defaultPageSize,
+      filterKeyword: "",
+      filterConditions: [],
+      sortDirection: "asc",
+      hiddenColumnNames: new Set<string>(),
+      latestColumns: [],
+      latestRows: [],
+    };
+
+    this.panelStatesByKey.set(panelKey, state);
+    this.registerPanelHandlers(state);
+
+    panel.webview.html = this.renderLoadingHtml(tableNode);
+    await this.renderTableData(state);
+  }
+
+  /**
+   * 为表数据页注册生命周期和消息处理。
+   *
+   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   */
+  private registerPanelHandlers(state: MySqlTablePanelState): void {
+    state.panel.onDidDispose(() => {
+      this.panelStatesByKey.delete(this.createPanelKey(state.tableNode));
+    });
+    state.panel.webview.onDidReceiveMessage(async (message: MySqlTableDataWebviewMessage) => {
+      await this.handleWebviewMessage(state, message);
+    });
+  }
+
+  /**
+   * 解析 VS Code 保存的表数据页 Webview 状态。
+   *
+   * @param {unknown} value 原始恢复状态。
+   * @returns {MySqlTablePanelSerializedState | undefined} 可用于恢复表数据页的轻量状态；无效时为空。
+   */
+  private parseSerializedState(value: unknown): MySqlTablePanelSerializedState | undefined {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return undefined;
+    }
+
+    const serializedState = value as Record<string, unknown>;
+    const connectionId = serializedState.connectionId;
+    const schemaName = serializedState.schemaName;
+    const tableName = serializedState.tableName;
+
+    if (
+      typeof connectionId !== "string" ||
+      typeof schemaName !== "string" ||
+      typeof tableName !== "string" ||
+      connectionId.trim().length === 0 ||
+      schemaName.trim().length === 0 ||
+      tableName.trim().length === 0
+    ) {
+      return undefined;
+    }
+
+    const pageIndex = serializedState.pageIndex;
+    const pageSize = serializedState.pageSize;
+    const filterKeyword = serializedState.filterKeyword;
+    const filterConditions = serializedState.filterConditions;
+    const sortColumnName = serializedState.sortColumnName;
+    const sortDirection = serializedState.sortDirection;
+    const hiddenColumnNames = serializedState.hiddenColumnNames;
+    const databaseName = serializedState.databaseName;
+
+    return {
+      engine:
+        serializedState.engine === "postgresql"
+          ? "postgresql"
+          : serializedState.engine === "sqlite3"
+            ? "sqlite3"
+            : "mysql",
+      connectionId,
+      databaseName: typeof databaseName === "string" ? databaseName : undefined,
+      schemaName,
+      tableName,
+      pageIndex:
+        typeof pageIndex === "number" && Number.isFinite(pageIndex)
+          ? Math.max(0, Math.floor(pageIndex))
+          : 0,
+      pageSize:
+        typeof pageSize === "number" && Number.isFinite(pageSize)
+          ? Math.max(1, Math.floor(pageSize))
+          : MySqlTableDataPanel.defaultPageSize,
+      filterKeyword: typeof filterKeyword === "string" ? filterKeyword : "",
+      filterConditions: this.parseFilterConditions(filterConditions),
+      sortColumnName:
+        typeof sortColumnName === "string" && sortColumnName.length > 0
+          ? sortColumnName
+          : undefined,
+      sortDirection: sortDirection === "desc" ? "desc" : "asc",
+      hiddenColumnNames: Array.isArray(hiddenColumnNames)
+        ? hiddenColumnNames.filter(
+            (columnName): columnName is string => typeof columnName === "string",
+          )
+        : [],
+    };
+  }
+
+  /**
+   * 解析 Webview 状态中保存的字段过滤条件。
+   *
+   * @param {unknown} value 原始过滤条件值。
+   * @returns {readonly MySqlTableFilterCondition[]} 可传给应用层的字段过滤条件列表。
+   */
+  private parseFilterConditions(value: unknown): readonly MySqlTableFilterCondition[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) => this.parseFilterCondition(item))
+      .filter((item): item is MySqlTableFilterCondition => item !== undefined);
+  }
+
+  /**
+   * 解析单条字段过滤条件。
+   *
+   * @param {unknown} value 原始字段过滤条件值。
+   * @returns {MySqlTableFilterCondition | undefined} 可用字段过滤条件；无效时为空。
+   */
+  private parseFilterCondition(value: unknown): MySqlTableFilterCondition | undefined {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return undefined;
+    }
+
+    const filterCondition = value as Record<string, unknown>;
+    const columnName = filterCondition.columnName;
+    const operator = filterCondition.operator;
+    const rawConditionValue = filterCondition.value;
+
+    if (typeof columnName !== "string" || !this.isSupportedFilterOperator(operator)) {
+      return undefined;
+    }
+
+    return {
+      columnName,
+      operator,
+      value: Array.isArray(rawConditionValue)
+        ? rawConditionValue.filter((item): item is string => typeof item === "string")
+        : typeof rawConditionValue === "string"
+          ? rawConditionValue
+          : undefined,
+    };
+  }
+
+  /**
+   * 判断过滤操作符是否为表数据页支持的旧 PPZ 操作符。
+   *
+   * @param {unknown} value 待检查的操作符。
+   * @returns {value is MySqlTableFilterCondition['operator']} 是否为支持的过滤操作符。
+   */
+  private isSupportedFilterOperator(
+    value: unknown,
+  ): value is MySqlTableFilterCondition["operator"] {
+    return (
+      value === "=" ||
+      value === "!=" ||
+      value === ">" ||
+      value === ">=" ||
+      value === "<" ||
+      value === "<=" ||
+      value === "like" ||
+      value === "in" ||
+      value === "not in" ||
+      value === "null" ||
+      value === "not null"
+    );
+  }
+
+  /**
+   * 按连接 ID 和数据库引擎查找可恢复的连接配置。
+   *
+   * @param {string} connectionId 需要恢复的连接标识。
+   * @param {'mysql' | 'postgresql' | 'sqlite3'} engine 需要恢复的数据库引擎。
+   * @returns {Promise<ConnectionConfig | undefined>} 匹配的连接配置；不存在时为空。
+   */
+  private async findRestoredConnection(
+    connectionId: string,
+    engine: "mysql" | "postgresql" | "sqlite3",
+  ): Promise<ConnectionConfig | undefined> {
+    const connections = await this.listStoredConnectionsUseCase.execute();
+    const connection = connections.find((item) => item.id === connectionId);
+
+    if (!connection || connection.engine !== engine) {
+      return undefined;
+    }
+
+    return connection;
+  }
+
+  /**
+   * 根据恢复状态创建表节点。
+   *
+   * @param {ConnectionConfig} connection 已恢复的连接配置。
+   * @param {MySqlTablePanelSerializedState} restoredState 已解析的 Webview 状态。
+   * @returns {TableDataTreeNode} 可供表数据页使用的表节点。
+   */
+  private createRestoredTableNode(
+    connection: ConnectionConfig,
+    restoredState: MySqlTablePanelSerializedState,
+  ): TableDataTreeNode {
+    if (connection.engine === "postgresql") {
+      const databaseName =
+        restoredState.databaseName ??
+        (connection.mode === "parameters" ? connection.database : undefined);
+
+      return {
+        kind: "postgresqlTable",
+        connection,
+        databaseName: databaseName ?? "",
+        schemaName: restoredState.schemaName,
+        tableName: restoredState.tableName,
+      };
+    }
+
+    if (connection.engine === "sqlite3") {
+      return {
+        kind: "sqlite3Table",
+        connection,
+        schemaName: "main",
+        tableName: restoredState.tableName,
+        tableType: "table",
+      };
+    }
+
+    return {
+      kind: "table",
+      connection,
+      schemaName: restoredState.schemaName,
+      tableName: restoredState.tableName,
+    };
+  }
+
+  /**
+   * 处理分页和刷新的 Webview 动作。
+   *
+   * @param {MySqlTablePanelState} state 正在更新的面板状态。
+   * @param {MySqlTableDataWebviewMessage} message Webview 发出的消息。
+   */
+  private async handleWebviewMessage(
+    state: MySqlTablePanelState,
+    message: MySqlTableDataWebviewMessage,
+  ): Promise<void> {
+    switch (message.type) {
+      case "previousPage":
+        state.pageIndex = Math.max(0, state.pageIndex - 1);
+        await this.renderTableData(state);
+        return;
+      case "nextPage":
+        state.pageIndex += 1;
+        await this.renderTableData(state);
+        return;
+      case "goToPage":
+        state.pageSize = Math.max(1, Math.floor(message.pageSize));
+        state.pageIndex = Math.max(0, Math.floor(message.pageIndex));
+        await this.renderTableData(state);
+        return;
+      case "refresh":
+        await this.renderTableData(state);
+        return;
+      case "applyQueryOptions":
+        state.filterKeyword = message.filterKeyword;
+        state.filterConditions = message.filterConditions ?? [];
+        state.sortColumnName =
+          message.sortColumnName.length > 0 ? message.sortColumnName : undefined;
+        state.sortDirection = message.sortDirection === "desc" ? "desc" : "asc";
+        state.pageIndex = 0;
+        await this.renderTableData(state);
+        return;
+      case "clearQueryOptions":
+        state.filterKeyword = "";
+        state.filterConditions = [];
+        state.sortColumnName = undefined;
+        state.sortDirection = "asc";
+        state.pageIndex = 0;
+        await this.renderTableData(state);
+        return;
+      case "setVisibleColumns":
+        state.hiddenColumnNames = new Set(message.hiddenColumnNames);
+        return;
+      case "openSqlTerminal":
+        if (this.isReadOnlyTableNode(state.tableNode)) {
+          await vscode.commands.executeCommand(
+            OpenPostgreSqlSqlTerminalCommand.id,
+            state.tableNode,
+            message.sql ?? state.currentSql,
+          );
+          return;
+        }
+        if (state.tableNode.kind === "sqlite3Table") {
+          await vscode.commands.executeCommand(
+            OpenSqlite3SqlTerminalCommand.id,
+            state.tableNode,
+            message.sql ?? state.currentSql,
+          );
+          return;
+        }
+        await vscode.commands.executeCommand(
+          OpenMySqlSqlTerminalCommand.id,
+          state.tableNode,
+          message.sql ?? state.currentSql,
+        );
+        return;
+      case "copyCurrentSql":
+        await this.copyCurrentSql(message.sql);
+        return;
+      case "openCurrentSqlDocument":
+        await this.openCurrentSqlDocument(message.sql);
+        return;
+      case "insertRow":
+        if (this.isReadOnlyTableNode(state.tableNode)) {
+          await this.showReadOnlyTableMessage();
+          return;
+        }
+        await this.insertRow(state);
+        return;
+      case "copyRow":
+        if (this.isReadOnlyTableNode(state.tableNode)) {
+          await this.showReadOnlyTableMessage();
+          return;
+        }
+        await this.copyRow(state, message.rowIndex);
+        return;
+      case "editRow":
+        if (this.isReadOnlyTableNode(state.tableNode)) {
+          await this.showReadOnlyTableMessage();
+          return;
+        }
+        await this.editRow(state, message.rowIndex);
+        return;
+      case "deleteRow":
+        if (this.isReadOnlyTableNode(state.tableNode)) {
+          await this.showReadOnlyTableMessage();
+          return;
+        }
+        await this.deleteRow(state, message.rowIndex);
+        return;
+      case "saveEditedRows":
+        if (this.isReadOnlyTableNode(state.tableNode)) {
+          await this.showReadOnlyTableMessage();
+          return;
+        }
+        await this.saveEditedRows(state, message.edits);
+        return;
+    }
+  }
+
+  /**
+   * 判断当前表节点是否只读。
+   *
+   * @param {TableDataTreeNode} tableNode 当前表节点。
+   * @returns {boolean} 是否只开放只读能力。
+   */
+  private isReadOnlyTableNode(tableNode: TableDataTreeNode): boolean {
+    return tableNode.kind === "postgresqlTable";
+  }
+
+  /**
+   * 从当前面板状态中读取可写的 MySQL 表节点。
+   *
+   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @returns {MySqlTableTreeNode | undefined} MySQL 表节点；非 MySQL 表时返回 undefined。
+   */
+  private getMySqlTableNode(state: MySqlTablePanelState): MySqlTableTreeNode | undefined {
+    return state.tableNode.kind === "table" ? state.tableNode : undefined;
+  }
+
+  /**
+   * 从当前面板状态中读取可写的 SQLite3 表节点。
+   *
+   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @returns {Sqlite3TableTreeNode | undefined} SQLite3 表节点；非 SQLite3 表时返回 undefined。
+   */
+  private getSqlite3TableNode(state: MySqlTablePanelState): Sqlite3TableTreeNode | undefined {
+    return state.tableNode.kind === "sqlite3Table" ? state.tableNode : undefined;
+  }
+
+  /**
+   * 展示只读表页提示。
+   */
+  private async showReadOnlyTableMessage(): Promise<void> {
+    await vscode.window.showInformationMessage("当前 PostgreSQL 表数据页暂时只支持读取。");
+  }
+
+  /**
+   * 将当前查看的 SQL 写入系统剪贴板。
+   *
+   * @param {string} sql Webview 当前选择的 SQL 文本。
+   */
+  private async copyCurrentSql(sql: string): Promise<void> {
+    await vscode.env.clipboard.writeText(sql);
+    await vscode.window.showInformationMessage("已复制到剪切板");
+  }
+
+  /**
+   * 在 VS Code 临时 SQL 文档中打开当前查看的 SQL。
+   *
+   * @param {string} sql Webview 当前选择的 SQL 文本。
+   */
+  private async openCurrentSqlDocument(sql: string): Promise<void> {
+    const document = await vscode.workspace.openTextDocument({
+      content: sql,
+      language: "sql",
+    });
+
+    await vscode.window.showTextDocument(document, {
+      preview: false,
+    });
+  }
+
+  /**
+   * 收集字段值并新增一条表记录。
+   *
+   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   */
+  private async insertRow(
+    state: MySqlTablePanelState,
+    sourceRow?: Record<string, MySqlTableCellValue>,
+  ): Promise<void> {
+    try {
+      const tableNode = this.getMySqlTableNode(state);
+      const sqlite3TableNode = this.getSqlite3TableNode(state);
+
+      if (!tableNode && !sqlite3TableNode) {
+        await this.showReadOnlyTableMessage();
+        return;
+      }
+
+      const columns = tableNode
+        ? await this.listMySqlTableColumnsUseCase.execute(
+            tableNode.connection,
+            tableNode.schemaName,
+            tableNode.tableName,
+          )
+        : await this.listSqlite3TableColumnsUseCase.execute(
+            sqlite3TableNode!.connection,
+            sqlite3TableNode!.tableName,
+          );
+      const values = await this.promptInsertValues(columns, sourceRow);
+
+      if (values === undefined) {
+        return;
+      }
+
+      const shouldSave = await this.confirmPendingChange("保存新增记录？");
+
+      if (!shouldSave) {
+        return;
+      }
+
+      const result = tableNode
+        ? await this.insertMySqlTableRowUseCase.execute(
+            tableNode.connection,
+            tableNode.schemaName,
+            tableNode.tableName,
+            values,
+          )
+        : await this.insertSqlite3TableRowUseCase.execute(
+            sqlite3TableNode!.connection,
+            sqlite3TableNode!.tableName,
+            values,
+          );
+
+      state.pageIndex = 0;
+      await vscode.window.showInformationMessage(`已新增 ${result.affectedRows} 条记录。`);
+      await this.renderTableData(state);
+    } catch (error) {
+      await showUserErrorMessage({
+        operation: "新增表记录",
+        error,
+      });
+    }
+  }
+
+  /**
+   * 以当前聚焦行作为默认值新增一条表记录。
+   *
+   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @param {number} rowIndex 当前页行索引。
+   */
+  private async copyRow(state: MySqlTablePanelState, rowIndex: number): Promise<void> {
+    const row = state.latestRows[rowIndex];
+
+    if (!row) {
+      await vscode.window.showWarningMessage("当前选中的记录已不可用。");
+      return;
+    }
+
+    await this.insertRow(state, row);
+  }
+
+  /**
+   * 通过 VS Code 输入框收集单条新增记录的字段值。
+   *
+   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {Record<string, MySqlTableCellValue>} sourceRow 作为新增默认值的来源行。
+   * @returns {Promise<MySqlTableInsertValues | undefined>} 用户提交的字段值；取消时返回 undefined。
+   */
+  private async promptInsertValues(
+    columns: readonly MySqlTableColumnMetadata[],
+    sourceRow?: Record<string, MySqlTableCellValue>,
+  ): Promise<MySqlTableInsertValues | undefined> {
+    const values: Record<string, string | number | boolean | null> = {};
+    const writableColumns = columns.filter(
+      (column) => !column.extra.toLowerCase().includes("auto_increment"),
+    );
+
+    for (const column of writableColumns) {
+      const sourceValue = sourceRow?.[column.name] ?? null;
+      const value = await vscode.window.showInputBox({
+        title: `填写 ${column.name}`,
+        value: sourceValue === null ? "" : String(sourceValue),
+        prompt: `类型：${column.dataType}${column.nullable ? "，可为空" : ""}。留空使用 DEFAULT；输入 NULL 写入 NULL。`,
+        ignoreFocusOut: true,
+      });
+
+      if (value === undefined) {
+        return undefined;
+      }
+
+      if (value.length === 0) {
+        continue;
+      }
+
+      values[column.name] = value.toUpperCase() === "NULL" ? null : value;
+    }
+
+    return values;
+  }
+
+  /**
+   * 编辑当前页中的一条表记录。
+   *
+   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @param {number} rowIndex 当前页行索引。
+   */
+  private async editRow(state: MySqlTablePanelState, rowIndex: number): Promise<void> {
+    try {
+      const tableNode = this.getMySqlTableNode(state);
+      const sqlite3TableNode = this.getSqlite3TableNode(state);
+
+      if (!tableNode && !sqlite3TableNode) {
+        await this.showReadOnlyTableMessage();
+        return;
+      }
+
+      const row = state.latestRows[rowIndex];
+      const primaryKeyColumns = state.latestColumns.filter((column) => column.isPrimaryKey);
+
+      if (!row) {
+        await vscode.window.showWarningMessage("当前选中的记录已不可用。");
+        return;
+      }
+
+      if (primaryKeyColumns.length === 0) {
+        await vscode.window.showWarningMessage(
+          `${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`,
+        );
+        return;
+      }
+
+      const identityValues = this.createIdentityValues(primaryKeyColumns, row);
+      const values = await this.promptUpdateValues(state.latestColumns, row);
+
+      if (values === undefined) {
+        return;
+      }
+
+      if (Object.keys(values).length === 0) {
+        await vscode.window.showInformationMessage("没有待保存的数据");
+        return;
+      }
+
+      const shouldSave = await this.confirmPendingChange("保存修改？");
+
+      if (!shouldSave) {
+        return;
+      }
+
+      const result = tableNode
+        ? await this.updateMySqlTableRowUseCase.execute(
+            tableNode.connection,
+            tableNode.schemaName,
+            tableNode.tableName,
+            identityValues,
+            values,
+          )
+        : await this.updateSqlite3TableRowUseCase.execute(
+            sqlite3TableNode!.connection,
+            sqlite3TableNode!.tableName,
+            identityValues,
+            values,
+          );
+
+      await vscode.window.showInformationMessage(`已保存 ${result.affectedRows} 条记录。`);
+      await this.renderTableData(state);
+    } catch (error) {
+      await showUserErrorMessage({
+        operation: "编辑表记录",
+        error,
+      });
+    }
+  }
+
+  /**
+   * 保存 Webview 表格中的内联编辑。
+   *
+   * @param state 当前表数据面板状态。
+   * @param edits 前端收集的逐行字段修改。
+   */
+  private async saveEditedRows(
+    state: MySqlTablePanelState,
+    edits: readonly {
+      readonly rowIndex: number;
+      readonly values: Record<string, string | number | boolean | null>;
+    }[],
+  ): Promise<void> {
+    try {
+      const tableNode = this.getMySqlTableNode(state);
+      const sqlite3TableNode = this.getSqlite3TableNode(state);
+
+      if (!tableNode && !sqlite3TableNode) {
+        await this.showReadOnlyTableMessage();
+        return;
+      }
+
+      const primaryKeyColumns = state.latestColumns.filter((column) => column.isPrimaryKey);
+
+      if (primaryKeyColumns.length === 0) {
+        await vscode.window.showWarningMessage(
+          `${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`,
+        );
+        return;
+      }
+
+      const normalizedEdits = edits
+        .map((edit) => {
+          const row = state.latestRows[edit.rowIndex];
+          if (!row) {
+            return undefined;
+          }
+
+          const values = this.normalizeInlineEditValues(state.latestColumns, edit.values);
+          if (Object.keys(values).length === 0) {
+            return undefined;
+          }
+
+          return {
+            row,
+            values,
+          };
+        })
+        .filter(
+          (
+            edit,
+          ): edit is {
+            readonly row: Record<string, MySqlTableCellValue>;
+            readonly values: MySqlTableUpdateValues;
+          } => edit !== undefined,
+        );
+
+      if (normalizedEdits.length === 0) {
+        await vscode.window.showInformationMessage("没有待保存的数据");
+        return;
+      }
+
+      let affectedRows = 0;
+      for (const edit of normalizedEdits) {
+        const result = tableNode
+          ? await this.updateMySqlTableRowUseCase.execute(
+              tableNode.connection,
+              tableNode.schemaName,
+              tableNode.tableName,
+              this.createIdentityValues(primaryKeyColumns, edit.row),
+              edit.values,
+            )
+          : await this.updateSqlite3TableRowUseCase.execute(
+              sqlite3TableNode!.connection,
+              sqlite3TableNode!.tableName,
+              this.createIdentityValues(primaryKeyColumns, edit.row),
+              edit.values,
+            );
+        affectedRows += result.affectedRows;
+      }
+
+      await vscode.window.showInformationMessage(`已保存 ${affectedRows} 条记录。`);
+      await this.renderTableData(state);
+    } catch (error) {
+      await showUserErrorMessage({
+        operation: "保存表记录修改",
+        error,
+      });
+    }
+  }
+
+  /**
+   * 归一化 Webview 内联编辑提交的字段值。
+   *
+   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {Record<string, string | number | boolean | null>} values Webview 提交的原始字段值。
+   * @returns {MySqlTableUpdateValues} 可传入更新用例的字段值。
+   */
+  private normalizeInlineEditValues(
+    columns: readonly MySqlTableColumnMetadata[],
+    values: Record<string, string | number | boolean | null>,
+  ): MySqlTableUpdateValues {
+    const editableColumnNames = new Set(
+      columns
+        .filter(
+          (column) =>
+            !column.isPrimaryKey && !column.extra.toLowerCase().includes("auto_increment"),
+        )
+        .map((column) => column.name),
+    );
+    const normalizedValues: Record<string, MySqlTableCellValue> = {};
+
+    for (const [columnName, value] of Object.entries(values)) {
+      if (editableColumnNames.has(columnName)) {
+        normalizedValues[columnName] = value;
+      }
+    }
+
+    return normalizedValues;
+  }
+
+  /**
+   * 根据主键字段从当前行创建原行定位值。
+   *
+   * @param {readonly MySqlTableColumnMetadata[]} primaryKeyColumns 主键字段列表。
+   * @param {Record<string, MySqlTableCellValue>} row 当前页中的原始行。
+   * @returns {MySqlTableRowIdentityValues} 原行定位值。
+   */
+  private createIdentityValues(
+    primaryKeyColumns: readonly MySqlTableColumnMetadata[],
+    row: Record<string, MySqlTableCellValue>,
+  ): MySqlTableRowIdentityValues {
+    return Object.fromEntries(
+      primaryKeyColumns.map((column) => [column.name, row[column.name] ?? null]),
+    );
+  }
+
+  /**
+   * 删除当前页中的一条表记录。
+   *
+   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @param {number} rowIndex 当前页行索引。
+   */
+  private async deleteRow(state: MySqlTablePanelState, rowIndex: number): Promise<void> {
+    try {
+      const tableNode = this.getMySqlTableNode(state);
+      const sqlite3TableNode = this.getSqlite3TableNode(state);
+
+      if (!tableNode && !sqlite3TableNode) {
+        await this.showReadOnlyTableMessage();
+        return;
+      }
+
+      const row = state.latestRows[rowIndex];
+      const primaryKeyColumns = state.latestColumns.filter((column) => column.isPrimaryKey);
+
+      if (!row) {
+        await vscode.window.showWarningMessage("当前选中的记录已不可用。");
+        return;
+      }
+
+      if (primaryKeyColumns.length === 0) {
+        await vscode.window.showWarningMessage(
+          `${state.tableNode.tableName} 表缺少主键，不能进行编辑、删除操作`,
+        );
+        return;
+      }
+
+      const confirmation = await vscode.window.showWarningMessage(
+        "确定删除？",
+        {
+          modal: true,
+          detail: this.createDeleteWarningMessage(primaryKeyColumns, row),
+        },
+        "确定",
+      );
+
+      if (confirmation !== "确定") {
+        return;
+      }
+
+      const result = tableNode
+        ? await this.deleteMySqlTableRowUseCase.execute(
+            tableNode.connection,
+            tableNode.schemaName,
+            tableNode.tableName,
+            this.createIdentityValues(primaryKeyColumns, row),
+          )
+        : await this.deleteSqlite3TableRowUseCase.execute(
+            sqlite3TableNode!.connection,
+            sqlite3TableNode!.tableName,
+            this.createIdentityValues(primaryKeyColumns, row),
+          );
+
+      await vscode.window.showInformationMessage(`已删除 ${result.affectedRows} 条记录。`);
+      await this.renderTableData(state);
+    } catch (error) {
+      await showUserErrorMessage({
+        operation: "删除表记录",
+        error,
+      });
+    }
+  }
+
+  /**
+   * 创建对齐旧 PPZ 的删除确认明细。
+   *
+   * @param {readonly MySqlTableColumnMetadata[]} primaryKeyColumns 当前表主键字段列表。
+   * @param {Record<string, MySqlTableCellValue>} row 当前准备删除的记录。
+   * @returns {string} 展示给用户确认的删除风险说明。
+   */
+  private createDeleteWarningMessage(
+    primaryKeyColumns: readonly MySqlTableColumnMetadata[],
+    row: Record<string, MySqlTableCellValue>,
+  ): string {
+    const warning = primaryKeyColumns
+      .map(
+        (column) => `${column.name} 为 ${this.formatCellValueForMessage(row[column.name] ?? null)}`,
+      )
+      .join(" 且 ");
+
+    return `您正在删除 ${warning} 的记录，删除后不可恢复`;
+  }
+
+  /**
+   * 将单元格值转换为确认弹窗中的短文本。
+   *
+   * @param {MySqlTableCellValue} value 单元格原始展示值。
+   * @returns {string} 可放入 VS Code 消息框的文本。
+   */
+  private formatCellValueForMessage(value: MySqlTableCellValue): string {
+    if (value === null) {
+      return "NULL";
+    }
+
+    return String(value);
+  }
+
+  /**
+   * 通过 VS Code 输入框收集单条记录更新值。
+   *
+   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {Record<string, MySqlTableCellValue>} row 当前页中的原始行。
+   * @returns {Promise<MySqlTableUpdateValues | undefined>} 用户提交的更新值；取消时返回 undefined。
+   */
+  private async promptUpdateValues(
+    columns: readonly MySqlTableColumnMetadata[],
+    row: Record<string, MySqlTableCellValue>,
+  ): Promise<MySqlTableUpdateValues | undefined> {
+    const values: Record<string, MySqlTableCellValue> = {};
+    const editableColumns = columns.filter(
+      (column) => !column.isPrimaryKey && !column.extra.toLowerCase().includes("auto_increment"),
+    );
+
+    for (const column of editableColumns) {
+      const currentValue = row[column.name] ?? null;
+      const value = await vscode.window.showInputBox({
+        title: `编辑 ${column.name}`,
+        value: currentValue === null ? "" : String(currentValue),
+        prompt: `类型：${column.dataType}${column.nullable ? "，可为空" : ""}。留空保持原值；输入 NULL 设置为 NULL。`,
+        ignoreFocusOut: true,
+      });
+
+      if (value === undefined) {
+        return undefined;
+      }
+
+      if (value.length === 0) {
+        continue;
+      }
+
+      const nextValue = value.toUpperCase() === "NULL" ? null : value;
+
+      if (nextValue !== currentValue) {
+        values[column.name] = nextValue;
+      }
+    }
+
+    return values;
+  }
+
+  /**
+   * 确认是否保存当前尚未写入数据库的修改。
+   *
+   * @param {string} message 确认弹窗消息。
+   * @returns {Promise<boolean>} 用户选择保存时返回 true。
+   */
+  private async confirmPendingChange(message: string): Promise<boolean> {
+    const confirmation = await vscode.window.showWarningMessage(
+      message,
+      {
+        modal: true,
+      },
+      "保存",
+      "放弃",
+    );
+
+    return confirmation === "保存";
+  }
+
+  /**
+   * 加载表字段和行数据，并渲染当前面板状态。
+   *
+   * @param {MySqlTablePanelState} state 正在渲染的面板状态。
+   */
+  private async renderTableData(state: MySqlTablePanelState): Promise<void> {
+    state.panel.title = `${state.tableNode.tableName} 表数据`;
+    state.panel.webview.html = this.renderLoadingHtml(state.tableNode);
+
+    try {
+      const [columns, rowPage] = await this.loadTableData(state);
+      state.currentSql = rowPage.sql;
+      state.latestColumns = columns;
+      state.latestRows = rowPage.rows;
+
+      state.panel.webview.html = this.renderTableHtml(state, columns, rowPage);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      state.panel.webview.html = this.renderErrorHtml(state.tableNode, message);
+      await showUserErrorMessage({
+        operation: "加载表数据",
+        error,
+      });
+    }
+  }
+
+  /**
+   * 根据表节点类型加载字段和分页行数据。
+   *
+   * @param {MySqlTablePanelState} state 正在渲染的面板状态。
+   * @returns 字段和分页行数据。
+   */
+  private async loadTableData(
+    state: MySqlTablePanelState,
+  ): Promise<readonly [readonly MySqlTableColumnMetadata[], MySqlTableRowPage]> {
+    if (state.tableNode.kind === "postgresqlTable") {
+      return Promise.all([
+        this.listPostgreSqlTableColumnsUseCase.execute(
+          state.tableNode.connection,
+          state.tableNode.databaseName,
+          state.tableNode.schemaName,
+          state.tableNode.tableName,
+        ),
+        this.listPostgreSqlTableRowPageUseCase.execute(
+          state.tableNode.connection,
+          state.tableNode.databaseName,
+          state.tableNode.schemaName,
+          state.tableNode.tableName,
+          state.pageIndex,
+          state.pageSize,
+          this.createQueryOptions(state),
+        ),
+      ]);
+    }
+
+    if (state.tableNode.kind === "sqlite3Table") {
+      return Promise.all([
+        this.listSqlite3TableColumnsUseCase.execute(
+          state.tableNode.connection,
+          state.tableNode.tableName,
+        ),
+        this.listSqlite3TableRowPageUseCase.execute(
+          state.tableNode.connection,
+          state.tableNode.tableName,
+          state.pageIndex,
+          state.pageSize,
+          this.createQueryOptions(state),
+        ),
+      ]);
+    }
+
+    return Promise.all([
+      this.listMySqlTableColumnsUseCase.execute(
+        state.tableNode.connection,
+        state.tableNode.schemaName,
+        state.tableNode.tableName,
+      ),
+      this.listMySqlTableRowPageUseCase.execute(
+        state.tableNode.connection,
+        state.tableNode.schemaName,
+        state.tableNode.tableName,
+        state.pageIndex,
+        state.pageSize,
+        this.createQueryOptions(state),
+      ),
+    ]);
+  }
+
+  /**
+   * 将当前面板状态转换为表数据查询选项。
+   *
+   * @param {MySqlTablePanelState} state 当前面板状态。
+   * @returns {MySqlTableQueryOptions} 排序和过滤查询选项。
+   */
+  private createQueryOptions(state: MySqlTablePanelState): MySqlTableQueryOptions {
+    const filterKeyword = state.filterKeyword.trim();
+    const hasFilterConditions = state.filterConditions.length > 0;
+    return {
+      filter:
+        filterKeyword.length > 0 || hasFilterConditions
+          ? {
+              keyword: filterKeyword,
+              conditions: state.filterConditions,
+            }
+          : undefined,
+      sort: state.sortColumnName
+        ? {
+            columnName: state.sortColumnName,
+            direction: state.sortDirection,
+          }
+        : undefined,
+    };
+  }
+
+  /**
+   * 为完整表名创建稳定的面板键。
+   *
+   * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
+   * @returns {string} 唯一的面板键。
+   */
+  private createPanelKey(tableNode: TableDataTreeNode): string {
+    if (tableNode.kind === "postgresqlTable") {
+      return `${tableNode.connection.id}:${tableNode.databaseName}:${tableNode.schemaName}:${tableNode.tableName}`;
+    }
+
+    if (tableNode.kind === "sqlite3Table") {
+      return `${tableNode.connection.id}:main:${tableNode.tableName}`;
+    }
+
+    return `${tableNode.connection.id}:${tableNode.schemaName}:${tableNode.tableName}`;
+  }
+
+  /**
+   * 从当前面板状态创建可保存到 Webview 的轻量状态。
+   *
+   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @returns {MySqlTablePanelSerializedState} 可由 VS Code 恢复的表数据页状态。
+   */
+  private createSerializedState(state: MySqlTablePanelState): MySqlTablePanelSerializedState {
+    return {
+      engine:
+        state.tableNode.kind === "postgresqlTable"
+          ? "postgresql"
+          : state.tableNode.kind === "sqlite3Table"
+            ? "sqlite3"
+            : "mysql",
+      connectionId: state.tableNode.connection.id,
+      databaseName:
+        state.tableNode.kind === "postgresqlTable" ? state.tableNode.databaseName : undefined,
+      schemaName: state.tableNode.schemaName,
+      tableName: state.tableNode.tableName,
+      pageIndex: state.pageIndex,
+      pageSize: state.pageSize,
+      filterKeyword: state.filterKeyword,
+      filterConditions: state.filterConditions,
+      sortColumnName: state.sortColumnName,
+      sortDirection: state.sortDirection,
+      hiddenColumnNames: Array.from(state.hiddenColumnNames),
+    };
+  }
+
+  /**
+   * 在表数据加载期间渲染临时加载视图。
+   *
+   * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
+   * @returns {string} 加载状态的 HTML 文档。
+   */
+  private renderLoadingHtml(tableNode: TableDataTreeNode): string {
+    const qualifiedName =
+      tableNode.kind === "postgresqlTable"
+        ? `${tableNode.databaseName}.${tableNode.schemaName}.${tableNode.tableName}`
+        : tableNode.kind === "sqlite3Table"
+          ? `${tableNode.connection.name}.${tableNode.tableName}`
+          : `${tableNode.schemaName}.${tableNode.tableName}`;
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8" />
@@ -1420,20 +1322,17 @@ export class MySqlTableDataPanel
 	<h2>正在加载 ${this.escapeHtml(qualifiedName)}...</h2>
 </body>
 </html>`;
-	}
+  }
 
-	/**
-	 * 为当前表面板渲染错误视图。
-	 *
-	 * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
-	 * @param {string} message 需要展示的错误消息。
-	 * @returns {string} 错误状态的 HTML 文档。
-	 */
-	private renderErrorHtml(
-		tableNode: TableDataTreeNode,
-		message: string
-	): string {
-		return `<!DOCTYPE html>
+  /**
+   * 为当前表面板渲染错误视图。
+   *
+   * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
+   * @param {string} message 需要展示的错误消息。
+   * @returns {string} 错误状态的 HTML 文档。
+   */
+  private renderErrorHtml(tableNode: TableDataTreeNode, message: string): string {
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8" />
@@ -1461,16 +1360,16 @@ export class MySqlTableDataPanel
 		<button onclick="acquireVsCodeApi().postMessage({ type: 'refresh' })">重试</button>
 </body>
 </html>`;
-	}
+  }
 
-	/**
-	 * 渲染 Webview 状态无法恢复时的错误页。
-	 *
-	 * @param {string} message 需要展示的恢复错误。
-	 * @returns {string} 错误状态的 HTML 文档。
-	 */
-	private renderRestoreErrorHtml(message: string): string {
-		return `<!DOCTYPE html>
+  /**
+   * 渲染 Webview 状态无法恢复时的错误页。
+   *
+   * @param {string} message 需要展示的恢复错误。
+   * @returns {string} 错误状态的 HTML 文档。
+   */
+  private renderRestoreErrorHtml(message: string): string {
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8" />
@@ -1493,121 +1392,102 @@ export class MySqlTableDataPanel
 	<p class="error">${this.escapeHtml(message)}</p>
 </body>
 </html>`;
-	}
+  }
 
-	/**
-	 * 渲染完整的表数据 HTML 文档。
-	 *
-	 * @param {MySqlTablePanelState} state 当前面板状态。
-	 * @param {readonly MySqlTableColumnMetadata[]} columns 当前选中表的字段元数据。
-	 * @param {MySqlTableRowPage} rowPage 当前选中表的分页行数据。
-	 * @returns {string} 渲染到 Webview 内的 HTML 文档。
-	 */
-	private renderTableHtml(
-		state: MySqlTablePanelState,
-		columns: readonly MySqlTableColumnMetadata[],
-		rowPage: MySqlTableRowPage
-	): string {
-		const tableNode = state.tableNode;
-		const isReadOnly = this.isReadOnlyTableNode(tableNode);
-		const hasPrimaryKey =
-			!isReadOnly && columns.some((column) => column.isPrimaryKey);
-		const readOnlyDisabled = isReadOnly ? ' disabled' : '';
-		const readOnlyTitle = isReadOnly ? 'PostgreSQL 表数据页暂时只支持读取' : '';
-		const breadcrumbTitle =
-			tableNode.kind === 'postgresqlTable'
-				? `${tableNode.connection.name} / ${tableNode.databaseName} / ${tableNode.schemaName} / ${tableNode.tableName}`
-				: tableNode.kind === 'sqlite3Table'
-					? `${tableNode.connection.name} / ${tableNode.tableName}`
-				: `${tableNode.connection.name} / ${tableNode.schemaName} / ${tableNode.tableName}`;
-		const databaseBreadcrumb =
-			tableNode.kind === 'postgresqlTable'
-				? `${this.renderIcon('arrow-right')}
+  /**
+   * 渲染完整的表数据 HTML 文档。
+   *
+   * @param {MySqlTablePanelState} state 当前面板状态。
+   * @param {readonly MySqlTableColumnMetadata[]} columns 当前选中表的字段元数据。
+   * @param {MySqlTableRowPage} rowPage 当前选中表的分页行数据。
+   * @returns {string} 渲染到 Webview 内的 HTML 文档。
+   */
+  private renderTableHtml(
+    state: MySqlTablePanelState,
+    columns: readonly MySqlTableColumnMetadata[],
+    rowPage: MySqlTableRowPage,
+  ): string {
+    const tableNode = state.tableNode;
+    const isReadOnly = this.isReadOnlyTableNode(tableNode);
+    const hasPrimaryKey = !isReadOnly && columns.some((column) => column.isPrimaryKey);
+    const readOnlyDisabled = isReadOnly ? " disabled" : "";
+    const readOnlyTitle = isReadOnly ? "PostgreSQL 表数据页暂时只支持读取" : "";
+    const breadcrumbTitle =
+      tableNode.kind === "postgresqlTable"
+        ? `${tableNode.connection.name} / ${tableNode.databaseName} / ${tableNode.schemaName} / ${tableNode.tableName}`
+        : tableNode.kind === "sqlite3Table"
+          ? `${tableNode.connection.name} / ${tableNode.tableName}`
+          : `${tableNode.connection.name} / ${tableNode.schemaName} / ${tableNode.tableName}`;
+    const databaseBreadcrumb =
+      tableNode.kind === "postgresqlTable"
+        ? `${this.renderIcon("arrow-right")}
 					<span>${this.escapeHtml(tableNode.databaseName)}</span>`
-				: '';
-		const columnHeaders =
-			columns.length === 0
-				? '<th class="empty-header">无字段</th>'
-				: columns
-						.map((column) => {
-							const sortDirection =
-								state.sortColumnName === column.name
-									? state.sortDirection
-									: undefined;
-							const hidden = state.hiddenColumnNames.has(column.name);
-							const title = [
-								column.dataType,
-								column.isPrimaryKey ? 'PK' : undefined,
-							]
-								.filter((item): item is string => item !== undefined)
-								.join(' / ');
-							return `<th data-column-name="${this.escapeHtml(column.name)}"${hidden ? ' hidden' : ''}>
+        : "";
+    const columnHeaders =
+      columns.length === 0
+        ? '<th class="empty-header">无字段</th>'
+        : columns
+            .map((column) => {
+              const sortDirection =
+                state.sortColumnName === column.name ? state.sortDirection : undefined;
+              const hidden = state.hiddenColumnNames.has(column.name);
+              const title = [column.dataType, column.isPrimaryKey ? "PK" : undefined]
+                .filter((item): item is string => item !== undefined)
+                .join(" / ");
+              return `<th data-column-name="${this.escapeHtml(column.name)}"${hidden ? " hidden" : ""}>
 				<div class="sort-field" data-sort-column="${this.escapeHtml(column.name)}" title="${this.escapeHtml(title)}">
 					<span>${this.escapeHtml(column.name)}</span>
 					<span class="sort-icons">
-						<span class="sort-icon up${sortDirection === 'desc' ? ' selected' : ''}"></span>
-						<span class="sort-icon down${sortDirection === 'asc' ? ' selected' : ''}"></span>
+						<span class="sort-icon up${sortDirection === "desc" ? " selected" : ""}"></span>
+						<span class="sort-icon down${sortDirection === "asc" ? " selected" : ""}"></span>
 					</span>
 				</div>
 			</th>`;
-						})
-						.join('');
+            })
+            .join("");
 
-		const rowsMarkup =
-			rowPage.rows.length === 0
-				? `<tr><td colspan="${Math.max(columns.length, 1)}" class="empty-cell">暂无数据</td></tr>`
-				: rowPage.rows
-						.map(
-							(row, rowIndex) =>
-								`<tr data-row-index="${rowIndex}">${
-									columns.length === 0
-										? '<td class="empty-cell">无字段</td>'
-										: columns
-												.map((column) =>
-													this.renderCell(
-														rowIndex,
-														column,
-														row[column.name] ?? null,
-														hasPrimaryKey,
-														state.hiddenColumnNames.has(column.name)
-													)
-												)
-												.join('')
-								}</tr>`
-						)
-						.join('');
-		const pageNumber = rowPage.pageIndex + 1;
-		const pageCount = Math.max(
-			1,
-			Math.ceil(rowPage.totalRowCount / rowPage.pageSize)
-		);
-		const columnVisibilityControls = columns
-			.map((column) => {
-				const checked = state.hiddenColumnNames.has(column.name)
-					? ''
-					: ' checked';
-				return `<label class="column-toggle">
+    const rowsMarkup =
+      rowPage.rows.length === 0
+        ? `<tr><td colspan="${Math.max(columns.length, 1)}" class="empty-cell">暂无数据</td></tr>`
+        : rowPage.rows
+            .map(
+              (row, rowIndex) =>
+                `<tr data-row-index="${rowIndex}">${
+                  columns.length === 0
+                    ? '<td class="empty-cell">无字段</td>'
+                    : columns
+                        .map((column) =>
+                          this.renderCell(
+                            rowIndex,
+                            column,
+                            row[column.name] ?? null,
+                            hasPrimaryKey,
+                            state.hiddenColumnNames.has(column.name),
+                          ),
+                        )
+                        .join("")
+                }</tr>`,
+            )
+            .join("");
+    const pageNumber = rowPage.pageIndex + 1;
+    const pageCount = Math.max(1, Math.ceil(rowPage.totalRowCount / rowPage.pageSize));
+    const columnVisibilityControls = columns
+      .map((column) => {
+        const checked = state.hiddenColumnNames.has(column.name) ? "" : " checked";
+        return `<label class="column-toggle">
 					<input type="checkbox" data-column-name="${this.escapeHtml(column.name)}"${checked} />
 					<span>${this.escapeHtml(column.name)}</span>
 				</label>`;
-				})
-				.join('');
-		const serializedState = this.serializeScriptValue(
-			this.createSerializedState(state)
-		);
-		const paginatedSql = this.serializeScriptValue(rowPage.sql);
-		const sqlWithoutPagination = this.serializeScriptValue(
-			rowPage.sqlWithoutPagination
-		);
-		const filterConditions = this.serializeScriptValue(
-			state.filterConditions
-		);
-		const filterColumnNames = this.serializeScriptValue(
-			columns.map((column) => column.name)
-		);
-		const iconSprite = this.renderIconSprite();
+      })
+      .join("");
+    const serializedState = this.serializeScriptValue(this.createSerializedState(state));
+    const paginatedSql = this.serializeScriptValue(rowPage.sql);
+    const sqlWithoutPagination = this.serializeScriptValue(rowPage.sqlWithoutPagination);
+    const filterConditions = this.serializeScriptValue(state.filterConditions);
+    const filterColumnNames = this.serializeScriptValue(columns.map((column) => column.name));
+    const iconSprite = this.renderIconSprite();
 
-		return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8" />
@@ -2076,38 +1956,38 @@ export class MySqlTableDataPanel
 		<header>
 			<nav title="${this.escapeHtml(breadcrumbTitle)}">
 				<span>${this.escapeHtml(tableNode.connection.name)}</span>
-				${this.renderIcon('arrow-right')}
+				${this.renderIcon("arrow-right")}
 				${databaseBreadcrumb}
 				<span>${this.escapeHtml(tableNode.schemaName)}</span>
-				${this.renderIcon('arrow-right')}
+				${this.renderIcon("arrow-right")}
 				<span class="active">${this.escapeHtml(tableNode.tableName)}</span>
 			</nav>
 		<div class="operations">
 			<div class="btns">
-				<button type="button" class="icon-btn" title="刷新" onclick="postAction('refresh')">${this.renderIcon('light')}</button>
-				<button type="button" class="icon-btn" title="搜索" onclick="showDialog('search')">${this.renderIcon('search')}</button>
-				<button type="button" class="icon-btn" title="字段选择" onclick="showDialog('fields')">${this.renderIcon('filter')}</button>
-				<button type="button" class="icon-btn" title="${isReadOnly ? this.escapeHtml(readOnlyTitle) : '插入'}" onclick="postAction('insertRow')"${readOnlyDisabled}>${this.renderIcon('add')}</button>
-				<button type="button" class="icon-btn" title="拷贝" id="copyButton" onclick="copyFocusedRow()" disabled>${this.renderIcon('copy')}</button>
-				<button type="button" class="icon-btn" title="保存" id="saveButton" onclick="saveEditedRows()" disabled>${this.renderIcon('save')}</button>
-				<button type="button" class="icon-btn" title="撤销全部" id="undoButton" onclick="undoEditedRows()" disabled>${this.renderIcon('undo')}</button>
-				<button type="button" class="icon-btn" title="删除" id="deleteButton" onclick="deleteFocusedRow()" disabled>${this.renderIcon('delete')}</button>
-				<button type="button" class="icon-btn" title="查看当前 sql" onclick="showDialog('sql')">${this.renderIcon('sql')}</button>
-				<button type="button" class="icon-btn" title="${isReadOnly ? 'PostgreSQL SQL 终端尚未支持' : '打开终端'}" onclick="postAction('openSqlTerminal')"${readOnlyDisabled}>${this.renderIcon('terminal')}</button>
+				<button type="button" class="icon-btn" title="刷新" onclick="postAction('refresh')">${this.renderIcon("light")}</button>
+				<button type="button" class="icon-btn" title="搜索" onclick="showDialog('search')">${this.renderIcon("search")}</button>
+				<button type="button" class="icon-btn" title="字段选择" onclick="showDialog('fields')">${this.renderIcon("filter")}</button>
+				<button type="button" class="icon-btn" title="${isReadOnly ? this.escapeHtml(readOnlyTitle) : "插入"}" onclick="postAction('insertRow')"${readOnlyDisabled}>${this.renderIcon("add")}</button>
+				<button type="button" class="icon-btn" title="拷贝" id="copyButton" onclick="copyFocusedRow()" disabled>${this.renderIcon("copy")}</button>
+				<button type="button" class="icon-btn" title="保存" id="saveButton" onclick="saveEditedRows()" disabled>${this.renderIcon("save")}</button>
+				<button type="button" class="icon-btn" title="撤销全部" id="undoButton" onclick="undoEditedRows()" disabled>${this.renderIcon("undo")}</button>
+				<button type="button" class="icon-btn" title="删除" id="deleteButton" onclick="deleteFocusedRow()" disabled>${this.renderIcon("delete")}</button>
+				<button type="button" class="icon-btn" title="查看当前 sql" onclick="showDialog('sql')">${this.renderIcon("sql")}</button>
+				<button type="button" class="icon-btn" title="${isReadOnly ? "PostgreSQL SQL 终端尚未支持" : "打开终端"}" onclick="postAction('openSqlTerminal')"${readOnlyDisabled}>${this.renderIcon("terminal")}</button>
 			</div>
 			<div class="pagination">
-				<button type="button" class="icon-btn" title="刷新" onclick="applyPagination()">${this.renderIcon('refresh')}</button>
+				<button type="button" class="icon-btn" title="刷新" onclick="applyPagination()">${this.renderIcon("refresh")}</button>
 				<span class="txt">每页</span>
 				<input id="pageSizeInput" class="page-input page-size" value="${rowPage.pageSize}" inputmode="numeric" />
 				<span class="txt">条记录，共 </span>
 				<span>${rowPage.totalRowCount}</span>
 				<span class="txt"> 条、</span>
 				<span>${pageCount}</span><span class="txt"> 页</span>
-				<button type="button" class="icon-btn big" title="第一页" onclick="goToPage(1)" ${pageNumber <= 1 ? 'disabled' : ''}>${this.renderIcon('arrow-left2')}</button>
-				<button type="button" class="icon-btn big" title="上一页" onclick="goToPage(${Math.max(1, pageNumber - 1)})" ${pageNumber <= 1 ? 'disabled' : ''}>${this.renderIcon('arrow-left')}</button>
+				<button type="button" class="icon-btn big" title="第一页" onclick="goToPage(1)" ${pageNumber <= 1 ? "disabled" : ""}>${this.renderIcon("arrow-left2")}</button>
+				<button type="button" class="icon-btn big" title="上一页" onclick="goToPage(${Math.max(1, pageNumber - 1)})" ${pageNumber <= 1 ? "disabled" : ""}>${this.renderIcon("arrow-left")}</button>
 				<input id="pageIndexInput" class="page-input" value="${pageNumber}" inputmode="numeric" />
-				<button type="button" class="icon-btn big" title="下一页" onclick="goToPage(${Math.min(pageCount, pageNumber + 1)})" ${pageNumber >= pageCount ? 'disabled' : ''}>${this.renderIcon('arrow-right')}</button>
-				<button type="button" class="icon-btn big" title="最后一页" onclick="goToPage(${pageCount})" ${pageNumber >= pageCount ? 'disabled' : ''}>${this.renderIcon('arrow-right2')}</button>
+				<button type="button" class="icon-btn big" title="下一页" onclick="goToPage(${Math.min(pageCount, pageNumber + 1)})" ${pageNumber >= pageCount ? "disabled" : ""}>${this.renderIcon("arrow-right")}</button>
+				<button type="button" class="icon-btn big" title="最后一页" onclick="goToPage(${pageCount})" ${pageNumber >= pageCount ? "disabled" : ""}>${this.renderIcon("arrow-right2")}</button>
 			</div>
 		</div>
 	</header>
@@ -2189,8 +2069,8 @@ export class MySqlTableDataPanel
 		const sqlWithoutPagination = ${sqlWithoutPagination};
 			const filterColumnNames = ${filterColumnNames};
 			let filterConditions = ${filterConditions};
-			const isReadOnly = ${isReadOnly ? 'true' : 'false'};
-			const hasPrimaryKey = ${hasPrimaryKey ? 'true' : 'false'};
+			const isReadOnly = ${isReadOnly ? "true" : "false"};
+			const hasPrimaryKey = ${hasPrimaryKey ? "true" : "false"};
 		const totalRowCount = ${rowPage.totalRowCount};
 		let focusedRowIndex = undefined;
 		const editing = {};
@@ -2682,48 +2562,46 @@ export class MySqlTableDataPanel
 	</script>
 </body>
 </html>`;
-	}
+  }
 
-	/**
-	 * 按旧 PPZ 表格结构渲染单个表格单元格。
-	 *
-	 * @param {number} rowIndex 当前页行索引。
-	 * @param {MySqlTableColumnMetadata} column 当前单元格所属字段元数据。
-	 * @param {string | number | boolean | null} value 待渲染的单元格值。
-	 * @param {boolean} canEditRow 当前表是否允许通过主键编辑行。
-	 * @param {boolean} hidden 当前字段是否初始隐藏。
-	 * @returns {string} HTML 表格单元格标记。
-	 */
-	private renderCell(
-		rowIndex: number,
-		column: MySqlTableColumnMetadata,
-		value: string | number | boolean | null,
-		canEditRow: boolean,
-		hidden: boolean
-	): string {
-		const displayValue = value === null ? '' : String(value);
-		const editable =
-			canEditRow &&
-			!column.isPrimaryKey &&
-			!column.extra.toLowerCase().includes('auto_increment');
+  /**
+   * 按旧 PPZ 表格结构渲染单个表格单元格。
+   *
+   * @param {number} rowIndex 当前页行索引。
+   * @param {MySqlTableColumnMetadata} column 当前单元格所属字段元数据。
+   * @param {string | number | boolean | null} value 待渲染的单元格值。
+   * @param {boolean} canEditRow 当前表是否允许通过主键编辑行。
+   * @param {boolean} hidden 当前字段是否初始隐藏。
+   * @returns {string} HTML 表格单元格标记。
+   */
+  private renderCell(
+    rowIndex: number,
+    column: MySqlTableColumnMetadata,
+    value: string | number | boolean | null,
+    canEditRow: boolean,
+    hidden: boolean,
+  ): string {
+    const displayValue = value === null ? "" : String(value);
+    const editable =
+      canEditRow && !column.isPrimaryKey && !column.extra.toLowerCase().includes("auto_increment");
 
-		return `<td
+    return `<td
 			data-row-index="${rowIndex}"
 			data-column-name="${this.escapeHtml(column.name)}"
 			data-original-value="${this.escapeHtml(displayValue)}"
 			title="${this.escapeHtml(`${column.name}: ${column.dataType}`)}"
-			${editable ? 'contenteditable="true"' : ''}
-			${hidden ? 'hidden' : ''}
+			${editable ? 'contenteditable="true"' : ""}
+			${hidden ? "hidden" : ""}
 		>${this.escapeHtml(displayValue)}</td>`;
-	}
+  }
 
-	/**
-	 * 渲染旧 PPZ iconfont 的 SVG symbol 子集。
-	 *
-	 * @returns {string} 当前表数据页工具栏所需的隐藏 SVG 符号。
-	 */
-	private renderIconSprite(): string {
-		return `<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  /**
+   * 渲染旧 PPZ iconfont 的 SVG symbol 子集。
+   *
+   * @returns {string} 当前表数据页工具栏所需的隐藏 SVG 符号。
+   */
+  private renderIconSprite(): string {
+    return `<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
 			<symbol id="icon-search" viewBox="0 0 1024 1024"><path d="M956.29141 864.626199 806.130436 705.068204c46.465265-72.432683 71.080895-160.022577 65.098647-252.750491-14.762215-229.339292-211.081463-403.244041-438.438611-388.447033C205.400578 78.668711 33.067628 276.605805 47.83189 505.930771c14.797008 229.405807 211.054857 403.307486 438.47238 388.512525 94.259804-6.135744 179.073468-43.763736 245.01532-102.06149l145.643078 154.744363c25.171286 20.206204 63.346747 18.111496 85.221964-4.709255C984.122269 919.6637 981.461673 884.818077 956.29141 864.626199zM477.945905 760.445442c-157.312862 10.117428-293.166993-109.276822-303.415404-266.750343-10.282181-157.375284 108.952434-293.200762 266.266319-303.31819 157.313885-10.123568 293.235554 109.304452 303.484989 266.663362C754.55785 614.530165 635.25979 750.322897 477.945905 760.445442z"></path></symbol>
 			<symbol id="icon-terminal" viewBox="0 0 1024 1024"><path d="M128 128h768a42.666667 42.666667 0 0 1 42.666667 42.666667v682.666666a42.666667 42.666667 0 0 1-42.666667 42.666667H128a42.666667 42.666667 0 0 1-42.666667-42.666667V170.666667a42.666667 42.666667 0 0 1 42.666667-42.666667z m384 512v85.333333h256v-85.333333h-256z m-153.002667-128l-120.661333 120.661333L298.666667 693.034667 479.701333 512 298.666667 330.965333 238.336 391.338667 358.997333 512z"></path></symbol>
 			<symbol id="icon-undo" viewBox="0 0 1024 1024"><path d="M884.451 455.595c-18.251-42.96-44.333-81.57-77.521-114.758s-71.797-59.269-114.758-77.521c-44.598-18.947-91.854-28.553-140.456-28.553H373.73c-0.93 0-1.852 0.031-2.772 0.07V86.666c0-17.787-21.505-26.695-34.083-14.117L116.843 292.581c-7.797 7.797-7.797 20.438 0 28.235l220.032 220.032c12.577 12.577 34.083 3.67 34.083-14.117V362.693c0.92 0.039 1.842 0.07 2.772 0.07h177.986c128.636 0 233.288 104.652 233.288 233.288 0 128.636-104.652 233.288-233.288 233.288H373.73c-35.346 0-64 28.653-64 64s28.654 64 64 64h177.986c48.603 0 95.858-9.606 140.456-28.554 42.961-18.251 81.57-44.333 114.758-77.521s59.27-71.797 77.521-114.758c18.947-44.598 28.554-91.854 28.554-140.456s-9.607-95.857-28.554-140.455z"></path></symbol>
@@ -2740,45 +2618,45 @@ export class MySqlTableDataPanel
 			<symbol id="icon-filter" viewBox="0 0 1024 1024"><path d="M825.6 117.333333H198.4C157.866667 117.333333 123.733333 151.466667 123.733333 192v4.266667c0 14.933333 6.4 32 17.066667 42.666666l256 302.933334v251.733333c0 12.8 6.4 23.466667 17.066667 27.733333l162.133333 81.066667 2.133333 2.133333c21.333333 8.533333 42.666667-6.4 42.666667-29.866666V541.866667l256-302.933334c27.733333-32 23.466667-78.933333-8.533333-104.533333-8.533333-10.666667-25.6-17.066667-42.666667-17.066667z"></path></symbol>
 			<symbol id="icon-light" viewBox="0 0 1024 1024"><path d="M893.6 371.68C888.672 359.744 876.96 352 864.032 352l-248.096 0 55.328-249.12c3.072-13.888-3.36-28.16-15.84-35.008s-27.968-4.704-38.016 5.408l-480 480c-9.152 9.152-11.904 22.976-6.944 34.944S147.104 608 160.032 608l242.304 0-112.384 308.992c-5.12 14.08 0.224 29.856 12.896 37.92 5.28 3.328 11.264 4.96 17.184 4.96 8.256 0 16.48-3.2 22.656-9.376l544-543.968C895.808 397.376 898.56 383.648 893.6 371.68z"></path></symbol>
 		</svg>`;
-	}
+  }
 
-	/**
-	 * 渲染旧 PPZ iconfont 图标引用。
-	 *
-	 * @param {string} iconId 旧 PPZ iconfont 中的图标标识。
-	 * @returns {string} SVG 图标引用。
-	 */
-	private renderIcon(iconId: string): string {
-		return `<svg class="icon" aria-hidden="true"><use href="#icon-${this.escapeHtml(iconId)}"></use></svg>`;
-	}
+  /**
+   * 渲染旧 PPZ iconfont 图标引用。
+   *
+   * @param {string} iconId 旧 PPZ iconfont 中的图标标识。
+   * @returns {string} SVG 图标引用。
+   */
+  private renderIcon(iconId: string): string {
+    return `<svg class="icon" aria-hidden="true"><use href="#icon-${this.escapeHtml(iconId)}"></use></svg>`;
+  }
 
-	/**
-	 * 转义用户可控文本以便安全渲染 HTML。
-	 *
-	 * @param {string} value 待转义的文本值。
-	 * @returns {string} 转义后的 HTML 字符串。
-	 */
-	private escapeHtml(value: string): string {
-		return value
-			.replaceAll('&', '&amp;')
-			.replaceAll('<', '&lt;')
-			.replaceAll('>', '&gt;')
-			.replaceAll('"', '&quot;')
-			.replaceAll("'", '&#39;');
-	}
+  /**
+   * 转义用户可控文本以便安全渲染 HTML。
+   *
+   * @param {string} value 待转义的文本值。
+   * @returns {string} 转义后的 HTML 字符串。
+   */
+  private escapeHtml(value: string): string {
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
 
-	/**
-	 * 将数据安全序列化为可嵌入 script 的 JSON。
-	 *
-	 * @param {unknown} value 需要嵌入 Webview 脚本的数据。
-	 * @returns {string} 经过转义的 JSON 字符串。
-	 */
-	private serializeScriptValue(value: unknown): string {
-		return JSON.stringify(value)
-			.replaceAll('<', '\\u003c')
-			.replaceAll('>', '\\u003e')
-			.replaceAll('&', '\\u0026')
-			.replaceAll('\u2028', '\\u2028')
-			.replaceAll('\u2029', '\\u2029');
-	}
+  /**
+   * 将数据安全序列化为可嵌入 script 的 JSON。
+   *
+   * @param {unknown} value 需要嵌入 Webview 脚本的数据。
+   * @returns {string} 经过转义的 JSON 字符串。
+   */
+  private serializeScriptValue(value: unknown): string {
+    return JSON.stringify(value)
+      .replaceAll("<", "\\u003c")
+      .replaceAll(">", "\\u003e")
+      .replaceAll("&", "\\u0026")
+      .replaceAll("\u2028", "\\u2028")
+      .replaceAll("\u2029", "\\u2029");
+  }
 }

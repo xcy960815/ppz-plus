@@ -6,12 +6,12 @@
 
 ## 分层边界
 
-| 层 | 职责 | 依赖方向 |
-|----|------|---------|
-| Presentation | VS Code 命令、Tree View、Webview Panel、通知、进度和 QuickPick | → Application |
-| Application | Use case 编排、参数校验、接口定义、多服务协调 | → Domain |
-| Domain | 纯数据模型、能力声明、导入导出模型、查询结果模型 | 无外部依赖 |
-| Infrastructure | 驱动封装、存储实现、文件系统、运行时适配 | → Domain，并实现 Application 接口 |
+| 层             | 职责                                                           | 依赖方向                          |
+| -------------- | -------------------------------------------------------------- | --------------------------------- |
+| Presentation   | VS Code 命令、Tree View、Webview Panel、通知、进度和 QuickPick | → Application                     |
+| Application    | Use case 编排、参数校验、接口定义、多服务协调                  | → Domain                          |
+| Domain         | 纯数据模型、能力声明、导入导出模型、查询结果模型               | 无外部依赖                        |
+| Infrastructure | 驱动封装、存储实现、文件系统、运行时适配                       | → Domain，并实现 Application 接口 |
 
 ## 核心规则
 

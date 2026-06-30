@@ -1,24 +1,24 @@
 import type {
-	SqlExportCapabilityCheck,
-	SqlExportCapabilityRequirement,
-} from '../../application/useCases/CheckSqlExportCapabilityUseCase';
-import type { DatabaseCapabilityKey } from '../../domain/capabilities/DatabaseCapabilityDeclaration';
-import type { DatabaseEngine } from '../../domain/database/DatabaseEngine';
-import type { SqlExportKind } from '../../domain/export/SqlExportDocument';
+  SqlExportCapabilityCheck,
+  SqlExportCapabilityRequirement,
+} from "../../application/useCases/CheckSqlExportCapabilityUseCase";
+import type { DatabaseCapabilityKey } from "../../domain/capabilities/DatabaseCapabilityDeclaration";
+import type { DatabaseEngine } from "../../domain/database/DatabaseEngine";
+import type { SqlExportKind } from "../../domain/export/SqlExportDocument";
 
 const ENGINE_LABELS: Record<DatabaseEngine, string> = {
-	mysql: 'MySQL',
-	postgresql: 'PostgreSQL',
-	sqlite3: 'SQLite3',
-	mssql: 'MSSQL',
-	cockroachdb: 'CockroachDB',
-	mariadb: 'MariaDB',
+  mysql: "MySQL",
+  postgresql: "PostgreSQL",
+  sqlite3: "SQLite3",
+  mssql: "MSSQL",
+  cockroachdb: "CockroachDB",
+  mariadb: "MariaDB",
 };
 
 const EXPORT_KIND_LABELS: Record<SqlExportKind, string> = {
-	ddl: 'DDL',
-	dml: 'DML',
-	both: 'DDL + DML',
+  ddl: "DDL",
+  dml: "DML",
+  both: "DDL + DML",
 };
 
 /**
@@ -28,23 +28,23 @@ const EXPORT_KIND_LABELS: Record<SqlExportKind, string> = {
  * @returns {string} 可直接展示给用户的能力差异提示。
  */
 export function formatSqlExportCapabilityMessage(
-	capabilityCheck: SqlExportCapabilityCheck
+  capabilityCheck: SqlExportCapabilityCheck,
 ): string {
-	const engineLabel = ENGINE_LABELS[capabilityCheck.engine];
-	const exportKindLabel = EXPORT_KIND_LABELS[capabilityCheck.kind];
+  const engineLabel = ENGINE_LABELS[capabilityCheck.engine];
+  const exportKindLabel = EXPORT_KIND_LABELS[capabilityCheck.kind];
 
-	if (!capabilityCheck.declarationFound) {
-		return `${engineLabel} 导出能力尚未声明，PPZ Plus 不会开始 ${exportKindLabel} 导出。`;
-	}
+  if (!capabilityCheck.declarationFound) {
+    return `${engineLabel} 导出能力尚未声明，PPZ Plus 不会开始 ${exportKindLabel} 导出。`;
+  }
 
-	const unsupportedRequirements = capabilityCheck.requirements.filter(
-		(requirement) => requirement.support !== 'supported'
-	);
-	const requirementSummary = unsupportedRequirements
-		.map(formatSqlExportCapabilityRequirement)
-		.join(', ');
+  const unsupportedRequirements = capabilityCheck.requirements.filter(
+    (requirement) => requirement.support !== "supported",
+  );
+  const requirementSummary = unsupportedRequirements
+    .map(formatSqlExportCapabilityRequirement)
+    .join(", ");
 
-	return `${engineLabel} ${exportKindLabel} 导出暂不可用：${requirementSummary}。PPZ Plus 不会开始导出。`;
+  return `${engineLabel} ${exportKindLabel} 导出暂不可用：${requirementSummary}。PPZ Plus 不会开始导出。`;
 }
 
 /**
@@ -53,12 +53,10 @@ export function formatSqlExportCapabilityMessage(
  * @param {SqlExportCapabilityRequirement} requirement 单项 SQL 导出能力要求。
  * @returns {string} 面向用户的能力状态片段。
  */
-function formatSqlExportCapabilityRequirement(
-	requirement: SqlExportCapabilityRequirement
-): string {
-	return `${formatCapabilityKey(requirement.key)} 为 ${formatCapabilitySupport(
-		requirement.support
-	)}`;
+function formatSqlExportCapabilityRequirement(requirement: SqlExportCapabilityRequirement): string {
+  return `${formatCapabilityKey(requirement.key)} 为 ${formatCapabilitySupport(
+    requirement.support,
+  )}`;
 }
 
 /**
@@ -67,18 +65,16 @@ function formatSqlExportCapabilityRequirement(
  * @param {SqlExportCapabilityRequirement['support']} support 原始能力支持状态。
  * @returns {string} 面向用户展示的支持状态。
  */
-function formatCapabilitySupport(
-	support: SqlExportCapabilityRequirement['support']
-): string {
-	if (support === 'supported') {
-		return '已支持';
-	}
+function formatCapabilitySupport(support: SqlExportCapabilityRequirement["support"]): string {
+  if (support === "supported") {
+    return "已支持";
+  }
 
-	if (support === 'unsupported') {
-		return '未支持';
-	}
+  if (support === "unsupported") {
+    return "未支持";
+  }
 
-	return '计划支持';
+  return "计划支持";
 }
 
 /**
@@ -88,13 +84,13 @@ function formatCapabilitySupport(
  * @returns {string} 面向用户的导出能力名称。
  */
 function formatCapabilityKey(key: DatabaseCapabilityKey): string {
-	if (key === 'exportDdl') {
-		return 'DDL 导出';
-	}
+  if (key === "exportDdl") {
+    return "DDL 导出";
+  }
 
-	if (key === 'exportDml') {
-		return 'DML 导出';
-	}
+  if (key === "exportDml") {
+    return "DML 导出";
+  }
 
-	return key;
+  return key;
 }

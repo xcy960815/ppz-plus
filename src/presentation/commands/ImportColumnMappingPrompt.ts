@@ -1,12 +1,12 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
-import type { CreateImportErrorReportUseCase } from '../../application/useCases/CreateImportErrorReportUseCase';
+import type { CreateImportErrorReportUseCase } from "../../application/useCases/CreateImportErrorReportUseCase";
 import type {
-	ImportColumnMapping,
-	ImportMappingPreparationResult,
-	ImportMappingPreparationSuccessResult,
-} from '../../domain/import/ImportColumnMapping';
-import { showImportErrorReport } from './ImportErrorReportPresenter';
+  ImportColumnMapping,
+  ImportMappingPreparationResult,
+  ImportMappingPreparationSuccessResult,
+} from "../../domain/import/ImportColumnMapping";
+import { showImportErrorReport } from "./ImportErrorReportPresenter";
 
 /**
  * 提示用户确认或配置导入字段映射。
@@ -19,44 +19,40 @@ import { showImportErrorReport } from './ImportErrorReportPresenter';
  * @returns {Promise<readonly ImportColumnMapping[] | undefined>} 用户确认后的字段映射；取消时返回空。
  */
 export async function promptImportColumnMapping(
-	createImportErrorReportUseCase: CreateImportErrorReportUseCase,
-	formatName: string,
-	fileName: string,
-	targetName: string,
-	preparation: ImportMappingPreparationResult
+  createImportErrorReportUseCase: CreateImportErrorReportUseCase,
+  formatName: string,
+  fileName: string,
+  targetName: string,
+  preparation: ImportMappingPreparationResult,
 ): Promise<readonly ImportColumnMapping[] | undefined> {
-	if (!preparation.success) {
-		await showImportErrorReport(createImportErrorReportUseCase, {
-			formatName,
-			fileName,
-			targetName,
-			stage: 'mapping',
-			errorMessage: preparation.errorMessage,
-		});
-		return undefined;
-	}
+  if (!preparation.success) {
+    await showImportErrorReport(createImportErrorReportUseCase, {
+      formatName,
+      fileName,
+      targetName,
+      stage: "mapping",
+      errorMessage: preparation.errorMessage,
+    });
+    return undefined;
+  }
 
-	const shouldConfigure = await shouldConfigureMapping(
-		formatName,
-		fileName,
-		preparation
-	);
-	if (shouldConfigure === undefined) {
-		await vscode.window.showInformationMessage(`已取消 ${formatName} 导入。`);
-		return undefined;
-	}
+  const shouldConfigure = await shouldConfigureMapping(formatName, fileName, preparation);
+  if (shouldConfigure === undefined) {
+    await vscode.window.showInformationMessage(`已取消 ${formatName} 导入。`);
+    return undefined;
+  }
 
-	if (!shouldConfigure) {
-		return preparation.defaultMappings;
-	}
+  if (!shouldConfigure) {
+    return preparation.defaultMappings;
+  }
 
-	return promptManualMappings(
-		createImportErrorReportUseCase,
-		formatName,
-		fileName,
-		targetName,
-		preparation
-	);
+  return promptManualMappings(
+    createImportErrorReportUseCase,
+    formatName,
+    fileName,
+    targetName,
+    preparation,
+  );
 }
 
 /**
@@ -68,40 +64,40 @@ export async function promptImportColumnMapping(
  * @returns {Promise<boolean | undefined>} 是否进入手动配置；取消时返回空。
  */
 async function shouldConfigureMapping(
-	formatName: string,
-	fileName: string,
-	preparation: ImportMappingPreparationSuccessResult
+  formatName: string,
+  fileName: string,
+  preparation: ImportMappingPreparationSuccessResult,
 ): Promise<boolean | undefined> {
-	const hasUnmappedSources = preparation.defaultMappings.some(
-		(mapping) => mapping.targetName === null
-	);
+  const hasUnmappedSources = preparation.defaultMappings.some(
+    (mapping) => mapping.targetName === null,
+  );
 
-	if (hasUnmappedSources) {
-		await vscode.window.showInformationMessage(
-			`${formatName} 文件“${fileName}”中有源字段未精确匹配到目标字段，请先配置字段映射。`
-		);
-		return true;
-	}
+  if (hasUnmappedSources) {
+    await vscode.window.showInformationMessage(
+      `${formatName} 文件“${fileName}”中有源字段未精确匹配到目标字段，请先配置字段映射。`,
+    );
+    return true;
+  }
 
-	const action = await vscode.window.showInformationMessage(
-		`是否使用“${fileName}”的默认 ${formatName} 字段映射？`,
-		{
-			modal: true,
-			detail: formatMappingDetail(preparation.defaultMappings),
-		},
-		'使用默认',
-		'手动配置'
-	);
+  const action = await vscode.window.showInformationMessage(
+    `是否使用“${fileName}”的默认 ${formatName} 字段映射？`,
+    {
+      modal: true,
+      detail: formatMappingDetail(preparation.defaultMappings),
+    },
+    "使用默认",
+    "手动配置",
+  );
 
-	if (action === '使用默认') {
-		return false;
-	}
+  if (action === "使用默认") {
+    return false;
+  }
 
-	if (action === '手动配置') {
-		return true;
-	}
+  if (action === "手动配置") {
+    return true;
+  }
 
-	return undefined;
+  return undefined;
 }
 
 /**
@@ -115,61 +111,55 @@ async function shouldConfigureMapping(
  * @returns {Promise<readonly ImportColumnMapping[] | undefined>} 手动配置后的字段映射；取消时返回空。
  */
 async function promptManualMappings(
-	createImportErrorReportUseCase: CreateImportErrorReportUseCase,
-	formatName: string,
-	fileName: string,
-	targetName: string,
-	preparation: ImportMappingPreparationSuccessResult
+  createImportErrorReportUseCase: CreateImportErrorReportUseCase,
+  formatName: string,
+  fileName: string,
+  targetName: string,
+  preparation: ImportMappingPreparationSuccessResult,
 ): Promise<readonly ImportColumnMapping[] | undefined> {
-	const mappings: ImportColumnMapping[] = [];
-	const usedTargetFields = new Set<string>();
+  const mappings: ImportColumnMapping[] = [];
+  const usedTargetFields = new Set<string>();
 
-	for (const sourceName of preparation.sourceFields) {
-		const defaultTarget = preparation.defaultMappings.find(
-			(mapping) => mapping.sourceName === sourceName
-		)?.targetName;
-		const selected = await vscode.window.showQuickPick(
-			createMappingItems(
-				preparation.targetFields,
-				usedTargetFields,
-				defaultTarget
-			),
-			{
-				title: `映射 ${formatName} 字段`,
-				placeHolder: `选择“${sourceName}”对应的目标字段`,
-			}
-		);
+  for (const sourceName of preparation.sourceFields) {
+    const defaultTarget = preparation.defaultMappings.find(
+      (mapping) => mapping.sourceName === sourceName,
+    )?.targetName;
+    const selected = await vscode.window.showQuickPick(
+      createMappingItems(preparation.targetFields, usedTargetFields, defaultTarget),
+      {
+        title: `映射 ${formatName} 字段`,
+        placeHolder: `选择“${sourceName}”对应的目标字段`,
+      },
+    );
 
-		if (!selected) {
-			await vscode.window.showInformationMessage(
-				`已取消 ${formatName} 导入。`
-			);
-			return undefined;
-		}
+    if (!selected) {
+      await vscode.window.showInformationMessage(`已取消 ${formatName} 导入。`);
+      return undefined;
+    }
 
-		if (selected.targetName !== null) {
-			usedTargetFields.add(selected.targetName);
-		}
+    if (selected.targetName !== null) {
+      usedTargetFields.add(selected.targetName);
+    }
 
-		mappings.push({
-			sourceName,
-			targetName: selected.targetName,
-		});
-	}
+    mappings.push({
+      sourceName,
+      targetName: selected.targetName,
+    });
+  }
 
-	if (mappings.every((mapping) => mapping.targetName === null)) {
-		await showImportErrorReport(createImportErrorReportUseCase, {
-			formatName,
-			fileName,
-			targetName,
-			stage: 'mapping',
-			errorMessage: '至少需要映射一个导入字段。',
-			mappings,
-		});
-		return undefined;
-	}
+  if (mappings.every((mapping) => mapping.targetName === null)) {
+    await showImportErrorReport(createImportErrorReportUseCase, {
+      formatName,
+      fileName,
+      targetName,
+      stage: "mapping",
+      errorMessage: "至少需要映射一个导入字段。",
+      mappings,
+    });
+    return undefined;
+  }
 
-	return mappings;
+  return mappings;
 }
 
 /**
@@ -181,28 +171,27 @@ async function promptManualMappings(
  * @returns {Array<vscode.QuickPickItem &} QuickPick 可展示的选项。
  */
 function createMappingItems(
-	targetFields: readonly string[],
-	usedTargetFields: ReadonlySet<string>,
-	defaultTarget: string | null | undefined
+  targetFields: readonly string[],
+  usedTargetFields: ReadonlySet<string>,
+  defaultTarget: string | null | undefined,
 ): Array<vscode.QuickPickItem & { readonly targetName: string | null }> {
-	const availableTargets = targetFields.filter(
-		(targetField) =>
-			!usedTargetFields.has(targetField) || targetField === defaultTarget
-	);
-	const targetItems = availableTargets.map((targetField) => ({
-		label: targetField,
-		description: targetField === defaultTarget ? '默认匹配' : undefined,
-		targetName: targetField,
-	}));
+  const availableTargets = targetFields.filter(
+    (targetField) => !usedTargetFields.has(targetField) || targetField === defaultTarget,
+  );
+  const targetItems = availableTargets.map((targetField) => ({
+    label: targetField,
+    description: targetField === defaultTarget ? "默认匹配" : undefined,
+    targetName: targetField,
+  }));
 
-	return [
-		...targetItems,
-		{
-			label: '跳过此字段',
-			description: '不导入这个源字段',
-			targetName: null,
-		},
-	];
+  return [
+    ...targetItems,
+    {
+      label: "跳过此字段",
+      description: "不导入这个源字段",
+      targetName: null,
+    },
+  ];
 }
 
 /**
@@ -211,13 +200,8 @@ function createMappingItems(
  * @param {readonly ImportColumnMapping[]} mappings 默认字段映射。
  * @returns {string} 可展示的字段映射文本。
  */
-function formatMappingDetail(
-	mappings: readonly ImportColumnMapping[]
-): string {
-	return mappings
-		.map(
-			(mapping) =>
-				`${mapping.sourceName} -> ${mapping.targetName ?? '（跳过）'}`
-		)
-		.join('\n');
+function formatMappingDetail(mappings: readonly ImportColumnMapping[]): string {
+  return mappings
+    .map((mapping) => `${mapping.sourceName} -> ${mapping.targetName ?? "（跳过）"}`)
+    .join("\n");
 }

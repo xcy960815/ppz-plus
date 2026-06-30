@@ -1,7 +1,4 @@
-import type {
-	TableImportResult,
-	TableImportTarget,
-} from './TableImportResult';
+import type { TableImportResult, TableImportTarget } from "./TableImportResult";
 
 /**
  * 描述 CSV 文件导入的目标表。

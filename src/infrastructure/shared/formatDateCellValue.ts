@@ -5,21 +5,21 @@
  * @returns {string} 面向 SQL 结果表展示的本地时间字符串。
  */
 export function formatDateCellValue(value: Date): string {
-	return [
-		padDatePart(value.getFullYear(), 4),
-		'-',
-		padDatePart(value.getMonth() + 1, 2),
-		'-',
-		padDatePart(value.getDate(), 2),
-		' ',
-		padDatePart(value.getHours(), 2),
-		':',
-		padDatePart(value.getMinutes(), 2),
-		':',
-		padDatePart(value.getSeconds(), 2),
-		'.',
-		padDatePart(value.getMilliseconds(), 3),
-	].join('');
+  return [
+    padDatePart(value.getFullYear(), 4),
+    "-",
+    padDatePart(value.getMonth() + 1, 2),
+    "-",
+    padDatePart(value.getDate(), 2),
+    " ",
+    padDatePart(value.getHours(), 2),
+    ":",
+    padDatePart(value.getMinutes(), 2),
+    ":",
+    padDatePart(value.getSeconds(), 2),
+    ".",
+    padDatePart(value.getMilliseconds(), 3),
+  ].join("");
 }
 
 /**
@@ -30,5 +30,5 @@ export function formatDateCellValue(value: Date): string {
  * @returns {string} 补零后的数字片段。
  */
 function padDatePart(value: number, width: number): string {
-	return String(value).padStart(width, '0');
+  return String(value).padStart(width, "0");
 }

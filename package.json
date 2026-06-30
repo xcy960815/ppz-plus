@@ -501,13 +501,24 @@
     "watch": "tsc -watch -p ./",
     "pretest": "pnpm compile && pnpm lint",
     "lint": "eslint src",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vscode-test",
     "release": "standard-version",
     "release:patch": "standard-version --release-as patch",
     "release:minor": "standard-version --release-as minor",
     "release:major": "standard-version --release-as major",
     "release:dry": "standard-version --dry-run",
-    "changelog": "standard-version --skip.bump --skip.commit --skip.tag"
+    "changelog": "standard-version --skip.bump --skip.commit --skip.tag",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,js,mjs,cjs,json,md}": [
+      "prettier --write"
+    ],
+    "*.ts": [
+      "eslint --fix"
+    ]
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -517,6 +528,10 @@
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.0.0",
     "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.1",
     "standard-version": "^9.5.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.1"

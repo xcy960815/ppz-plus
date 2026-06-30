@@ -1,36 +1,33 @@
 // See https://go.microsoft.com/fwlink/?LinkId=733558
 // for the documentation about the tasks.json format
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "pnpm: watch",
-			"type": "shell",
-			"command": "pnpm",
-			"args": [
-				"run",
-				"watch"
-			],
-			"problemMatcher": {
-				"owner": "typescript",
-				"fileLocation": "relative",
-				"pattern": "$tsc",
-				"background": {
-					"activeOnStart": true,
-					"beginsPattern": ".*Starting compilation in watch mode.*",
-					"endsPattern": ".*Found [0-9]+ errors?\\. Watching for file changes\\."
-				}
-			},
-			"isBackground": true,
-			"presentation": {
-				"reveal": "silent",
-				"panel": "dedicated",
-				"clear": true
-			},
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "pnpm: watch",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["run", "watch"],
+      "problemMatcher": {
+        "owner": "typescript",
+        "fileLocation": "relative",
+        "pattern": "$tsc",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*Starting compilation in watch mode.*",
+          "endsPattern": ".*Found [0-9]+ errors?\\. Watching for file changes\\."
+        }
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
 }

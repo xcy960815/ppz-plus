@@ -1,259 +1,244 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
-import type { ExecuteMySqlSqlUseCase } from '../../application/useCases/ExecuteMySqlSqlUseCase';
-import type { ListStoredConnectionsUseCase } from '../../application/useCases/ListStoredConnectionsUseCase';
+import type { ExecuteMySqlSqlUseCase } from "../../application/useCases/ExecuteMySqlSqlUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
 import type {
-	ConnectionConfig,
-	MysqlConnectionConfig,
-} from '../../domain/connections/ConnectionConfig';
-import type { SqlExecutionResult } from '../../domain/query/SqlExecutionResult';
-import type { ExtensionActivationParticipant } from '../bootstrap/ExtensionActivationParticipant';
-import { SqlExecutionResultRenderer } from './SqlExecutionResultRenderer';
-import type { MySqlSqlTerminalWebviewMessage } from './MySqlSqlTerminalWebviewMessage';
+  ConnectionConfig,
+  MysqlConnectionConfig,
+} from "../../domain/connections/ConnectionConfig";
+import type { SqlExecutionResult } from "../../domain/query/SqlExecutionResult";
+import type { ExtensionActivationParticipant } from "../bootstrap/ExtensionActivationParticipant";
+import { SqlExecutionResultRenderer } from "./SqlExecutionResultRenderer";
+import type { MySqlSqlTerminalWebviewMessage } from "./MySqlSqlTerminalWebviewMessage";
 
 /**
  * 保存 MySQL SQL 终端面板的可变状态。
  */
 interface MySqlSqlTerminalPanelState {
-	readonly panel: vscode.WebviewPanel;
-	selectedConnectionId?: string;
-	sql: string;
-	result?: SqlExecutionResult;
+  readonly panel: vscode.WebviewPanel;
+  selectedConnectionId?: string;
+  sql: string;
+  result?: SqlExecutionResult;
 }
 
 /**
  * 保存 MySQL SQL 终端可由 VS Code 恢复的轻量状态。
  */
 interface MySqlSqlTerminalSerializedState {
-	readonly selectedConnectionId?: string;
-	readonly sql: string;
+  readonly selectedConnectionId?: string;
+  readonly sql: string;
 }
 
 /**
  * 管理 MySQL SQL 终端面板。
  */
 export class MySqlSqlTerminalPanel
-	implements ExtensionActivationParticipant, vscode.WebviewPanelSerializer
+  implements ExtensionActivationParticipant, vscode.WebviewPanelSerializer
 {
-	/**
-	 * 保存 SQL 终端 Webview 的 VS Code viewType。
-	 */
-	private static readonly viewType = 'ppzPlus.mysqlSqlTerminal';
+  /**
+   * 保存 SQL 终端 Webview 的 VS Code viewType。
+   */
+  private static readonly viewType = "ppzPlus.mysqlSqlTerminal";
 
-	/**
-	 * 渲染通用 SQL 执行结果区域。
-	 */
-	private readonly resultRenderer = new SqlExecutionResultRenderer();
+  /**
+   * 渲染通用 SQL 执行结果区域。
+   */
+  private readonly resultRenderer = new SqlExecutionResultRenderer();
 
-	/**
-	 * 保存当前已打开的 SQL 终端面板。
-	 */
-	private panelState?: MySqlSqlTerminalPanelState;
+  /**
+   * 保存当前已打开的 SQL 终端面板。
+   */
+  private panelState?: MySqlSqlTerminalPanelState;
 
-	/**
-	 * 创建 MySQL SQL 终端面板管理器。
-	 *
-	 * @param listStoredConnectionsUseCase 用于列出已保存连接的用例。
-	 * @param executeMySqlSqlUseCase 用于执行 MySQL SQL 的用例。
-	 */
-	public constructor(
-		private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
-		private readonly executeMySqlSqlUseCase: ExecuteMySqlSqlUseCase
-	) {}
+  /**
+   * 创建 MySQL SQL 终端面板管理器。
+   *
+   * @param listStoredConnectionsUseCase 用于列出已保存连接的用例。
+   * @param executeMySqlSqlUseCase 用于执行 MySQL SQL 的用例。
+   */
+  public constructor(
+    private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
+    private readonly executeMySqlSqlUseCase: ExecuteMySqlSqlUseCase,
+  ) {}
 
-	/**
-	 * 注册 SQL 终端 Webview 恢复器。
-	 *
-	 * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
-	 */
-	public activate(context: vscode.ExtensionContext): void {
-		context.subscriptions.push(
-			vscode.window.registerWebviewPanelSerializer(
-				MySqlSqlTerminalPanel.viewType,
-				this
-			)
-		);
-	}
+  /**
+   * 注册 SQL 终端 Webview 恢复器。
+   *
+   * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
+   */
+  public activate(context: vscode.ExtensionContext): void {
+    context.subscriptions.push(
+      vscode.window.registerWebviewPanelSerializer(MySqlSqlTerminalPanel.viewType, this),
+    );
+  }
 
-	/**
-	 * 从 VS Code 保存的 Webview 状态恢复 SQL 终端面板。
-	 *
-	 * @param {vscode.WebviewPanel} panel VS Code 恢复出来的 Webview 面板。
-	 * @param {unknown} serializedState Webview 前端保存的轻量状态。
-	 */
-	public async deserializeWebviewPanel(
-		panel: vscode.WebviewPanel,
-		serializedState: unknown
-	): Promise<void> {
-		panel.webview.options = {
-			enableScripts: true,
-		};
-		const restoredState = this.parseSerializedState(serializedState);
-		const state: MySqlSqlTerminalPanelState = {
-			panel,
-			selectedConnectionId: restoredState.selectedConnectionId,
-			sql: restoredState.sql,
-		};
+  /**
+   * 从 VS Code 保存的 Webview 状态恢复 SQL 终端面板。
+   *
+   * @param {vscode.WebviewPanel} panel VS Code 恢复出来的 Webview 面板。
+   * @param {unknown} serializedState Webview 前端保存的轻量状态。
+   */
+  public async deserializeWebviewPanel(
+    panel: vscode.WebviewPanel,
+    serializedState: unknown,
+  ): Promise<void> {
+    panel.webview.options = {
+      enableScripts: true,
+    };
+    const restoredState = this.parseSerializedState(serializedState);
+    const state: MySqlSqlTerminalPanelState = {
+      panel,
+      selectedConnectionId: restoredState.selectedConnectionId,
+      sql: restoredState.sql,
+    };
 
-		this.panelState = state;
-		this.registerPanelHandlers(state);
-		await this.render(state);
-	}
+    this.panelState = state;
+    this.registerPanelHandlers(state);
+    await this.render(state);
+  }
 
-	/**
-	 * 打开或显示 MySQL SQL 终端。
-	 *
-	 * @param {MysqlConnectionConfig} initialConnection 可选的初始选中连接。
-	 * @param {string} initialSql 可选的初始 SQL 文本。
-	 */
-	public async open(
-		initialConnection?: MysqlConnectionConfig,
-		initialSql?: string
-	): Promise<void> {
-		if (this.panelState) {
-			this.panelState.panel.reveal(vscode.ViewColumn.Active);
-			if (initialConnection) {
-				this.panelState.selectedConnectionId = initialConnection.id;
-			}
-			if (initialSql !== undefined) {
-				this.panelState.sql = initialSql;
-				this.panelState.result = undefined;
-			}
-			await this.render(this.panelState);
-			return;
-		}
+  /**
+   * 打开或显示 MySQL SQL 终端。
+   *
+   * @param {MysqlConnectionConfig} initialConnection 可选的初始选中连接。
+   * @param {string} initialSql 可选的初始 SQL 文本。
+   */
+  public async open(initialConnection?: MysqlConnectionConfig, initialSql?: string): Promise<void> {
+    if (this.panelState) {
+      this.panelState.panel.reveal(vscode.ViewColumn.Active);
+      if (initialConnection) {
+        this.panelState.selectedConnectionId = initialConnection.id;
+      }
+      if (initialSql !== undefined) {
+        this.panelState.sql = initialSql;
+        this.panelState.result = undefined;
+      }
+      await this.render(this.panelState);
+      return;
+    }
 
-		const panel = vscode.window.createWebviewPanel(
-			MySqlSqlTerminalPanel.viewType,
-			'MySQL SQL 终端',
-			vscode.ViewColumn.Active,
-			{
-				enableScripts: true,
-				retainContextWhenHidden: true,
-			}
-		);
-		const state: MySqlSqlTerminalPanelState = {
-			panel,
-			selectedConnectionId: initialConnection?.id,
-			sql: initialSql ?? '',
-		};
+    const panel = vscode.window.createWebviewPanel(
+      MySqlSqlTerminalPanel.viewType,
+      "MySQL SQL 终端",
+      vscode.ViewColumn.Active,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+      },
+    );
+    const state: MySqlSqlTerminalPanelState = {
+      panel,
+      selectedConnectionId: initialConnection?.id,
+      sql: initialSql ?? "",
+    };
 
-		this.panelState = state;
-		this.registerPanelHandlers(state);
+    this.panelState = state;
+    this.registerPanelHandlers(state);
 
-		await this.render(state);
-	}
+    await this.render(state);
+  }
 
-	/**
-	 * 为 SQL 终端面板注册生命周期和消息处理。
-	 *
-	 * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
-	 */
-	private registerPanelHandlers(state: MySqlSqlTerminalPanelState): void {
-		state.panel.onDidDispose(() => {
-			if (this.panelState?.panel === state.panel) {
-				this.panelState = undefined;
-			}
-		});
-		state.panel.webview.onDidReceiveMessage(
-			async (message: MySqlSqlTerminalWebviewMessage) => {
-				await this.handleWebviewMessage(state, message);
-			}
-		);
-	}
+  /**
+   * 为 SQL 终端面板注册生命周期和消息处理。
+   *
+   * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
+   */
+  private registerPanelHandlers(state: MySqlSqlTerminalPanelState): void {
+    state.panel.onDidDispose(() => {
+      if (this.panelState?.panel === state.panel) {
+        this.panelState = undefined;
+      }
+    });
+    state.panel.webview.onDidReceiveMessage(async (message: MySqlSqlTerminalWebviewMessage) => {
+      await this.handleWebviewMessage(state, message);
+    });
+  }
 
-	/**
-	 * 处理 SQL 终端 Webview 动作。
-	 *
-	 * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
-	 * @param {MySqlSqlTerminalWebviewMessage} message Webview 发出的消息。
-	 */
-	private async handleWebviewMessage(
-		state: MySqlSqlTerminalPanelState,
-		message: MySqlSqlTerminalWebviewMessage
-	): Promise<void> {
-		if (message.type !== 'execute') {
-			return;
-		}
+  /**
+   * 处理 SQL 终端 Webview 动作。
+   *
+   * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
+   * @param {MySqlSqlTerminalWebviewMessage} message Webview 发出的消息。
+   */
+  private async handleWebviewMessage(
+    state: MySqlSqlTerminalPanelState,
+    message: MySqlSqlTerminalWebviewMessage,
+  ): Promise<void> {
+    if (message.type !== "execute") {
+      return;
+    }
 
-		state.selectedConnectionId = message.connectionId;
-		state.sql = message.sql;
-		state.result = undefined;
-		state.panel.webview.html = await this.renderHtml(state, true);
+    state.selectedConnectionId = message.connectionId;
+    state.sql = message.sql;
+    state.result = undefined;
+    state.panel.webview.html = await this.renderHtml(state, true);
 
-		const connections = await this.listMySqlConnections();
-		const selectedConnection = connections.find(
-			(connection) => connection.id === message.connectionId
-		);
+    const connections = await this.listMySqlConnections();
+    const selectedConnection = connections.find(
+      (connection) => connection.id === message.connectionId,
+    );
 
-		if (!selectedConnection) {
-			state.result = {
-				sql: message.sql,
-				success: false,
-				isQuery: false,
-				fields: [],
-				rows: [],
-				affectedRows: null,
-				durationMs: 0,
-				resultSets: [],
-				errorMessage: '未找到已选择的 MySQL 连接。',
-			};
-			await this.render(state);
-			return;
-		}
+    if (!selectedConnection) {
+      state.result = {
+        sql: message.sql,
+        success: false,
+        isQuery: false,
+        fields: [],
+        rows: [],
+        affectedRows: null,
+        durationMs: 0,
+        resultSets: [],
+        errorMessage: "未找到已选择的 MySQL 连接。",
+      };
+      await this.render(state);
+      return;
+    }
 
-		state.result = await this.executeMySqlSqlUseCase.execute(
-			selectedConnection,
-			message.sql
-		);
-		await this.render(state);
-	}
+    state.result = await this.executeMySqlSqlUseCase.execute(selectedConnection, message.sql);
+    await this.render(state);
+  }
 
-	/**
-	 * 渲染当前 SQL 终端面板。
-	 *
-	 * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
-	 */
-	private async render(state: MySqlSqlTerminalPanelState): Promise<void> {
-		state.panel.title = 'MySQL SQL 终端';
-		state.panel.webview.html = await this.renderHtml(state, false);
-	}
+  /**
+   * 渲染当前 SQL 终端面板。
+   *
+   * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
+   */
+  private async render(state: MySqlSqlTerminalPanelState): Promise<void> {
+    state.panel.title = "MySQL SQL 终端";
+    state.panel.webview.html = await this.renderHtml(state, false);
+  }
 
-	/**
-	 * 创建 SQL 终端 Webview HTML。
-	 *
-	 * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
-	 * @param {boolean} isExecuting 是否正在执行 SQL。
-	 * @returns {Promise<string>} Webview HTML 文档。
-	 */
-	private async renderHtml(
-		state: MySqlSqlTerminalPanelState,
-		isExecuting: boolean
-	): Promise<string> {
-		const connections = await this.listMySqlConnections();
-		const selectedConnectionId =
-			state.selectedConnectionId ?? connections[0]?.id ?? '';
-		const connectionOptions = connections
-			.map((connection) => {
-				const selected =
-					connection.id === selectedConnectionId ? ' selected' : '';
-				return `<option value="${this.escapeHtmlAttribute(
-					connection.id
-				)}"${selected}>${this.escapeHtml(
-					this.describeConnection(connection)
-				)}</option>`;
-			})
-			.join('');
-		const resultMarkup = state.result
-			? this.resultRenderer.render(state.result)
-			: '<div class="empty-result">尚未执行 SQL。</div>';
-		const disabled = connections.length === 0 || isExecuting ? ' disabled' : '';
-		const serializedState = this.serializeScriptValue({
-			selectedConnectionId,
-			sql: state.sql,
-		} satisfies MySqlSqlTerminalSerializedState);
+  /**
+   * 创建 SQL 终端 Webview HTML。
+   *
+   * @param {MySqlSqlTerminalPanelState} state 当前面板状态。
+   * @param {boolean} isExecuting 是否正在执行 SQL。
+   * @returns {Promise<string>} Webview HTML 文档。
+   */
+  private async renderHtml(
+    state: MySqlSqlTerminalPanelState,
+    isExecuting: boolean,
+  ): Promise<string> {
+    const connections = await this.listMySqlConnections();
+    const selectedConnectionId = state.selectedConnectionId ?? connections[0]?.id ?? "";
+    const connectionOptions = connections
+      .map((connection) => {
+        const selected = connection.id === selectedConnectionId ? " selected" : "";
+        return `<option value="${this.escapeHtmlAttribute(
+          connection.id,
+        )}"${selected}>${this.escapeHtml(this.describeConnection(connection))}</option>`;
+      })
+      .join("");
+    const resultMarkup = state.result
+      ? this.resultRenderer.render(state.result)
+      : '<div class="empty-result">尚未执行 SQL。</div>';
+    const disabled = connections.length === 0 || isExecuting ? " disabled" : "";
+    const serializedState = this.serializeScriptValue({
+      selectedConnectionId,
+      sql: state.sql,
+    } satisfies MySqlSqlTerminalSerializedState);
 
-		return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 	<meta charset="UTF-8" />
@@ -426,15 +411,15 @@ export class MySqlSqlTerminalPanel
 			<div>
 				<h1>MySQL SQL 终端</h1>
 				<div class="subtitle">${this.escapeHtml(
-					this.describeSelectedConnection(connections, selectedConnectionId)
-				)}</div>
+          this.describeSelectedConnection(connections, selectedConnectionId),
+        )}</div>
 			</div>
-			<div class="meta">${isExecuting ? '执行中...' : '就绪'}</div>
+			<div class="meta">${isExecuting ? "执行中..." : "就绪"}</div>
 		</div>
 		<div class="form">
 			<label>
 				连接
-				<select id="connection" ${connections.length === 0 ? 'disabled' : ''}>
+				<select id="connection" ${connections.length === 0 ? "disabled" : ""}>
 					${connectionOptions}
 				</select>
 			</label>
@@ -449,7 +434,7 @@ export class MySqlSqlTerminalPanel
 				</span>
 			</div>
 		</div>
-		${connections.length === 0 ? '<p class="error">暂无已保存的 MySQL 连接。</p>' : ''}
+		${connections.length === 0 ? '<p class="error">暂无已保存的 MySQL 连接。</p>' : ""}
 		<section>
 			${resultMarkup}
 		</section>
@@ -491,132 +476,124 @@ export class MySqlSqlTerminalPanel
 	</script>
 </body>
 </html>`;
-	}
+  }
 
-	/**
-	 * 解析 VS Code 保存的 SQL 终端 Webview 状态。
-	 *
-	 * @param {unknown} value 原始恢复状态。
-	 * @returns {MySqlSqlTerminalSerializedState} 可用于重新渲染的 SQL 终端状态。
-	 */
-	private parseSerializedState(
-		value: unknown
-	): MySqlSqlTerminalSerializedState {
-		if (!value || typeof value !== 'object' || Array.isArray(value)) {
-			return {
-				sql: '',
-			};
-		}
+  /**
+   * 解析 VS Code 保存的 SQL 终端 Webview 状态。
+   *
+   * @param {unknown} value 原始恢复状态。
+   * @returns {MySqlSqlTerminalSerializedState} 可用于重新渲染的 SQL 终端状态。
+   */
+  private parseSerializedState(value: unknown): MySqlSqlTerminalSerializedState {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return {
+        sql: "",
+      };
+    }
 
-		const selectedConnectionId = Reflect.get(value, 'selectedConnectionId');
-		const sql = Reflect.get(value, 'sql');
+    const state = value as Record<string, unknown>;
+    const selectedConnectionId = state.selectedConnectionId;
+    const sql = state.sql;
 
-		return {
-			selectedConnectionId:
-				typeof selectedConnectionId === 'string'
-					? selectedConnectionId
-					: undefined,
-			sql: typeof sql === 'string' ? sql : '',
-		};
-	}
+    return {
+      selectedConnectionId:
+        typeof selectedConnectionId === "string" ? selectedConnectionId : undefined,
+      sql: typeof sql === "string" ? sql : "",
+    };
+  }
 
-	/**
-	 * 读取当前保存的 MySQL 连接。
-	 *
-	 * @returns {Promise<readonly MysqlConnectionConfig[]>} MySQL 连接配置列表。
-	 */
-	private async listMySqlConnections(): Promise<readonly MysqlConnectionConfig[]> {
-		const connections = await this.listStoredConnectionsUseCase.execute();
-		return connections.filter(
-			(connection): connection is MysqlConnectionConfig =>
-				this.isMySqlConnection(connection)
-		);
-	}
+  /**
+   * 读取当前保存的 MySQL 连接。
+   *
+   * @returns {Promise<readonly MysqlConnectionConfig[]>} MySQL 连接配置列表。
+   */
+  private async listMySqlConnections(): Promise<readonly MysqlConnectionConfig[]> {
+    const connections = await this.listStoredConnectionsUseCase.execute();
+    return connections.filter((connection): connection is MysqlConnectionConfig =>
+      this.isMySqlConnection(connection),
+    );
+  }
 
-	/**
-	 * 判断连接配置是否为 MySQL 连接。
-	 *
-	 * @param {ConnectionConfig} connection 待检查的连接配置。
-	 * @returns {connection is MysqlConnectionConfig} 是否为 MySQL 连接。
-	 */
-	private isMySqlConnection(
-		connection: ConnectionConfig
-	): connection is MysqlConnectionConfig {
-		return connection.engine === 'mysql';
-	}
+  /**
+   * 判断连接配置是否为 MySQL 连接。
+   *
+   * @param {ConnectionConfig} connection 待检查的连接配置。
+   * @returns {connection is MysqlConnectionConfig} 是否为 MySQL 连接。
+   */
+  private isMySqlConnection(connection: ConnectionConfig): connection is MysqlConnectionConfig {
+    return connection.engine === "mysql";
+  }
 
-	/**
-	 * 为连接选择框创建用户可读描述。
-	 *
-	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
-	 * @returns {string} 连接描述文本。
-	 */
-	private describeConnection(connection: MysqlConnectionConfig): string {
-		if (connection.mode === 'parameters') {
-			const database = connection.database ? `/${connection.database}` : '';
-			return `${connection.name} (${connection.host}:${connection.port}${database})`;
-		}
+  /**
+   * 为连接选择框创建用户可读描述。
+   *
+   * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+   * @returns {string} 连接描述文本。
+   */
+  private describeConnection(connection: MysqlConnectionConfig): string {
+    if (connection.mode === "parameters") {
+      const database = connection.database ? `/${connection.database}` : "";
+      return `${connection.name} (${connection.host}:${connection.port}${database})`;
+    }
 
-		return `${connection.name} (${connection.url})`;
-	}
+    return `${connection.name} (${connection.url})`;
+  }
 
-	/**
-	 * 创建当前选中连接的状态文本。
-	 *
-	 * @param {readonly MysqlConnectionConfig[]} connections 当前可选的 MySQL 连接。
-	 * @param {string} selectedConnectionId 当前选中的连接标识。
-	 * @returns {string} 连接状态文本。
-	 */
-	private describeSelectedConnection(
-		connections: readonly MysqlConnectionConfig[],
-		selectedConnectionId: string
-	): string {
-		const selectedConnection = connections.find(
-			(connection) => connection.id === selectedConnectionId
-		);
+  /**
+   * 创建当前选中连接的状态文本。
+   *
+   * @param {readonly MysqlConnectionConfig[]} connections 当前可选的 MySQL 连接。
+   * @param {string} selectedConnectionId 当前选中的连接标识。
+   * @returns {string} 连接状态文本。
+   */
+  private describeSelectedConnection(
+    connections: readonly MysqlConnectionConfig[],
+    selectedConnectionId: string,
+  ): string {
+    const selectedConnection = connections.find(
+      (connection) => connection.id === selectedConnectionId,
+    );
 
-		return selectedConnection
-			? this.describeConnection(selectedConnection)
-			: '未选择 MySQL 连接。';
-	}
+    return selectedConnection ? this.describeConnection(selectedConnection) : "未选择 MySQL 连接。";
+  }
 
-	/**
-	 * 转义用户可控文本以便安全渲染 HTML。
-	 *
-	 * @param {string} value 待转义的文本值。
-	 * @returns {string} 转义后的 HTML 字符串。
-	 */
-	private escapeHtml(value: string): string {
-		return value
-			.replaceAll('&', '&amp;')
-			.replaceAll('<', '&lt;')
-			.replaceAll('>', '&gt;')
-			.replaceAll('"', '&quot;')
-			.replaceAll("'", '&#39;');
-	}
+  /**
+   * 转义用户可控文本以便安全渲染 HTML。
+   *
+   * @param {string} value 待转义的文本值。
+   * @returns {string} 转义后的 HTML 字符串。
+   */
+  private escapeHtml(value: string): string {
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
 
-	/**
-	 * 转义用户可控文本以便安全放入 HTML 属性。
-	 *
-	 * @param {string} value 待转义的文本值。
-	 * @returns {string} 转义后的属性字符串。
-	 */
-	private escapeHtmlAttribute(value: string): string {
-		return this.escapeHtml(value);
-	}
+  /**
+   * 转义用户可控文本以便安全放入 HTML 属性。
+   *
+   * @param {string} value 待转义的文本值。
+   * @returns {string} 转义后的属性字符串。
+   */
+  private escapeHtmlAttribute(value: string): string {
+    return this.escapeHtml(value);
+  }
 
-	/**
-	 * 将数据安全序列化为可嵌入 script 的 JSON。
-	 *
-	 * @param {unknown} value 需要嵌入 Webview 脚本的数据。
-	 * @returns {string} 经过转义的 JSON 字符串。
-	 */
-	private serializeScriptValue(value: unknown): string {
-		return JSON.stringify(value)
-			.replaceAll('<', '\\u003c')
-			.replaceAll('>', '\\u003e')
-			.replaceAll('&', '\\u0026')
-			.replaceAll('\u2028', '\\u2028')
-			.replaceAll('\u2029', '\\u2029');
-	}
+  /**
+   * 将数据安全序列化为可嵌入 script 的 JSON。
+   *
+   * @param {unknown} value 需要嵌入 Webview 脚本的数据。
+   * @returns {string} 经过转义的 JSON 字符串。
+   */
+  private serializeScriptValue(value: unknown): string {
+    return JSON.stringify(value)
+      .replaceAll("<", "\\u003c")
+      .replaceAll(">", "\\u003e")
+      .replaceAll("&", "\\u0026")
+      .replaceAll("\u2028", "\\u2028")
+      .replaceAll("\u2029", "\\u2029");
+  }
 }

@@ -1,4 +1,4 @@
-import type { MySqlDriverConnectionInput } from './MySqlConnectionAdapter';
+import type { MySqlDriverConnectionInput } from "./MySqlConnectionAdapter";
 
 /**
  * mysql2 底层驱动返回的单行数据形状。
@@ -12,18 +12,18 @@ export type MySqlQueryResultRow = Record<string | number, unknown>;
  * mysql2 字段元数据的最小形状。
  */
 export interface MySqlField {
-	readonly name: string;
+  readonly name: string;
 }
 
 /**
  * mysql2 非查询执行结果形状。
  */
 export interface MySqlStatementResult {
-	readonly affectedRows?: number;
-	readonly insertId?: number | string;
-	readonly serverStatus?: number;
-	readonly warningStatus?: number;
-	readonly [key: string | number]: unknown;
+  readonly affectedRows?: number;
+  readonly insertId?: number | string;
+  readonly serverStatus?: number;
+  readonly warningStatus?: number;
+  readonly [key: string | number]: unknown;
 }
 
 /**
@@ -33,8 +33,7 @@ export interface MySqlStatementResult {
  * 多语句时返回 (RowDataPacket[] | OkPacket | ResultSetHeader)[]。
  */
 export type MySqlQueryRows =
-	| readonly MySqlQueryResultRow[]
-	| readonly (MySqlQueryResultRow[] | MySqlStatementResult)[];
+  readonly MySqlQueryResultRow[] | readonly (MySqlQueryResultRow[] | MySqlStatementResult)[];
 
 /**
  * mysql2 字段返回值。
@@ -43,25 +42,22 @@ export type MySqlQueryRows =
  * 多语句时返回 (MySqlField[] | undefined)[]。
  */
 export type MySqlQueryResultFields =
-	| readonly MySqlField[]
-	| readonly (readonly MySqlField[] | undefined)[];
+  readonly MySqlField[] | readonly (readonly MySqlField[] | undefined)[];
 
 /**
  * mysql2 promise Connection 的最小运行时接口。
  */
 export interface MySqlRuntimeClient {
-	query(
-		sql: string,
-		values?: readonly unknown[]
-	): Promise<[MySqlQueryRows, MySqlQueryResultFields]>;
-	end(): Promise<void>;
+  query(
+    sql: string,
+    values?: readonly unknown[],
+  ): Promise<[MySqlQueryRows, MySqlQueryResultFields]>;
+  end(): Promise<void>;
 }
 
 /**
  * mysql2 promise 模块的最小运行时接口。
  */
 export interface MySqlRuntimeModule {
-	createConnection(
-		options: MySqlDriverConnectionInput
-	): Promise<MySqlRuntimeClient>;
+  createConnection(options: MySqlDriverConnectionInput): Promise<MySqlRuntimeClient>;
 }
