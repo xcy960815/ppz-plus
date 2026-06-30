@@ -99,12 +99,50 @@
 
 ## 当前参考文档
 
-- [legacy-ppz-analysis.md](/Users/opera/Documents/my-repositories/ppz-plus/ppz-plus/.agents/legacy-ppz-analysis.md)
-- [todolist.md](/Users/opera/Documents/my-repositories/ppz-plus/ppz-plus/.agents/todolist.md)
+- [legacy-ppz-analysis.md](.agents/legacy-ppz-analysis.md)
+- [todolist.md](.agents/todolist.md)
+- [changelog-automation.md](.agents/changelog-automation.md)
 
-## 后续文档建议
+## 项目结构
 
-- `docs/mvp-scope.md`
-- `docs/architecture-overview.md`
-- `docs/database-capability-matrix.md`
-- `docs/import-export-design.md`
+```
+ppz-plus/
+├── .agents/                    # AI 协作参考文档
+│   ├── legacy-ppz-analysis.md  # 旧 PPZ 能力审计
+│   ├── todolist.md             # 迁移清单与支持清单
+│   └── changelog-automation.md # Changelog 自动化方案
+├── src/
+│   ├── presentation/           # VS Code UI 入口（命令、Tree、Webview）
+│   ├── application/            # 用例编排层（use cases）
+│   │   ├── mysql/              # MySQL 用例接口
+│   │   ├── postgresql/         # PostgreSQL 用例接口
+│   │   └── shared/             # 共享数据类型（TableDataTypes 等）
+│   ├── domain/                 # 领域模型（不依赖 vscode）
+│   │   ├── connections/        # 连接配置模型
+│   │   ├── capabilities/       # 数据库能力声明
+│   │   ├── export/             # 导出文档模型
+│   │   └── query/              # SQL 执行结果模型
+│   ├── infrastructure/         # 驱动封装、存储、文件
+│   │   ├── mysql/              # mysql2 驱动适配
+│   │   ├── postgresql/         # pg 驱动适配
+│   │   └── shared/             # 共享工具（日期格式化等）
+│   └── test/                   # 单元测试
+│       └── domain/             # 领域层测试
+├── CHANGELOG.md                # 自动生成的变更日志
+├── package.json                # 项目配置与 pnpm 脚本
+└── pnpm-lock.yaml              # 依赖锁定文件
+```
+
+### 分层规则
+
+| 层 | 职责 | 依赖方向 |
+|----|------|---------|
+| Presentation | VS Code 命令、Tree View、Webview Panel | → Application |
+| Application | Use case 编排、接口定义 | → Domain |
+| Domain | 纯数据模型、类型定义 | 无外部依赖 |
+| Infrastructure | 驱动封装、存储实现 | → Domain（实现 Application 接口） |
+
+- `Domain` 不依赖 `vscode`
+- `Infrastructure` 不引用 Presentation
+- `Application` 定义接口，`Infrastructure` 实现接口
+- 导入导出是独立子系统，不挂在 UI 或单一连接对象上
