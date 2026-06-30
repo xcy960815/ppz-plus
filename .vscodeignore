@@ -2,12 +2,17 @@
 .vscode-test/**
 .agents/**
 .github/**
+.husky/**
+.pnpm-store/**
 docs/**
 scripts/**
 src/**
+out/test/**
 AGENTS.md
 README_CN.md
+.prettierignore
 .gitignore
+package-lock.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
 .yarnrc
