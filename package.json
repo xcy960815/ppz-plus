@@ -3,6 +3,16 @@
   "displayName": "ppz-plus",
   "description": "VS Code 数据库导入导出工具",
   "version": "0.0.1",
+  "publisher": "xcy960815",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xcy960815/ppz-plus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xcy960815/ppz-plus/issues"
+  },
+  "homepage": "https://github.com/xcy960815/ppz-plus#readme",
   "packageManager": "pnpm@11.7.0",
   "engines": {
     "vscode": "^1.125.0"
