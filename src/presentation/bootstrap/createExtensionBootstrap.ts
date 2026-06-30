@@ -5,6 +5,7 @@ import { CsvDocumentParser } from '../../application/import/CsvDocumentParser';
 import { ImportColumnMapper } from '../../application/import/ImportColumnMapper';
 import { JsonDocumentParser } from '../../application/import/JsonDocumentParser';
 import { CheckSqlExportCapabilityUseCase } from '../../application/useCases/CheckSqlExportCapabilityUseCase';
+import { ClearPpzStateUseCase } from '../../application/useCases/ClearPpzStateUseCase';
 import { GetBootstrapStatusUseCase } from '../../application/useCases/GetBootstrapStatusUseCase';
 import { DeleteMySqlTableRowUseCase } from '../../application/useCases/DeleteMySqlTableRowUseCase';
 import { DeleteSqlite3TableRowUseCase } from '../../application/useCases/DeleteSqlite3TableRowUseCase';
@@ -87,6 +88,7 @@ import { GlobalStateConnectionRepository } from '../../infrastructure/storage/Gl
 import { GlobalStateSqlExportTaskLogRepository } from '../../infrastructure/storage/GlobalStateSqlExportTaskLogRepository';
 import { AddMySqlConnectionCommand } from '../commands/AddMySqlConnectionCommand';
 import { AddSqlite3ConnectionCommand } from '../commands/AddSqlite3ConnectionCommand';
+import { ClearPpzStateCommand } from '../commands/ClearPpzStateCommand';
 import { ExportMySqlSchemaSqlCommand } from '../commands/ExportMySqlSchemaSqlCommand';
 import { ExportMySqlTableSqlCommand } from '../commands/ExportMySqlTableSqlCommand';
 import { ExportMySqlTablesBatchSqlCommand } from '../commands/ExportMySqlTablesBatchSqlCommand';
@@ -113,7 +115,6 @@ import { ExtensionBootstrap } from './ExtensionBootstrap';
 import { MySqlConnectionsTreeDataProvider } from '../explorer/MySqlConnectionsTreeDataProvider';
 import { MySqlConnectionsView } from '../explorer/MySqlConnectionsView';
 import { Sqlite3ConnectionsTreeDataProvider } from '../explorer/Sqlite3ConnectionsTreeDataProvider';
-import { Sqlite3ConnectionsView } from '../explorer/Sqlite3ConnectionsView';
 import { MySqlSqlTerminalPanel } from '../sql/MySqlSqlTerminalPanel';
 import { PostgreSqlSqlTerminalPanel } from '../sql/PostgreSqlSqlTerminalPanel';
 import { Sqlite3SqlTerminalPanel } from '../sql/Sqlite3SqlTerminalPanel';
@@ -354,6 +355,10 @@ export function createExtensionBootstrap(
 	const listSqlExportTaskLogsUseCase = new ListSqlExportTaskLogsUseCase(
 		sqlExportTaskLogRepository
 	);
+	const clearPpzStateUseCase = new ClearPpzStateUseCase(
+		connectionRepository,
+		sqlExportTaskLogRepository
+	);
 	const importMySqlSqlFileUseCase = new ImportMySqlSqlFileUseCase(
 		sqlFileReader,
 		mySqlSqlFileImportProvider
@@ -476,6 +481,11 @@ export function createExtensionBootstrap(
 			testConnectionUseCase
 		),
 		new TestStoredSqlite3ConnectionCommand(),
+		new ClearPpzStateCommand(
+			clearPpzStateUseCase,
+			mySqlConnectionsTreeDataProvider,
+			sqlite3ConnectionsTreeDataProvider
+		),
 		new OpenMySqlTableDataCommand(mySqlTableDataPanel),
 		new OpenMySqlSqlTerminalCommand(mySqlSqlTerminalPanel),
 		new OpenPostgreSqlSqlTerminalCommand(postgreSqlSqlTerminalPanel),
@@ -694,7 +704,6 @@ export function createExtensionBootstrap(
 		new ShowProjectStatusCommand(getBootstrapStatusUseCase),
 	], [
 		new MySqlConnectionsView(mySqlConnectionsTreeDataProvider),
-		new Sqlite3ConnectionsView(sqlite3ConnectionsTreeDataProvider),
 		mySqlTableDataPanel,
 		mySqlSqlTerminalPanel,
 		postgreSqlSqlTerminalPanel,

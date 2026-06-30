@@ -53,6 +53,16 @@ export class GlobalStateSqlExportTaskLogRepository
 	}
 
 	/**
+	 * 清空所有 SQL 导出任务日志。
+	 */
+	public async clear(): Promise<void> {
+		await this.globalState.update(
+			GlobalStateSqlExportTaskLogRepository.storageKey,
+			[]
+		);
+	}
+
+	/**
 	 * 从 VS Code 全局状态读取 SQL 导出任务日志。
 	 *
 	 * @returns {SqlExportTaskLogEntry[]} 已保存的 SQL 导出任务日志。

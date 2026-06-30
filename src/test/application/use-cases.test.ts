@@ -16,6 +16,7 @@ import { ListStoredConnectionsUseCase } from '../../application/useCases/ListSto
 import { DeleteStoredConnectionUseCase } from '../../application/useCases/DeleteStoredConnectionUseCase';
 import { SaveConnectionConfigUseCase } from '../../application/useCases/SaveConnectionConfigUseCase';
 import { TestConnectionUseCase } from '../../application/useCases/TestConnectionUseCase';
+import { ClearPpzStateUseCase } from '../../application/useCases/ClearPpzStateUseCase';
 import { GetBootstrapStatusUseCase } from '../../application/useCases/GetBootstrapStatusUseCase';
 import { CheckSqlExportCapabilityUseCase } from '../../application/useCases/CheckSqlExportCapabilityUseCase';
 import { ExecuteMySqlSqlUseCase } from '../../application/useCases/ExecuteMySqlSqlUseCase';
@@ -117,6 +118,9 @@ function createMockConnectionRepository(saved: ConnectionConfig[] = []) {
 			if (idx !== -1) {
 				state.splice(idx, 1);
 			}
+		},
+		async clear() {
+			state.splice(0, state.length);
 		},
 	};
 
@@ -227,6 +231,44 @@ suite('Application — TestConnectionUseCase', () => {
 			() => useCase.execute(makeMysqlConfig()),
 			/连接超时/
 		);
+	});
+});
+
+suite('Application — ClearPpzStateUseCase', () => {
+	test('清空连接配置和 SQL 导出任务日志', async () => {
+		const config = makeMysqlConfig();
+		const { repo, saved } = createMockConnectionRepository([config]);
+		const logs: SqlExportTaskLogEntry[] = [
+			{
+				id: 'log-1',
+				engine: 'mysql',
+				connectionName: '测试连接',
+				targetType: 'table',
+				targetName: 'test_db.users',
+				kind: 'ddl',
+				status: 'success',
+				startedAt: '2026-01-01T00:00:00Z',
+				endedAt: '2026-01-01T00:00:01Z',
+				durationMs: 1000,
+			},
+		];
+		const logRepository: SqlExportTaskLogRepository = {
+			async append(entry) {
+				logs.push(entry);
+			},
+			async listRecent() {
+				return [...logs];
+			},
+			async clear() {
+				logs.splice(0, logs.length);
+			},
+		};
+		const useCase = new ClearPpzStateUseCase(repo, logRepository);
+
+		await useCase.execute();
+
+		assert.strictEqual(saved.length, 0);
+		assert.strictEqual(logs.length, 0);
 	});
 });
 
@@ -806,6 +848,9 @@ suite('Application — RecordSqlExportTaskLogUseCase', () => {
 			async listRecent() {
 				return [...appended];
 			},
+			async clear() {
+				appended.splice(0, appended.length);
+			},
 		};
 		const useCase = new RecordSqlExportTaskLogUseCase(repo);
 
@@ -854,6 +899,9 @@ suite('Application — ListSqlExportTaskLogsUseCase', () => {
 			async listRecent() {
 				return [...saved];
 			},
+			async clear() {
+				saved.splice(0, saved.length);
+			},
 		};
 		const useCase = new ListSqlExportTaskLogsUseCase(repo);
 
@@ -869,6 +917,7 @@ suite('Application — ListSqlExportTaskLogsUseCase', () => {
 			async listRecent() {
 				return [];
 			},
+			async clear() {},
 		};
 		const useCase = new ListSqlExportTaskLogsUseCase(repo);
 

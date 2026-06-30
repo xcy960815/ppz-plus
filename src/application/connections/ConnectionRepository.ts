@@ -32,4 +32,9 @@ export interface ConnectionRepository {
 	 * @param {string} id 需要删除的连接标识。
 	 */
 	delete(id: string): Promise<void>;
+
+	/**
+	 * 清空所有已保存连接配置。
+	 */
+	clear(): Promise<void>;
 }
