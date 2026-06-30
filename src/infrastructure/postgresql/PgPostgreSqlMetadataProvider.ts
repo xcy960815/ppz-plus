@@ -6,7 +6,7 @@ import type {
 	PostgreSqlTableMetadata,
 } from '../../application/postgresql/PostgreSqlMetadataProvider';
 import { PostgreSqlConnectionAdapter } from './PostgreSqlConnectionAdapter';
-import type { PostgreSqlRuntimeClient } from './PostgreSqlRuntimeLoader';
+import type { PgRuntimeClient } from './PgRuntimeTypes';
 import { PostgreSqlRuntimeLoader } from './PostgreSqlRuntimeLoader';
 
 /**
@@ -130,7 +130,7 @@ export class PgPostgreSqlMetadataProvider
 	private async openClient(
 		connection: PostgreSqlConnectionConfig,
 		databaseName?: string
-	): Promise<PostgreSqlRuntimeClient> {
+	): Promise<PgRuntimeClient> {
 		const postgreSql = this.postgreSqlRuntimeLoader.loadPostgreSqlModule();
 		const client = new postgreSql.Client(
 			this.postgreSqlConnectionAdapter.resolveDriverOptions(

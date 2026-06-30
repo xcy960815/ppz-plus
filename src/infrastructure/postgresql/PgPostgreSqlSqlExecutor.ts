@@ -8,7 +8,7 @@ import type {
 	SqlExecutionResultSet,
 } from '../../domain/query/SqlExecutionResult';
 import { PostgreSqlConnectionAdapter } from './PostgreSqlConnectionAdapter';
-import type { PostgreSqlRuntimeClient } from './PostgreSqlRuntimeLoader';
+import type { PgRuntimeClient, PgQueryResult } from './PgRuntimeTypes';
 import { PostgreSqlRuntimeLoader } from './PostgreSqlRuntimeLoader';
 
 /**
@@ -40,7 +40,7 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 		sql: string
 	): Promise<SqlExecutionResult> {
 		const startedAt = Date.now();
-		let runtimeClient: PostgreSqlRuntimeClient | undefined;
+		let runtimeClient: PgRuntimeClient | undefined;
 
 		try {
 			const postgreSql = this.postgreSqlRuntimeLoader.loadPostgreSqlModule();
@@ -52,7 +52,7 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 			);
 			await runtimeClient.connect();
 
-			const rawResult: unknown = await runtimeClient.query(sql);
+			const rawResult: PgQueryResult | readonly PgQueryResult[] = await runtimeClient.query(sql) as PgQueryResult | readonly PgQueryResult[];
 			const durationMs = Date.now() - startedAt;
 			const resultSets = this.normalizeResultSets(rawResult);
 			const primaryResultSet =
@@ -96,26 +96,31 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 将 pg 返回值归一化为一个或多个 SQL 结果集。
 	 *
+	 * 单语句时返回 PgQueryResult，
+	 * 多语句时 pg 的 query 方法返回 PgQueryResult[]。
+	 *
 	 * @param rawResult pg 返回的原始结果。
 	 * @returns 可供 SQL 终端渲染的结果集列表。
 	 */
-	private normalizeResultSets(rawResult: unknown): readonly SqlExecutionResultSet[] {
+	private normalizeResultSets(
+		rawResult: PgQueryResult | readonly PgQueryResult[]
+	): readonly SqlExecutionResultSet[] {
 		if (Array.isArray(rawResult)) {
 			return rawResult.map((result) => this.normalizeResultSet(result));
 		}
 
-		return [this.normalizeResultSet(rawResult)];
+		return [this.normalizeResultSet(rawResult as PgQueryResult)];
 	}
 
 	/**
-	 * 归一化单个 PostgreSQL 执行结果。
+	 * 归一化单个 pg 执行结果。
 	 *
 	 * @param rawResult pg 返回的单个结果。
 	 * @returns 单个 SQL 结果集。
 	 */
-	private normalizeResultSet(rawResult: unknown): SqlExecutionResultSet {
+	private normalizeResultSet(rawResult: PgQueryResult): SqlExecutionResultSet {
 		const rows = this.readRows(rawResult);
-		const fields = this.normalizeFields(rawResult, rows);
+		const fields = this.normalizeFields(rawResult.fields, rows);
 		const isQuery = fields.length > 0;
 
 		if (isQuery) {
@@ -158,50 +163,32 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	 * @param rawResult pg 返回的单个结果。
 	 * @returns 原始行集合。
 	 */
-	private readRows(rawResult: unknown): readonly Record<string, unknown>[] {
-		if (!rawResult || typeof rawResult !== 'object') {
-			return [];
-		}
-
-		const rows = (rawResult as Record<string, unknown>).rows;
-		if (!Array.isArray(rows)) {
-			return [];
-		}
-
-		return rows.filter(
-			(row): row is Record<string, unknown> =>
-				Boolean(row) && typeof row === 'object' && !Array.isArray(row)
-		);
+	private readRows(
+		rawResult: PgQueryResult
+	): readonly Record<string, unknown>[] {
+		return Array.isArray(rawResult.rows)
+			? (rawResult.rows as readonly Record<string, unknown>[])
+			: [];
 	}
 
 	/**
 	 * 将 pg 字段对象归一化为领域字段。
 	 *
-	 * @param rawResult pg 返回的单个结果。
+	 * @param rawFields pg 返回的字段定义。
 	 * @param rows pg 返回的原始行集合。
 	 * @returns 可供 UI 和导出功能复用的字段列表。
 	 */
 	private normalizeFields(
-		rawResult: unknown,
+		rawFields: readonly { name: string }[],
 		rows: readonly Record<string, unknown>[]
 	): readonly SqlExecutionField[] {
-		if (rawResult && typeof rawResult === 'object') {
-			const rawFields = (rawResult as Record<string, unknown>).fields;
-			if (Array.isArray(rawFields)) {
-				const fieldNames = rawFields
-					.map((field) => {
-						if (!field || typeof field !== 'object') {
-							return undefined;
-						}
+		if (Array.isArray(rawFields)) {
+			const fieldNames = rawFields
+				.map((field) => (typeof field.name === 'string' ? field.name : undefined))
+				.filter((name): name is string => name !== undefined);
 
-						const name = (field as Record<string, unknown>).name;
-						return typeof name === 'string' ? name : undefined;
-					})
-					.filter((name): name is string => name !== undefined);
-
-				if (fieldNames.length > 0) {
-					return fieldNames.map((name) => ({ name }));
-				}
+			if (fieldNames.length > 0) {
+				return fieldNames.map((name) => ({ name }));
 			}
 		}
 
@@ -326,13 +313,8 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	 * @param rawResult pg 返回的非查询执行结果。
 	 * @returns 影响行数；无法识别时返回 null。
 	 */
-	private normalizeAffectedRows(rawResult: unknown): number | null {
-		if (!rawResult || typeof rawResult !== 'object') {
-			return null;
-		}
-
-		const rowCount = (rawResult as Record<string, unknown>).rowCount;
-		return typeof rowCount === 'number' ? rowCount : null;
+	private normalizeAffectedRows(rawResult: PgQueryResult): number | null {
+		return typeof rawResult.rowCount === 'number' ? rawResult.rowCount : null;
 	}
 
 	/**
@@ -342,15 +324,11 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	 * @returns 可供旧 PPZ 风格 key/value 表格展示的执行摘要。
 	 */
 	private normalizeMetadata(
-		rawResult: unknown
+		rawResult: PgQueryResult
 	): readonly SqlExecutionResultMetadataEntry[] {
-		if (!rawResult || typeof rawResult !== 'object') {
-			return [];
-		}
-
 		return ['command', 'rowCount', 'oid']
 			.map((key) => {
-				const value = (rawResult as Record<string, unknown>)[key];
+				const value = (rawResult as unknown as Record<string, unknown>)[key];
 				return value === undefined
 					? undefined
 					: {

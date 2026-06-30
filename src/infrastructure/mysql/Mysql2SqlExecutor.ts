@@ -9,17 +9,20 @@ import type {
 } from '../../domain/query/SqlExecutionResult';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
+import type {
+	MySqlField,
+	MySqlQueryResultRow,
+	MySqlQueryRows,
+	MySqlQueryResultFields,
+	MySqlRuntimeClient,
+	MySqlStatementResult,
+} from './MySqlRuntimeTypes';
 
 /**
  * 通过 mysql2 promise 驱动执行 MySQL SQL。
  */
 export class Mysql2SqlExecutor implements MySqlSqlExecutor {
-	/**
-	 * 创建基于 mysql2 的 SQL 执行器。
-	 *
-	 * @param mySqlConnectionAdapter 用于归一化连接选项的适配器。
-	 * @param mySqlRuntimeLoader 用于延迟解析 mysql2 运行时的加载器。
-	 */
+	/** 保存数据库连接适配器以便创建运行时连接选项。 */
 	public constructor(
 		private readonly mySqlConnectionAdapter: MySqlConnectionAdapter,
 		private readonly mySqlRuntimeLoader: MySqlRuntimeLoader
@@ -37,15 +40,7 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 		sql: string
 	): Promise<SqlExecutionResult> {
 		const startedAt = Date.now();
-		let runtimeConnection:
-			| {
-					query(
-						sql: string,
-						values?: readonly unknown[]
-					): Promise<[unknown, unknown]>;
-					end(): Promise<void>;
-			  }
-			| undefined;
+		let runtimeConnection: MySqlRuntimeClient | undefined;
 
 		try {
 			const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
@@ -85,9 +80,7 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 				try {
 					await runtimeConnection.end();
 				} catch {
-					/**
-					 * SQL 执行结果优先，关闭连接失败不覆盖主要结果。
-					 */
+					/** SQL 执行结果优先，关闭连接失败不覆盖主要结果。 */
 				}
 			}
 		}
@@ -139,19 +132,29 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	 * @returns 可供 SQL 终端渲染的结果集列表。
 	 */
 	private normalizeResultSets(
-		rows: unknown,
-		fields: unknown
+		rows: MySqlQueryRows,
+		fields: MySqlQueryResultFields
 	): readonly SqlExecutionResultSet[] {
 		if (this.isMultipleStatementResult(rows, fields)) {
-			return rows.map((rowSet, index) =>
+			return (rows as readonly (
+				| MySqlQueryResultRow[]
+				| MySqlStatementResult
+			)[]).map((rowSet, index) =>
 				this.normalizeResultSet(
 					rowSet,
-					Array.isArray(fields) ? fields[index] : undefined
+					Array.isArray(fields)
+						? (fields as readonly (readonly MySqlField[] | undefined)[])[index]
+						: (fields as readonly MySqlField[] | undefined)
 				)
 			);
 		}
 
-		return [this.normalizeResultSet(rows, fields)];
+		return [
+			this.normalizeResultSet(
+				rows as MySqlQueryResultRow[],
+				fields as readonly MySqlField[]
+			),
+		];
 	}
 
 	/**
@@ -162,53 +165,59 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	 * @returns 是否包含多个结果集。
 	 */
 	private isMultipleStatementResult(
-		rows: unknown,
-		fields: unknown
-	): rows is readonly unknown[] {
+		rows: MySqlQueryRows,
+		fields: MySqlQueryResultFields
+	): boolean {
 		if (!Array.isArray(rows)) {
 			return false;
 		}
 
+		// 多语句时，rows 或 fields 的每个元素可能都是数组（每个语句一组结果）
 		if (Array.isArray(fields)) {
 			return fields.some(
 				(fieldSet) => Array.isArray(fieldSet) || fieldSet === undefined
 			);
 		}
 
-		return fields === undefined && rows.some((row) => this.isResultHeader(row));
+		return (
+			fields === undefined &&
+			rows.some((row) => !Array.isArray(row) && this.isStatementResult(row))
+		);
 	}
 
 	/**
-	 * 判断原始返回值是否像 mysql2 的 ResultSetHeader。
+	 * 判断返回值是否更像 mysql2 的 StatementResult。
 	 *
 	 * @param value mysql2 返回的单个结果。
-	 * @returns 是否包含非查询结果常见字段。
+	 * @returns 是否包含非查询结果标志字段。
 	 */
-	private isResultHeader(value: unknown): boolean {
+	private isStatementResult(
+		value: unknown
+	): value is MySqlStatementResult {
 		return (
-				Boolean(value) &&
-				typeof value === 'object' &&
-				value !== null &&
-				['affectedRows', 'insertId', 'serverStatus', 'warningStatus'].some((key) =>
-					Reflect.has(value, key)
-				)
+			value !== null &&
+			typeof value === 'object' &&
+			(
+				'affectedRows' in value ||
+				'insertId' in value ||
+				'serverStatus' in value ||
+				'warningStatus' in value
+			)
 		);
 	}
 
 	/**
 	 * 归一化单个 SQL 结果集。
 	 *
-	 * @param rows mysql2 返回的单个 rows 或 ResultSetHeader。
+	 * @param rows mysql2 返回的单个 rows 或 StatementResult。
 	 * @param fields mysql2 返回的单个 fields。
 	 * @returns 单个 SQL 结果集。
 	 */
 	private normalizeResultSet(
-		rows: unknown,
-		fields: unknown
+		rows: readonly MySqlQueryResultRow[] | MySqlStatementResult,
+		fields: readonly MySqlField[] | undefined
 	): SqlExecutionResultSet {
-		const isQuery = Array.isArray(rows);
-
-		if (isQuery) {
+		if (Array.isArray(rows)) {
 			return {
 				isQuery: true,
 				fields: this.normalizeFields(fields, rows),
@@ -222,8 +231,10 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 			isQuery: false,
 			fields: [],
 			rows: [],
-			affectedRows: this.normalizeAffectedRows(rows),
-			metadata: this.normalizeMetadata(rows),
+			affectedRows: this.extractAffectedRows(rows as MySqlStatementResult),
+			metadata: this.normalizeMetadataFromStatementResult(
+				rows as MySqlStatementResult
+			),
 		};
 	}
 
@@ -250,19 +261,12 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	 * @returns 可供 UI 和导出功能复用的字段列表。
 	 */
 	private normalizeFields(
-		fields: unknown,
-		rows: unknown
+		fields: readonly MySqlField[] | undefined,
+		rows: readonly MySqlQueryResultRow[]
 	): readonly SqlExecutionField[] {
 		if (Array.isArray(fields)) {
 			const fieldNames = fields
-				.map((field) => {
-					if (!field || typeof field !== 'object') {
-						return undefined;
-					}
-
-					const name = Reflect.get(field, 'name');
-					return typeof name === 'string' ? name : undefined;
-				})
+				.map((field) => (typeof field.name === 'string' ? field.name : undefined))
 				.filter((name): name is string => name !== undefined);
 
 			if (fieldNames.length > 0) {
@@ -270,12 +274,10 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 			}
 		}
 
-		const firstRow = Array.isArray(rows) ? rows[0] : undefined;
-		if (firstRow && typeof firstRow === 'object' && !Array.isArray(firstRow)) {
-			return Object.keys(firstRow).map((name) => ({ name }));
-		}
-
-		return [];
+		const firstRow = rows[0];
+		return firstRow
+			? Object.keys(firstRow).map((name) => ({ name }))
+			: [];
 	}
 
 	/**
@@ -285,16 +287,12 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	 * @returns 可序列化的 SQL 行数据。
 	 */
 	private normalizeRows(
-		rows: unknown
+		rows: readonly MySqlQueryResultRow[]
 	): readonly Record<string, SqlExecutionCellValue>[] {
-		if (!Array.isArray(rows)) {
-			return [];
-		}
-
 		return rows
 			.filter(
 				(row): row is Record<string, unknown> =>
-					Boolean(row) && typeof row === 'object' && !Array.isArray(row)
+					row !== null && typeof row === 'object' && !Array.isArray(row)
 			)
 			.map((row) => this.normalizeRow(row));
 	}
@@ -352,7 +350,7 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 			).toString('hex')}`;
 		}
 
-		if (value && typeof value === 'object') {
+		if (value !== null && typeof value === 'object') {
 			try {
 				return JSON.stringify(value);
 			} catch {
@@ -404,13 +402,10 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	 * @param result mysql2 返回的非查询执行结果。
 	 * @returns 影响行数；无法识别时返回 null。
 	 */
-	private normalizeAffectedRows(result: unknown): number | null {
-		if (!result || typeof result !== 'object') {
-			return null;
-		}
-
-		const affectedRows = Reflect.get(result, 'affectedRows');
-		return typeof affectedRows === 'number' ? affectedRows : null;
+	private extractAffectedRows(
+		result: MySqlStatementResult
+	): number | null {
+		return typeof result.affectedRows === 'number' ? result.affectedRows : null;
 	}
 
 	/**
@@ -419,13 +414,9 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	 * @param result mysql2 返回的非查询执行结果。
 	 * @returns 可供旧 PPZ 风格 key/value 表格展示的执行摘要。
 	 */
-	private normalizeMetadata(
-		result: unknown
+	private normalizeMetadataFromStatementResult(
+		result: MySqlStatementResult
 	): readonly SqlExecutionResultMetadataEntry[] {
-		if (!result || typeof result !== 'object') {
-			return [];
-		}
-
 		return Object.entries(result).map(([key, value]) => ({
 			key,
 			value: this.normalizeCellValue(value),

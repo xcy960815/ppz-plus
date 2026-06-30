@@ -13,7 +13,7 @@ import type {
 } from '../../domain/export/SqlExportDocument';
 import { SQL_EXPORT_FORMAT } from '../../domain/export/SqlExportFormat';
 import { PostgreSqlConnectionAdapter } from './PostgreSqlConnectionAdapter';
-import type { PostgreSqlRuntimeClient } from './PostgreSqlRuntimeLoader';
+import type { PgRuntimeClient } from './PgRuntimeTypes';
 import { PostgreSqlRuntimeLoader } from './PostgreSqlRuntimeLoader';
 
 /**
@@ -272,7 +272,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	private async openClient(
 		connection: PostgreSqlConnectionConfig,
 		databaseName: string
-	): Promise<PostgreSqlRuntimeClient> {
+	): Promise<PgRuntimeClient> {
 		const postgreSql = this.postgreSqlRuntimeLoader.loadPostgreSqlModule();
 		const client = new postgreSql.Client(
 			this.postgreSqlConnectionAdapter.resolveDriverOptions(
@@ -289,7 +289,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 *
 	 * @param client 当前可用的 pg 客户端。
 	 */
-	private async closeClient(client: PostgreSqlRuntimeClient): Promise<void> {
+	private async closeClient(client: PgRuntimeClient): Promise<void> {
 		try {
 			await client.end();
 		} catch {
@@ -403,7 +403,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns 单表 SQL 文本块。
 	 */
 	private async exportTableBlock(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		target: PostgreSqlExportTableTarget,
 		kind: SqlExportKind,
 		options: PostgreSqlDdlBlockOptions
@@ -432,7 +432,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns 表名列表。
 	 */
 	private async listSchemaTables(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		target: PostgreSqlExportSchemaTarget
 	): Promise<readonly string[]> {
 		const result = await client.query(
@@ -458,7 +458,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns 按名称排序的 schema 名称列表。
 	 */
 	private async listDatabaseSchemas(
-		client: PostgreSqlRuntimeClient
+		client: PgRuntimeClient
 	): Promise<readonly string[]> {
 		const result = await client.query(
 			[
@@ -484,7 +484,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns 按 schema/table 排序的表目标列表。
 	 */
 	private async listDatabaseTables(
-		client: PostgreSqlRuntimeClient
+		client: PgRuntimeClient
 	): Promise<readonly SqlExportTableTarget[]> {
 		const result = await client.query(
 			[
@@ -522,7 +522,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns DDL SQL 文本。
 	 */
 	private async exportDdl(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		target: PostgreSqlExportTableTarget,
 		options: PostgreSqlDdlBlockOptions
 	): Promise<string> {
@@ -570,7 +570,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns 字段定义列表。
 	 */
 	private async listColumns(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		target: PostgreSqlExportTableTarget
 	): Promise<readonly PostgreSqlColumnDefinition[]> {
 		const result = await client.query(
@@ -611,7 +611,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns 主键约束定义列表。
 	 */
 	private async listPrimaryKeys(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		target: PostgreSqlExportTableTarget
 	): Promise<readonly PostgreSqlConstraintDefinition[]> {
 		return this.listConstraints(client, target, 'p');
@@ -625,7 +625,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns 外键约束定义列表。
 	 */
 	private async listForeignKeys(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		target: PostgreSqlExportTableTarget
 	): Promise<readonly PostgreSqlConstraintDefinition[]> {
 		return this.listConstraints(client, target, 'f');
@@ -640,7 +640,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns 约束定义列表。
 	 */
 	private async listConstraints(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		target: PostgreSqlExportTableTarget,
 		constraintType: 'p' | 'f'
 	): Promise<readonly PostgreSqlConstraintDefinition[]> {
@@ -676,7 +676,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns 索引定义列表。
 	 */
 	private async listIndexes(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		target: PostgreSqlExportTableTarget
 	): Promise<readonly PostgreSqlIndexDefinition[]> {
 		const result = await client.query(
@@ -712,7 +712,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns sequence 定义列表。
 	 */
 	private async listOwnedSequences(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		target: PostgreSqlExportTableTarget
 	): Promise<readonly PostgreSqlSequenceDefinition[]> {
 		const result = await client.query(
@@ -762,7 +762,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns 外键 SQL 文本。
 	 */
 	private async exportForeignKeys(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		targets: readonly PostgreSqlExportTableTarget[]
 	): Promise<string> {
 		const statements: string[] = [];
@@ -1080,7 +1080,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	 * @returns DML SQL 文本。
 	 */
 	private async exportDml(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		target: PostgreSqlExportTableTarget
 	): Promise<string> {
 		const result = await client.query(

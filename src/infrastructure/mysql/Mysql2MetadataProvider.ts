@@ -6,6 +6,7 @@ import type {
 } from '../../application/mysql/MySqlMetadataProvider';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
+import type { MySqlQueryRows } from './MySqlRuntimeTypes';
 
 /**
  * 通过 mysql2 promise 驱动读取 MySQL schema 和表元数据。
@@ -86,7 +87,7 @@ export class Mysql2MetadataProvider implements MySqlMetadataProvider {
 	 * @returns 归一化后的 schema 元数据。
 	 */
 	private normalizeDatabaseRows(
-		rows: unknown
+		rows: MySqlQueryRows
 	): readonly MySqlSchemaMetadata[] {
 		if (!Array.isArray(rows)) {
 			return [];
@@ -114,7 +115,7 @@ export class Mysql2MetadataProvider implements MySqlMetadataProvider {
 	 * @returns 归一化后的表元数据。
 	 */
 	private normalizeTableRows(
-		rows: unknown,
+		rows: MySqlQueryRows,
 		schemaName: string
 	): readonly MySqlTableMetadata[] {
 		if (!Array.isArray(rows)) {
