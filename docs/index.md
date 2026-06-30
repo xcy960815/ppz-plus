@@ -8,10 +8,10 @@ hero:
   actions:
     - theme: brand
       text: 快速开始
-      link: /zh-CN/guide/install
+      link: /guide/install
     - theme: alt
       text: 使用指南
-      link: /zh-CN/guide/usage
+      link: /guide/usage
 
 features:
   - title: 多引擎支持
@@ -43,6 +43,6 @@ PPZ Plus 是一个用于在 VS Code 中操作 MySQL、PostgreSQL 和 SQLite3 数
 
 ## 下一步
 
-- [安装与配置](/zh-CN/guide/install)
-- [使用指南](/zh-CN/guide/usage)
-- [架构概览](/zh-CN/guide/architecture)
+- [安装与配置](/guide/install)
+- [使用指南](/guide/usage)
+- [架构概览](/guide/architecture)
