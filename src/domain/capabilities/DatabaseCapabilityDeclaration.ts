@@ -71,3 +71,23 @@ export const POSTGRESQL_TREE_CAPABILITY_DECLARATION = {
 		exportDml: 'supported',
 	},
 } satisfies DatabaseCapabilityDeclaration;
+
+/**
+ * 声明 SQLite3 当前已开放的 MVP 能力。
+ */
+export const SQLITE3_MVP_CAPABILITY_DECLARATION = {
+	engine: 'sqlite3',
+	capabilities: {
+		connectionManagement: 'supported',
+		connectionTest: 'supported',
+		treeExplorer: 'supported',
+		schemaBrowse: 'unsupported',
+		tableRead: 'supported',
+		tablePagination: 'supported',
+		tableSort: 'supported',
+		tableFilter: 'supported',
+		sqlExecute: 'supported',
+		exportDdl: 'supported',
+		exportDml: 'supported',
+	},
+} satisfies DatabaseCapabilityDeclaration;

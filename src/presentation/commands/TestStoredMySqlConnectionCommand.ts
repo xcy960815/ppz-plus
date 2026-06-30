@@ -59,7 +59,7 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 						this.testConnectionUseCase.execute(connection)
 					);
 					await vscode.window.showInformationMessage(
-						`已通过 TCP 连接到“${connection.name}”。`
+						`“${connection.name}”连接测试通过。`
 					);
 				} catch (error) {
 					await showUserErrorMessage({
@@ -89,10 +89,7 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 			connections.map((connection) => ({
 				label: connection.name,
 				detail: describeConnectionEngine(connection),
-				description:
-					connection.mode === 'parameters'
-						? `${connection.host}:${connection.port}`
-						: connection.url,
+				description: this.describeConnectionTarget(connection),
 				connection,
 			})),
 			{
@@ -102,5 +99,23 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
 		);
 
 		return selectedConnection?.connection;
+	}
+
+	/**
+	 * 描述连接目标地址。
+	 *
+	 * @param connection 当前连接配置。
+	 * @returns 连接目标描述。
+	 */
+	private describeConnectionTarget(connection: ConnectionConfig): string {
+		if (connection.mode === 'parameters') {
+			return `${connection.host}:${connection.port}`;
+		}
+
+		if (connection.mode === 'file') {
+			return connection.dbPath;
+		}
+
+		return connection.url;
 	}
 }

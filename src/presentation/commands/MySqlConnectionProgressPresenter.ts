@@ -13,6 +13,10 @@ export function describeConnectionEngine(connection: ConnectionConfig): string {
 		return 'PostgreSQL';
 	}
 
+	if (connection.engine === 'sqlite3') {
+		return 'SQLite3';
+	}
+
 	return 'MySQL';
 }
 
@@ -34,7 +38,10 @@ export async function withConnectionTestProgress(
 		},
 		async (progress) => {
 			progress.report({
-				message: '正在打开 TCP 连接...',
+				message:
+					connection.engine === 'sqlite3'
+						? '正在打开数据库文件...'
+						: '正在打开 TCP 连接...',
 				increment: 25,
 			});
 

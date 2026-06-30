@@ -35,7 +35,7 @@ interface MySqlConnectionFormSaveMessage {
 interface MySqlConnectionFormPayload {
 	readonly engine: 'mysql' | 'postgresql';
 	readonly name: string;
-	readonly mode: ConnectionInputMode;
+	readonly mode: Extract<ConnectionInputMode, 'parameters' | 'url'>;
 	readonly host: string;
 	readonly port: string;
 	readonly username: string;
