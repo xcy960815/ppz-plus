@@ -1,49 +1,45 @@
 # PPZ Plus
 
-PPZ Plus is a VS Code extension for working with MySQL databases from the editor. It is a capability-migration rewrite of the legacy PPZ extension: the product workflows are being preserved, while the implementation is rebuilt around clear `presentation / application / domain / infrastructure` boundaries.
+PPZ Plus is a VS Code extension for working with MySQL, PostgreSQL, and SQLite3 databases from the editor. It is a capability-migration rewrite of the legacy PPZ extension: the product workflows are being preserved, while the implementation is rebuilt around clear `presentation / application / domain / infrastructure` boundaries.
 
 [中文说明](./README_CN.md)
 
 ## Current Scope
 
-PPZ Plus currently targets a MySQL MVP.
+PPZ Plus currently provides a database explorer, table data view, SQL terminal, import, and export workflows across the supported engines.
 
 Supported now:
 
-- MySQL connection management.
-- MySQL schema and table browsing.
-- Table data viewing and basic row operations.
-- SQL terminal execution.
-- SQL / CSV / JSON import workflows.
-- DDL / DML SQL export workflows.
+- MySQL connection management, schema/table browsing, table data editing, SQL terminal execution, SQL/CSV/JSON import, and DDL/DML export workflows.
+- PostgreSQL connection management, database/schema/table browsing, table data reading, SQL terminal execution, and DDL/DML export workflows.
+- SQLite3 file connection management, table/view browsing, table data reading and editing, SQL terminal execution, and DDL/DML export workflows.
 
-Not opened yet:
+Planned later:
 
-- PostgreSQL.
-- SQLite.
 - MSSQL.
 - Other compatible databases.
 
-These engines are part of the longer-term roadmap, but the current extension entry points are intentionally kept MySQL-focused.
+MSSQL and other compatible databases remain part of the longer-term roadmap.
 
 ## Features
 
 ### Connection Management
 
-- Add, edit, delete, and test MySQL connections.
-- Supports parameter fields and connection URL input.
+- Add, edit, delete, and test MySQL, PostgreSQL, and SQLite3 connections.
+- Supports parameter fields, connection URL input, and SQLite3 database file selection.
 - Stores connection profiles in VS Code extension state.
 - Shows progress and user-friendly errors during connection tests.
 
-### MySQL Explorer
+### Database Explorer
 
 - Adds a `PPZ Plus` activity bar container.
-- Shows saved MySQL connections, schemas, and tables.
-- Provides context-menu actions for opening table data, launching SQL terminal, importing files, and exporting SQL.
+- Shows saved MySQL, PostgreSQL, and SQLite3 connections.
+- Uses engine-specific hierarchy: MySQL schemas/tables, PostgreSQL databases/schemas/tables, and SQLite3 tables/views.
+- Provides context-menu actions for opening table data, launching SQL terminals, importing files where supported, and exporting SQL.
 
 ### Table Data
 
-- Open table data from the MySQL explorer.
+- Open table data from the database explorer.
 - Page through table rows.
 - Sort and filter table data.
 - Toggle column visibility.
@@ -53,7 +49,7 @@ These engines are part of the longer-term roadmap, but the current extension ent
 
 ### SQL Terminal
 
-- Execute query and non-query SQL.
+- Execute query and non-query SQL for MySQL, PostgreSQL, and SQLite3.
 - Display elapsed execution time.
 - Render multiple database result shapes.
 - Restore terminal state after VS Code reloads the webview.
@@ -61,7 +57,7 @@ These engines are part of the longer-term roadmap, but the current extension ent
 ### Import
 
 - Import SQL files into a selected MySQL connection.
-- Import CSV and JSON files into selected tables.
+- Import CSV and JSON files into selected MySQL tables.
 - Preview imports before execution.
 - Configure column mappings.
 - Generate import error reports.
@@ -71,6 +67,8 @@ These engines are part of the longer-term roadmap, but the current extension ent
 
 - Export MySQL table DDL, DML, or DDL + DML.
 - Export MySQL schema DDL, DML, or DDL + DML.
+- Export PostgreSQL database/schema/table DDL, DML, or DDL + DML.
+- Export SQLite3 table DDL, DML, or DDL + DML.
 - Batch export multiple tables from a schema node.
 - Save generated SQL files to disk.
 - Record SQL export task logs.
@@ -80,11 +78,11 @@ These engines are part of the longer-term roadmap, but the current extension ent
 ## Basic Usage
 
 1. Open the `PPZ Plus` activity bar view.
-2. Choose `PPZ Plus: Add MySQL Connection`.
-3. Enter connection details using parameter fields or a MySQL URL.
-4. Expand the saved connection to browse schemas and tables.
-5. Use table or schema context menus to open data, import files, or export SQL.
-6. Use `PPZ Plus: Open MySQL SQL Terminal` to run custom SQL.
+2. Choose `PPZ Plus: Add MySQL Connection` or `PPZ Plus: Add SQLite3 Connection`.
+3. Enter connection details using parameter fields, a connection URL, or a SQLite3 database file.
+4. Expand the saved connection to browse databases, schemas, tables, or views.
+5. Use context menus to open data, launch SQL terminals, import files where supported, or export SQL.
+6. Use the engine-specific SQL terminal command to run custom SQL.
 
 ## Development
 
@@ -93,7 +91,7 @@ These engines are part of the longer-term roadmap, but the current extension ent
 - VS Code `^1.125.0`.
 - Node.js compatible with the project toolchain.
 - `pnpm` `11.7.0`.
-- A reachable MySQL server for manual extension testing.
+- A reachable MySQL/PostgreSQL server or SQLite3 database file for manual extension testing.
 
 This project intentionally enforces `pnpm`. Do not use `npm` or `yarn` for installs or scripts.
 
@@ -128,7 +126,7 @@ The codebase follows four main layers:
 - `presentation`: VS Code commands, tree views, webviews, and user-facing presenters.
 - `application`: use cases that orchestrate domain and infrastructure capabilities.
 - `domain`: database-agnostic models, task models, and business concepts.
-- `infrastructure`: MySQL driver integration, file writing, storage adapters, and other external details.
+- `infrastructure`: database driver integration, file writing, storage adapters, and other external details.
 
 Important boundaries:
 
@@ -136,19 +134,19 @@ Important boundaries:
 - Domain code should not depend on `vscode`.
 - Import/export is kept as an independent subsystem.
 - The rewrite does not reuse the old PPZ architecture.
-- MySQL is the only active database target in the current MVP.
+- Database-specific infrastructure is isolated behind application interfaces.
 
 ## Roadmap
 
 Progress is tracked in [`.agents/todolist.md`](./.agents/todolist.md).
 
-Near-term work remains focused on stabilizing the MySQL experience and keeping the architecture ready for later database engines. PostgreSQL, SQLite, MSSQL, and compatible databases are intentionally deferred until the MySQL path is solid.
+Near-term work remains focused on stabilizing the existing MySQL, PostgreSQL, and SQLite3 workflows while keeping the architecture ready for additional engines. MSSQL and compatible databases remain future work.
 
 ## Known Limitations
 
-- Only MySQL is currently exposed as a supported database engine.
 - The extension is still in early `0.0.1` development.
-- Packaging and marketplace release workflows are not documented here yet.
+- MySQL import workflows are currently richer than PostgreSQL and SQLite3 import support.
+- Packaging and marketplace release workflows should be verified in a clean environment before publishing.
 
 ## License
 
