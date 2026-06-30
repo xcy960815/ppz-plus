@@ -130,7 +130,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 			blocks.push(this.renderFooter());
 
 			return {
-				title: `${target.schemaName}.sql`,
+				title: `${target.schemaName}.${kind}.sql`,
 				format: SQL_EXPORT_FORMAT.id,
 				kind,
 				target,
