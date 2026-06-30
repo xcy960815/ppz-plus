@@ -123,25 +123,23 @@ suite('Domain — DatabaseCapabilityDeclaration', () => {
 	});
 
 	test('POSTGRESQL_TREE_CAPABILITY_DECLARATION 已迁移能力为 supported', () => {
-		const supportedCapabilities = ['tableRead', 'tablePagination', 'tableSort', 'tableFilter', 'sqlExecute', 'exportDml'] as const;
+		const supportedCapabilities = ['tableRead', 'tablePagination', 'tableSort', 'tableFilter', 'sqlExecute', 'exportDdl', 'exportDml'] as const;
 
 		for (const key of supportedCapabilities) {
 			assert.strictEqual(
 				POSTGRESQL_TREE_CAPABILITY_DECLARATION.capabilities[key],
 				'supported',
-				`PostgreSQL 能力“${key}”应为 supported`
+				`PostgreSQL 能力”${key}”应为 supported`
 			);
 		}
 	});
 
-	test('POSTGRESQL_TREE_CAPABILITY_DECLARATION DDL 导出仍为 planned', () => {
-		const plannedCapabilities = ['exportDdl'] as const;
-
-		for (const key of plannedCapabilities) {
-			assert.strictEqual(
+	test('POSTGRESQL_TREE_CAPABILITY_DECLARATION 无 planned 残留能力', () => {
+		for (const key of DATABASE_CAPABILITY_KEYS) {
+			assert.notStrictEqual(
 				POSTGRESQL_TREE_CAPABILITY_DECLARATION.capabilities[key],
 				'planned',
-				`PostgreSQL 能力“${key}”应为 planned`
+				`PostgreSQL 能力”${key}”不应停留在 planned 状态`
 			);
 		}
 	});

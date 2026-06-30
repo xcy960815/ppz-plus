@@ -104,6 +104,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 
 			if (kind === 'ddl' || kind === 'both') {
 				blocks.push(this.renderCreateSchemaStatement(target.schemaName));
+				blocks.push(this.renderSetSearchPathStatement(target.schemaName));
 				blocks.push(
 					await this.exportDdl(client, target, {
 						includeForeignKeys: true,
@@ -145,10 +146,11 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 		const client = await this.openClient(connection, target.databaseName);
 
 		try {
+			const schemaName = target.schemaName;
 			const tableTargets = (await this.listSchemaTables(client, target)).map(
 				(tableName) => ({
 					databaseName: target.databaseName,
-					schemaName: target.schemaName,
+					schemaName,
 					tableName,
 				})
 			);
@@ -157,7 +159,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 			];
 
 			if (kind === 'ddl' || kind === 'both') {
-				blocks.push(this.renderCreateSchemaStatement(target.schemaName));
+				blocks.push(this.renderCreateSchemaStatement(schemaName));
+				blocks.push(this.renderSetSearchPathStatement(schemaName));
 			}
 
 			if (tableTargets.length === 0) {
@@ -181,7 +184,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 			blocks.push(this.renderFooter());
 
 			return {
-				title: `${target.databaseName}.${target.schemaName}.sql`,
+				title: `${target.databaseName}.${target.schemaName}.${kind}.sql`,
 				format: SQL_EXPORT_FORMAT.id,
 				kind,
 				target,
@@ -369,6 +372,19 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 	}
 
 	/**
+	 * 生成 PostgreSQL search_path 设置语句。
+	 *
+	 * 确保后续 DDL 语句（CREATE TABLE / CREATE INDEX / ALTER TABLE）
+	 * 作用于目标 schema，而不是默认的 public 或用户同名 schema。
+	 *
+	 * @param schemaName schema 名称。
+	 * @returns SET search_path SQL。
+	 */
+	private renderSetSearchPathStatement(schemaName: string): string {
+		return `SET search_path TO ${this.escapeIdentifier(schemaName)};`;
+	}
+
+	/**
 	 * 生成导出文件尾部注释。
 	 *
 	 * @returns 导出文件尾部 SQL。
@@ -392,7 +408,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 		kind: SqlExportKind,
 		options: PostgreSqlDdlBlockOptions
 	): Promise<string> {
-		const blocks = [`-- Table: ${this.renderQualifiedTableLabel(target)}`];
+		const blocks = [
+			`-- Table: ${this.renderQualifiedTableLabel(target)}`,
+			this.renderSetSearchPathStatement(target.schemaName),
+		];
 
 		if (kind === 'ddl' || kind === 'both') {
 			blocks.push(await this.exportDdl(client, target, options));
@@ -719,6 +738,8 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
 				'WHERE tbl_ns.nspname = $1',
 				'AND tbl.relname = $2',
 				"AND dep.deptype IN ('a', 'i')",
+				// identity columns 内部管理 sequence，不需要显式导出
+				"AND attr.attidentity = ''",
 				'ORDER BY seq_ns.nspname, seq.relname',
 			].join(' '),
 			[target.schemaName, target.tableName]
