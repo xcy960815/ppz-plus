@@ -64,6 +64,11 @@ export function extractUserErrorMessage(
 		return error.message.trim();
 	}
 
+	const aggregateMessage = extractAggregateErrorMessage(error);
+	if (aggregateMessage !== undefined) {
+		return aggregateMessage;
+	}
+
 	if (typeof error === 'string' && error.trim().length > 0) {
 		return error.trim();
 	}
@@ -89,10 +94,18 @@ function formatUserErrorDetails(
 		`消息：${errorMessage}`,
 		`创建时间：${new Date().toISOString()}`,
 	];
+	const aggregateDetails = formatAggregateErrorDetails(error);
 
 	if (error instanceof Error && error.stack) {
 		detailLines.push('', '堆栈：', error.stack);
+		if (aggregateDetails.length > 0) {
+			detailLines.push('', '子错误：', ...aggregateDetails);
+		}
 		return detailLines.join('\n');
+	}
+
+	if (aggregateDetails.length > 0) {
+		detailLines.push('', '子错误：', ...aggregateDetails);
 	}
 
 	if (typeof error !== 'string') {
@@ -100,6 +113,48 @@ function formatUserErrorDetails(
 	}
 
 	return detailLines.join('\n');
+}
+
+/**
+ * 从 AggregateError 一类的错误对象中提取子错误消息。
+ *
+ * @param error 原始错误。
+ * @returns 汇总后的子错误消息；没有可读子错误时为空。
+ */
+function extractAggregateErrorMessage(error: unknown): string | undefined {
+	const messages = readAggregateErrors(error)
+		.map((item) => extractUserErrorMessage(item, ''))
+		.filter((message) => message.length > 0);
+
+	return messages.length > 0 ? messages.join('；') : undefined;
+}
+
+/**
+ * 格式化 AggregateError 的子错误详情。
+ *
+ * @param error 原始错误。
+ * @returns 可写入诊断信息的子错误行。
+ */
+function formatAggregateErrorDetails(error: unknown): readonly string[] {
+	return readAggregateErrors(error).map((item, index) => {
+		const message = extractUserErrorMessage(item, '无错误消息。');
+		return `${index + 1}. ${message}`;
+	});
+}
+
+/**
+ * 从未知错误对象中读取 AggregateError 子错误。
+ *
+ * @param error 原始错误。
+ * @returns 子错误列表。
+ */
+function readAggregateErrors(error: unknown): readonly unknown[] {
+	if (!error || typeof error !== 'object' || !('errors' in error)) {
+		return [];
+	}
+
+	const errors = (error as { readonly errors?: unknown }).errors;
+	return Array.isArray(errors) ? errors : [];
 }
 
 /**
