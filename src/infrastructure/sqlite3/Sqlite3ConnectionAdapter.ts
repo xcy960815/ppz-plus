@@ -12,8 +12,8 @@ export class Sqlite3ConnectionAdapter {
 	/**
 	 * 检查连接配置是否属于 SQLite3 引擎。
 	 *
-	 * @param config 正在检查的连接配置。
-	 * @returns 该配置是否为 SQLite3 连接。
+	 * @param {ConnectionConfig} config 正在检查的连接配置。
+	 * @returns {config is Sqlite3ConnectionConfig} 该配置是否为 SQLite3 连接。
 	 */
 	public supports(config: ConnectionConfig): config is Sqlite3ConnectionConfig {
 		return config.engine === 'sqlite3';
@@ -22,8 +22,8 @@ export class Sqlite3ConnectionAdapter {
 	/**
 	 * 解析 SQLite3 配置对应的本地数据库文件路径。
 	 *
-	 * @param config SQLite3 连接配置。
-	 * @returns 绝对数据库文件路径。
+	 * @param {Sqlite3ConnectionConfig} config SQLite3 连接配置。
+	 * @returns {string} 绝对数据库文件路径。
 	 */
 	public resolveDatabasePath(config: Sqlite3ConnectionConfig): string {
 		if (config.dbPath.trim().length === 0) {

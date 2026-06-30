@@ -21,10 +21,10 @@ export class InsertSqlite3TableRowUseCase {
 	/**
 	 * 向指定 SQLite3 表新增单条记录。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要新增记录的表。
-	 * @param values 需要显式写入的字段值。
-	 * @returns 单行新增结果。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要新增记录的表。
+	 * @param {Sqlite3TableInsertValues} values 需要显式写入的字段值。
+	 * @returns {Promise<Sqlite3TableInsertResult>} 单行新增结果。
 	 */
 	public async execute(
 		connection: Sqlite3ConnectionConfig,

@@ -58,7 +58,7 @@ export class ExportPostgreSqlTableSqlCommand implements ExtensionCommand {
 	/**
 	 * 创建 PostgreSQL 表级 SQL 导出命令。
 	 *
-	 * @param config 命令标识和导出内容类型配置。
+	 * @param {ExportPostgreSqlTableSqlCommandConfig} config 命令标识和导出内容类型配置。
 	 * @param checkSqlExportCapabilityUseCase 用于在命令入口判断导出能力。
 	 * @param exportPostgreSqlTableUseCase 用于生成 SQL 导出文档的用例。
 	 * @param saveSqlExportDocumentUseCase 用于保存 SQL 导出文档到文件。
@@ -78,7 +78,7 @@ export class ExportPostgreSqlTableSqlCommand implements ExtensionCommand {
 	/**
 	 * 向 VS Code 注册命令。
 	 *
-	 * @returns 命令注册的可释放句柄。
+	 * @returns {vscode.Disposable} 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
@@ -111,7 +111,7 @@ export class ExportPostgreSqlTableSqlCommand implements ExtensionCommand {
 	/**
 	 * 导出表级 SQL 并保存到用户选择的文件。
 	 *
-	 * @param tableNode 当前选中的 PostgreSQL 表 Tree 节点。
+	 * @param {PostgreSqlTableTreeNode} tableNode 当前选中的 PostgreSQL 表 Tree 节点。
 	 */
 	private async exportTable(tableNode: PostgreSqlTableTreeNode): Promise<void> {
 		const startedAt = new Date();
@@ -161,9 +161,9 @@ export class ExportPostgreSqlTableSqlCommand implements ExtensionCommand {
 	/**
 	 * 带 VS Code 进度提示生成表级 SQL 文档。
 	 *
-	 * @param tableNode 当前选中的 PostgreSQL 表 Tree 节点。
-	 * @param targetName 导出目标名称。
-	 * @returns 生成后的 SQL 导出文档。
+	 * @param {PostgreSqlTableTreeNode} tableNode 当前选中的 PostgreSQL 表 Tree 节点。
+	 * @param {string} targetName 导出目标名称。
+	 * @returns {Promise<SqlExportDocument>} 生成后的 SQL 导出文档。
 	 */
 	private async exportTableDocumentWithProgress(
 		tableNode: PostgreSqlTableTreeNode,
@@ -196,10 +196,10 @@ export class ExportPostgreSqlTableSqlCommand implements ExtensionCommand {
 	/**
 	 * 带 VS Code 进度提示保存表级 SQL 文档。
 	 *
-	 * @param document 已生成的 SQL 导出文档。
-	 * @param filePath 用户选择的目标文件路径。
-	 * @param targetName 导出目标名称。
-	 * @returns SQL 文件保存结果。
+	 * @param {SqlExportDocument} document 已生成的 SQL 导出文档。
+	 * @param {string} filePath 用户选择的目标文件路径。
+	 * @param {string} targetName 导出目标名称。
+	 * @returns {Promise<SqlExportFileSaveResult>} SQL 文件保存结果。
 	 */
 	private async saveTableDocumentWithProgress(
 		document: SqlExportDocument,
@@ -228,12 +228,12 @@ export class ExportPostgreSqlTableSqlCommand implements ExtensionCommand {
 	/**
 	 * 记录表级 SQL 导出任务日志。
 	 *
-	 * @param tableNode 当前选中的 PostgreSQL 表 Tree 节点。
-	 * @param targetName 导出目标名称。
-	 * @param startedAt 导出任务开始时间。
-	 * @param status 导出任务最终状态。
-	 * @param filePath 可选的导出文件路径。
-	 * @param errorMessage 可选的错误信息。
+	 * @param {PostgreSqlTableTreeNode} tableNode 当前选中的 PostgreSQL 表 Tree 节点。
+	 * @param {string} targetName 导出目标名称。
+	 * @param {Date} startedAt 导出任务开始时间。
+	 * @param {'success' | 'failure'} status 导出任务最终状态。
+	 * @param {string} filePath 可选的导出文件路径。
+	 * @param {string} errorMessage 可选的错误信息。
 	 */
 	private async recordExportLog(
 		tableNode: PostgreSqlTableTreeNode,

@@ -125,8 +125,8 @@ export class MySqlConnectionsTreeDataProvider
 	/**
 	 * 返回指定节点对应的 TreeItem 表现。
 	 *
-	 * @param element 正在渲染的 Tree 节点。
-	 * @returns 该节点对应的 VS Code TreeItem。
+	 * @param {MySqlConnectionsTreeNode} element 正在渲染的 Tree 节点。
+	 * @returns {vscode.TreeItem} 该节点对应的 VS Code TreeItem。
 	 */
 	public getTreeItem(
 		element: MySqlConnectionsTreeNode
@@ -161,8 +161,8 @@ export class MySqlConnectionsTreeDataProvider
 	/**
 	 * 加载指定 Tree 节点的子节点。
 	 *
-	 * @param element 父级 Tree 节点；根层级时为空。
-	 * @returns 需要渲染的子节点。
+	 * @param {MySqlConnectionsTreeNode} element 父级 Tree 节点；根层级时为空。
+	 * @returns {Promise<MySqlConnectionsTreeNode[]>} 需要渲染的子节点。
 	 */
 	public async getChildren(
 		element?: MySqlConnectionsTreeNode
@@ -270,8 +270,8 @@ export class MySqlConnectionsTreeDataProvider
 	/**
 	 * 创建连接节点的可视化表示。
 	 *
-	 * @param element 连接 Tree 节点。
-	 * @returns 连接节点对应的 TreeItem。
+	 * @param {MySqlConnectionTreeNode} element 连接 Tree 节点。
+	 * @returns {vscode.TreeItem} 连接节点对应的 TreeItem。
 	 */
 	private createConnectionTreeItem(
 		element: MySqlConnectionTreeNode
@@ -298,8 +298,8 @@ export class MySqlConnectionsTreeDataProvider
 	/**
 	 * 创建 schema 节点的可视化表示。
 	 *
-	 * @param element schema Tree 节点。
-	 * @returns schema 节点对应的 TreeItem。
+	 * @param {MySqlSchemaTreeNode} element schema Tree 节点。
+	 * @returns {vscode.TreeItem} schema 节点对应的 TreeItem。
 	 */
 	private createSchemaTreeItem(
 		element: MySqlSchemaTreeNode
@@ -317,8 +317,8 @@ export class MySqlConnectionsTreeDataProvider
 	/**
 	 * 创建 PostgreSQL database 节点的可视化表示。
 	 *
-	 * @param element PostgreSQL database Tree 节点。
-	 * @returns PostgreSQL database 节点对应的 TreeItem。
+	 * @param {PostgreSqlDatabaseTreeNode} element PostgreSQL database Tree 节点。
+	 * @returns {vscode.TreeItem} PostgreSQL database 节点对应的 TreeItem。
 	 */
 	private createPostgreSqlDatabaseTreeItem(
 		element: PostgreSqlDatabaseTreeNode
@@ -338,8 +338,8 @@ export class MySqlConnectionsTreeDataProvider
 	/**
 	 * 创建 PostgreSQL schema 节点的可视化表示。
 	 *
-	 * @param element PostgreSQL schema Tree 节点。
-	 * @returns PostgreSQL schema 节点对应的 TreeItem。
+	 * @param {PostgreSqlSchemaTreeNode} element PostgreSQL schema Tree 节点。
+	 * @returns {vscode.TreeItem} PostgreSQL schema 节点对应的 TreeItem。
 	 */
 	private createPostgreSqlSchemaTreeItem(
 		element: PostgreSqlSchemaTreeNode
@@ -359,8 +359,8 @@ export class MySqlConnectionsTreeDataProvider
 	/**
 	 * 创建 PostgreSQL 表节点的可视化表示。
 	 *
-	 * @param element PostgreSQL 表 Tree 节点。
-	 * @returns PostgreSQL 表节点对应的 TreeItem。
+	 * @param {PostgreSqlTableTreeNode} element PostgreSQL 表 Tree 节点。
+	 * @returns {vscode.TreeItem} PostgreSQL 表节点对应的 TreeItem。
 	 */
 	private createPostgreSqlTableTreeItem(
 		element: PostgreSqlTableTreeNode
@@ -385,8 +385,8 @@ export class MySqlConnectionsTreeDataProvider
 	/**
 	 * 创建 SQLite3 表节点的可视化表示。
 	 *
-	 * @param element SQLite3 表 Tree 节点。
-	 * @returns SQLite3 表节点对应的 TreeItem。
+	 * @param {Sqlite3TableTreeNode} element SQLite3 表 Tree 节点。
+	 * @returns {vscode.TreeItem} SQLite3 表节点对应的 TreeItem。
 	 */
 	private createSqlite3TableTreeItem(
 		element: Sqlite3TableTreeNode
@@ -413,8 +413,8 @@ export class MySqlConnectionsTreeDataProvider
 	/**
 	 * 创建表节点的可视化表示。
 	 *
-	 * @param element 表 Tree 节点。
-	 * @returns 表节点对应的 TreeItem。
+	 * @param {MySqlTableTreeNode} element 表 Tree 节点。
+	 * @returns {vscode.TreeItem} 表节点对应的 TreeItem。
 	 */
 	private createTableTreeItem(
 		element: MySqlTableTreeNode
@@ -438,8 +438,8 @@ export class MySqlConnectionsTreeDataProvider
 	/**
 	 * 为资源树创建简短连接描述。
 	 *
-	 * @param connection 待描述的连接配置。
-	 * @returns 用户可读的连接描述。
+	 * @param {ConnectionConfig} connection 待描述的连接配置。
+	 * @returns {string} 用户可读的连接描述。
 	 */
 	private describeConnection(connection: ConnectionConfig): string {
 		if (connection.mode === 'parameters') {

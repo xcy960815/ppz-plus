@@ -34,11 +34,11 @@ export class PreviewMySqlJsonFileImportUseCase {
 	/**
 	 * 读取 JSON 文件并生成导入预览。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param target JSON 导入目标表。
-	 * @param filePath JSON 文件路径。
-	 * @param mappings 可选的字段映射配置。
-	 * @returns 导入预览结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {JsonTableImportTarget} target JSON 导入目标表。
+	 * @param {string} filePath JSON 文件路径。
+	 * @param {readonly ImportColumnMapping[]} mappings 可选的字段映射配置。
+	 * @returns {Promise<ImportPreviewResult>} 导入预览结果。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,

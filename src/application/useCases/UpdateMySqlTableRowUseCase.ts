@@ -22,12 +22,12 @@ export class UpdateMySqlTableRowUseCase {
 	/**
 	 * 更新指定 MySQL 表中的单条记录。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要更新记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @param values 需要更新的新字段值。
-	 * @returns 单行更新结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要更新记录的表。
+	 * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @param {MySqlTableUpdateValues} values 需要更新的新字段值。
+	 * @returns {Promise<MySqlTableUpdateResult>} 单行更新结果。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,

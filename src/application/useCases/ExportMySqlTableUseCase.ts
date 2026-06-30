@@ -20,10 +20,10 @@ export class ExportMySqlTableUseCase {
 	/**
 	 * 导出指定 MySQL 表的 SQL 内容。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param target 表级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns 生成后的 SQL 导出文档。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {Promise<SqlExportDocument>} 生成后的 SQL 导出文档。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,

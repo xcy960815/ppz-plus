@@ -20,9 +20,9 @@ export class ListSqlite3TableColumnsUseCase {
 	/**
 	 * 加载选中 SQLite3 表的字段。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly Sqlite3TableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	public async execute(
 		connection: Sqlite3ConnectionConfig,

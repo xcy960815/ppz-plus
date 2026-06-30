@@ -42,13 +42,13 @@ export class ImportMySqlCsvFileUseCase {
 	/**
 	 * 读取并导入指定 CSV 文件。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param target CSV 导入目标表。
-	 * @param filePath CSV 文件路径。
-	 * @param mappings 可选的字段映射配置。
-	 * @param progressReporter 可选的导入进度回调。
-	 * @param cancellationSignal 可选的长任务取消信号。
-	 * @returns CSV 文件导入结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {CsvTableImportTarget} target CSV 导入目标表。
+	 * @param {string} filePath CSV 文件路径。
+	 * @param {readonly ImportColumnMapping[]} mappings 可选的字段映射配置。
+	 * @param {ImportTaskProgressReporter} progressReporter 可选的导入进度回调。
+	 * @param {CancellationSignal} cancellationSignal 可选的长任务取消信号。
+	 * @returns {Promise<CsvFileImportResult>} CSV 文件导入结果。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,
@@ -107,9 +107,9 @@ export class ImportMySqlCsvFileUseCase {
 	/**
 	 * 校验 CSV 导入的基础输入。
 	 *
-	 * @param target CSV 导入目标表。
-	 * @param filePath CSV 文件路径。
-	 * @returns 输入无效时返回失败结果，否则返回空。
+	 * @param {CsvTableImportTarget} target CSV 导入目标表。
+	 * @param {string} filePath CSV 文件路径。
+	 * @returns {CsvFileImportResult | undefined} 输入无效时返回失败结果，否则返回空。
 	 */
 	private validateInput(
 		target: CsvTableImportTarget,

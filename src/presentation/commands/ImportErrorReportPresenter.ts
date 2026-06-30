@@ -19,8 +19,8 @@ export interface ImportErrorReportPresentationInput {
 /**
  * 展示导入错误，并允许用户打开详细报告。
  *
- * @param createImportErrorReportUseCase 用于创建错误报告文档的用例。
- * @param input 导入错误展示输入。
+ * @param {CreateImportErrorReportUseCase} createImportErrorReportUseCase 用于创建错误报告文档的用例。
+ * @param {ImportErrorReportPresentationInput} input 导入错误展示输入。
  */
 export async function showImportErrorReport(
 	createImportErrorReportUseCase: CreateImportErrorReportUseCase,
@@ -51,8 +51,8 @@ export async function showImportErrorReport(
 /**
  * 格式化导入错误阶段。
  *
- * @param stage 原始导入错误阶段。
- * @returns 面向用户展示的导入阶段名称。
+ * @param {ImportErrorStage} stage 原始导入错误阶段。
+ * @returns {string} 面向用户展示的导入阶段名称。
  */
 function formatImportStage(stage: ImportErrorStage): string {
 	if (stage === 'mapping') {

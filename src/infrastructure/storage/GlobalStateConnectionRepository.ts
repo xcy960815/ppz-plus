@@ -24,7 +24,7 @@ export class GlobalStateConnectionRepository
 	/**
 	 * 列出所有已保存的连接配置。
 	 *
-	 * @returns 已保存的连接配置。
+	 * @returns {Promise<readonly ConnectionConfig[]>} 已保存的连接配置。
 	 */
 	public async list(): Promise<readonly ConnectionConfig[]> {
 		return this.readConnections();
@@ -33,8 +33,8 @@ export class GlobalStateConnectionRepository
 	/**
 	 * 根据标识查找已保存连接。
 	 *
-	 * @param id 连接标识。
-	 * @returns 存在时返回匹配的已保存连接。
+	 * @param {string} id 连接标识。
+	 * @returns {Promise<ConnectionConfig | undefined>} 存在时返回匹配的已保存连接。
 	 */
 	public async find(id: string): Promise<ConnectionConfig | undefined> {
 		const connections = this.readConnections();
@@ -44,7 +44,7 @@ export class GlobalStateConnectionRepository
 	/**
 	 * 保存连接配置，并替换具有相同标识的已有连接。
 	 *
-	 * @param config 需要持久化的连接配置。
+	 * @param {ConnectionConfig} config 需要持久化的连接配置。
 	 */
 	public async save(config: ConnectionConfig): Promise<void> {
 		const connections = this.readConnections();
@@ -71,7 +71,7 @@ export class GlobalStateConnectionRepository
 	/**
 	 * 删除已保存连接配置。
 	 *
-	 * @param id 需要删除的连接标识。
+	 * @param {string} id 需要删除的连接标识。
 	 */
 	public async delete(id: string): Promise<void> {
 		const connections = this.readConnections().filter(
@@ -86,7 +86,7 @@ export class GlobalStateConnectionRepository
 	/**
 	 * 从 VS Code 全局状态读取已保存连接列表。
 	 *
-	 * @returns 已保存连接列表。
+	 * @returns {ConnectionConfig[]} 已保存连接列表。
 	 */
 	private readConnections(): ConnectionConfig[] {
 		return this.globalState.get<ConnectionConfig[]>(

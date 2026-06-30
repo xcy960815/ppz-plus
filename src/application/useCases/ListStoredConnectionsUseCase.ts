@@ -17,7 +17,7 @@ export class ListStoredConnectionsUseCase {
 	/**
 	 * 返回全部已保存连接配置。
 	 *
-	 * @returns 已保存的连接记录。
+	 * @returns {Promise<readonly ConnectionConfig[]>} 已保存的连接记录。
 	 */
 	public async execute(): Promise<readonly ConnectionConfig[]> {
 		return this.connectionRepository.list();

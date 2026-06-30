@@ -5,7 +5,7 @@ import { createExtensionBootstrap } from './presentation/bootstrap/createExtensi
 /**
  * 激活扩展启动流程并注册所有表现层入口。
  *
- * @param context VS Code 扩展生命周期上下文。
+ * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
  */
 export function activate(context: vscode.ExtensionContext): void {
 	/**

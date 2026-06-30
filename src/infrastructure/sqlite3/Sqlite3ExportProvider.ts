@@ -31,10 +31,10 @@ export class Sqlite3ExportProvider implements ApplicationSqlite3ExportProvider {
 	/**
 	 * 导出指定 SQLite3 表的 SQL 文档。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param target 表级导出目标。
-	 * @param kind 导出的 SQL 内容类型。
-	 * @returns 生成后的 SQL 导出文档。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @param {SqlExportKind} kind 导出的 SQL 内容类型。
+	 * @returns {Promise<SqlExportDocument>} 生成后的 SQL 导出文档。
 	 */
 	public async exportTable(
 		connection: Sqlite3ConnectionConfig,
@@ -69,9 +69,9 @@ export class Sqlite3ExportProvider implements ApplicationSqlite3ExportProvider {
 	/**
 	 * 从 sqlite_master 中导出建表 SQL。
 	 *
-	 * @param database 已打开的数据库实例。
-	 * @param tableName 需要导出的表。
-	 * @returns DDL SQL 文本。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
+	 * @param {string} tableName 需要导出的表。
+	 * @returns {Promise<string>} DDL SQL 文本。
 	 */
 	private async exportDdl(
 		database: Sqlite3RuntimeDatabase,
@@ -99,9 +99,9 @@ export class Sqlite3ExportProvider implements ApplicationSqlite3ExportProvider {
 	/**
 	 * 导出表数据 INSERT 语句。
 	 *
-	 * @param database 已打开的数据库实例。
-	 * @param tableName 需要导出的表。
-	 * @returns DML SQL 文本。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
+	 * @param {string} tableName 需要导出的表。
+	 * @returns {Promise<string>} DML SQL 文本。
 	 */
 	private async exportDml(
 		database: Sqlite3RuntimeDatabase,
@@ -137,8 +137,8 @@ export class Sqlite3ExportProvider implements ApplicationSqlite3ExportProvider {
 	/**
 	 * 打开 SQLite3 数据库文件。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @returns 已打开的数据库实例。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @returns {Promise<Sqlite3RuntimeDatabase>} 已打开的数据库实例。
 	 */
 	private async openDatabase(
 		connection: Sqlite3ConnectionConfig
@@ -165,10 +165,10 @@ export class Sqlite3ExportProvider implements ApplicationSqlite3ExportProvider {
 	/**
 	 * 执行 SQLite3 多行查询。
 	 *
-	 * @param database 已打开的数据库实例。
-	 * @param sql 需要执行的 SQL。
-	 * @param params 绑定参数。
-	 * @returns 原始查询行。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
+	 * @param {string} sql 需要执行的 SQL。
+	 * @param {readonly unknown[]} params 绑定参数。
+	 * @returns {Promise<Sqlite3QueryRows>} 原始查询行。
 	 */
 	private async all(
 		database: Sqlite3RuntimeDatabase,
@@ -197,7 +197,7 @@ export class Sqlite3ExportProvider implements ApplicationSqlite3ExportProvider {
 	/**
 	 * 关闭 SQLite3 数据库实例。
 	 *
-	 * @param database 已打开的数据库实例。
+	 * @param {Sqlite3RuntimeDatabase} database 已打开的数据库实例。
 	 */
 	private async closeDatabase(database: Sqlite3RuntimeDatabase): Promise<void> {
 		await new Promise<void>((resolve, reject) => {
@@ -215,8 +215,8 @@ export class Sqlite3ExportProvider implements ApplicationSqlite3ExportProvider {
 	/**
 	 * 转义 SQLite3 标识符。
 	 *
-	 * @param identifier 原始标识符。
-	 * @returns 可安全拼接进 SQL 的标识符。
+	 * @param {string} identifier 原始标识符。
+	 * @returns {string} 可安全拼接进 SQL 的标识符。
 	 */
 	private quoteIdentifier(identifier: string): string {
 		return `"${identifier.replaceAll('"', '""')}"`;
@@ -225,8 +225,8 @@ export class Sqlite3ExportProvider implements ApplicationSqlite3ExportProvider {
 	/**
 	 * 格式化 SQLite3 INSERT 字面量。
 	 *
-	 * @param value 原始单元格值。
-	 * @returns SQL 字面量。
+	 * @param {unknown} value 原始单元格值。
+	 * @returns {string} SQL 字面量。
 	 */
 	private formatLiteral(value: unknown): string {
 		if (value === null || value === undefined) {

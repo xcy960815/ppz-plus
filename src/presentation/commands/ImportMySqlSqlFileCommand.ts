@@ -48,7 +48,7 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 	/**
 	 * 向 VS Code 注册命令。
 	 *
-	 * @returns 命令注册的可释放句柄。
+	 * @returns {vscode.Disposable} 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
@@ -79,8 +79,8 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 	/**
 	 * 从 Tree 节点解析初始 MySQL 连接。
 	 *
-	 * @param node 可选的 MySQL Tree 节点。
-	 * @returns 可直接用于导入的 MySQL 连接。
+	 * @param {MySqlConnectionsTreeNode} node 可选的 MySQL Tree 节点。
+	 * @returns {MysqlConnectionConfig | undefined} 可直接用于导入的 MySQL 连接。
 	 */
 	private resolveInitialConnection(
 		node?: MySqlConnectionsTreeNode
@@ -91,7 +91,7 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择一个已保存的 MySQL 连接。
 	 *
-	 * @returns 用户选择的 MySQL 连接；未选择时为空。
+	 * @returns {Promise<MysqlConnectionConfig | undefined>} 用户选择的 MySQL 连接；未选择时为空。
 	 */
 	private async pickConnection(): Promise<MysqlConnectionConfig | undefined> {
 		const connections = (
@@ -133,7 +133,7 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 	/**
 	 * 提示用户选择一个 SQL 文件。
 	 *
-	 * @returns 用户选择的 SQL 文件路径；未选择时为空。
+	 * @returns {Promise<string | undefined>} 用户选择的 SQL 文件路径；未选择时为空。
 	 */
 	private async pickSqlFilePath(): Promise<string | undefined> {
 		const selectedFiles = await vscode.window.showOpenDialog({
@@ -152,9 +152,9 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 	/**
 	 * 生成 SQL 文件导入预览并等待用户确认。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param filePath SQL 文件路径。
-	 * @returns 用户是否确认继续导入。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} filePath SQL 文件路径。
+	 * @returns {Promise<boolean>} 用户是否确认继续导入。
 	 */
 	private async confirmImportPreview(
 		connection: MysqlConnectionConfig,
@@ -201,8 +201,8 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
 	/**
 	 * 执行 SQL 文件导入并展示用户可见结果。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param filePath SQL 文件路径。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} filePath SQL 文件路径。
 	 */
 	private async importSqlFile(
 		connection: MysqlConnectionConfig,

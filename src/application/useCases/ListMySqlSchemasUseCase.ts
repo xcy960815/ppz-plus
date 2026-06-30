@@ -20,8 +20,8 @@ export class ListMySqlSchemasUseCase {
 	/**
 	 * 加载选中 MySQL 连接可见的 schema。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @returns 可见的 schema 列表。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @returns {Promise<readonly MySqlSchemaMetadata[]>} 可见的 schema 列表。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig

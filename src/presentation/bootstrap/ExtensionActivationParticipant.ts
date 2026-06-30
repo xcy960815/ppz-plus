@@ -7,7 +7,7 @@ export interface ExtensionActivationParticipant {
 	/**
 	 * 为当前扩展会话激活该参与者。
 	 *
-	 * @param context VS Code 扩展生命周期上下文。
+	 * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
 	 */
 	activate(context: vscode.ExtensionContext): void;
 }

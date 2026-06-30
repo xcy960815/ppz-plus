@@ -16,9 +16,9 @@ export class ExecuteSqlite3SqlUseCase {
 	/**
 	 * 执行用户提交的 SQLite3 SQL。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param sql 用户输入的 SQL 文本。
-	 * @returns 统一 SQL 执行结果。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {string} sql 用户输入的 SQL 文本。
+	 * @returns {Promise<SqlExecutionResult>} 统一 SQL 执行结果。
 	 */
 	public async execute(
 		connection: Sqlite3ConnectionConfig,

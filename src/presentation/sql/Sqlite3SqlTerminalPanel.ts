@@ -64,7 +64,7 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 注册 SQL 终端 Webview 恢复器。
 	 *
-	 * @param context VS Code 扩展生命周期上下文。
+	 * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
 	 */
 	public activate(context: vscode.ExtensionContext): void {
 		context.subscriptions.push(
@@ -78,8 +78,8 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 从 VS Code 保存的 Webview 状态恢复 SQL 终端面板。
 	 *
-	 * @param panel VS Code 恢复出来的 Webview 面板。
-	 * @param serializedState Webview 前端保存的轻量状态。
+	 * @param {vscode.WebviewPanel} panel VS Code 恢复出来的 Webview 面板。
+	 * @param {unknown} serializedState Webview 前端保存的轻量状态。
 	 */
 	public async deserializeWebviewPanel(
 		panel: vscode.WebviewPanel,
@@ -103,8 +103,8 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 打开或显示 SQLite3 SQL 终端。
 	 *
-	 * @param initialConnection 可选的初始选中连接。
-	 * @param initialSql 可选的初始 SQL 文本。
+	 * @param {Sqlite3ConnectionConfig} initialConnection 可选的初始选中连接。
+	 * @param {string} initialSql 可选的初始 SQL 文本。
 	 */
 	public async open(
 		initialConnection?: Sqlite3ConnectionConfig,
@@ -146,7 +146,7 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 为 SQL 终端面板注册生命周期和消息处理。
 	 *
-	 * @param state 当前面板状态。
+	 * @param {Sqlite3SqlTerminalPanelState} state 当前面板状态。
 	 */
 	private registerPanelHandlers(state: Sqlite3SqlTerminalPanelState): void {
 		state.panel.onDidDispose(() => {
@@ -164,8 +164,8 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 处理 SQL 终端 Webview 动作。
 	 *
-	 * @param state 当前面板状态。
-	 * @param message Webview 发出的消息。
+	 * @param {Sqlite3SqlTerminalPanelState} state 当前面板状态。
+	 * @param {MySqlSqlTerminalWebviewMessage} message Webview 发出的消息。
 	 */
 	private async handleWebviewMessage(
 		state: Sqlite3SqlTerminalPanelState,
@@ -211,7 +211,7 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 渲染当前 SQL 终端面板。
 	 *
-	 * @param state 当前面板状态。
+	 * @param {Sqlite3SqlTerminalPanelState} state 当前面板状态。
 	 */
 	private async render(state: Sqlite3SqlTerminalPanelState): Promise<void> {
 		state.panel.title = 'SQLite3 SQL 终端';
@@ -221,9 +221,9 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 创建 SQL 终端 Webview HTML。
 	 *
-	 * @param state 当前面板状态。
-	 * @param isExecuting 是否正在执行 SQL。
-	 * @returns Webview HTML 文档。
+	 * @param {Sqlite3SqlTerminalPanelState} state 当前面板状态。
+	 * @param {boolean} isExecuting 是否正在执行 SQL。
+	 * @returns {Promise<string>} Webview HTML 文档。
 	 */
 	private async renderHtml(
 		state: Sqlite3SqlTerminalPanelState,
@@ -336,7 +336,7 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 从存储中列出 SQLite3 连接。
 	 *
-	 * @returns SQLite3 连接列表。
+	 * @returns {Promise<Sqlite3ConnectionConfig[]>} SQLite3 连接列表。
 	 */
 	private async listSqlite3Connections(): Promise<Sqlite3ConnectionConfig[]> {
 		const connections = await this.listStoredConnectionsUseCase.execute();
@@ -349,8 +349,8 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 从 VS Code 保存状态解析 SQL 终端状态。
 	 *
-	 * @param value 原始状态。
-	 * @returns 归一化后的恢复状态。
+	 * @param {unknown} value 原始状态。
+	 * @returns {Sqlite3SqlTerminalSerializedState} 归一化后的恢复状态。
 	 */
 	private parseSerializedState(
 		value: unknown
@@ -372,8 +372,8 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 描述 SQLite3 连接选择项。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @returns 用户可读描述。
+	 * @param {ConnectionConfig} connection SQLite3 连接配置。
+	 * @returns {string} 用户可读描述。
 	 */
 	private describeConnection(connection: ConnectionConfig): string {
 		return `${connection.name} (${connection.mode === 'file' ? connection.dbPath : ''})`;
@@ -382,8 +382,8 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 将值序列化为安全的脚本字面量。
 	 *
-	 * @param value 需要写入脚本的值。
-	 * @returns JSON 字符串。
+	 * @param {unknown} value 需要写入脚本的值。
+	 * @returns {string} JSON 字符串。
 	 */
 	private serializeScriptValue(value: unknown): string {
 		return JSON.stringify(value).replaceAll('</script', '<\\/script');
@@ -392,8 +392,8 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 转义 HTML 文本。
 	 *
-	 * @param value 原始文本。
-	 * @returns HTML 安全文本。
+	 * @param {string} value 原始文本。
+	 * @returns {string} HTML 安全文本。
 	 */
 	private escapeHtml(value: string): string {
 		return value
@@ -407,8 +407,8 @@ export class Sqlite3SqlTerminalPanel
 	/**
 	 * 转义 HTML 属性。
 	 *
-	 * @param value 原始属性值。
-	 * @returns HTML 安全属性值。
+	 * @param {string} value 原始属性值。
+	 * @returns {string} HTML 安全属性值。
 	 */
 	private escapeHtmlAttribute(value: string): string {
 		return this.escapeHtml(value);

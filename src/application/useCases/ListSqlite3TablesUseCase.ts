@@ -20,8 +20,8 @@ export class ListSqlite3TablesUseCase {
 	/**
 	 * 加载选中 SQLite3 连接下的表和视图。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @returns 当前文件中可见的表和视图。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @returns {Promise<readonly Sqlite3TableMetadata[]>} 当前文件中可见的表和视图。
 	 */
 	public async execute(
 		connection: Sqlite3ConnectionConfig

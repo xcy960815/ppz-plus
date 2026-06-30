@@ -22,8 +22,8 @@ export class RecordSqlExportTaskLogUseCase {
 	/**
 	 * 记录一条 SQL 导出任务日志。
 	 *
-	 * @param input 导出任务日志输入。
-	 * @returns 已保存的导出任务日志。
+	 * @param {SqlExportTaskLogInput} input 导出任务日志输入。
+	 * @returns {Promise<SqlExportTaskLogEntry>} 已保存的导出任务日志。
 	 */
 	public async execute(
 		input: SqlExportTaskLogInput

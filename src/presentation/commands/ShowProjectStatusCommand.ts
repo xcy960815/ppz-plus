@@ -29,7 +29,7 @@ export class ShowProjectStatusCommand implements ExtensionCommand {
 	/**
 	 * 注册命令并绑定到 VS Code 命令服务。
 	 *
-	 * @returns 注册产生的可释放句柄。
+	 * @returns {vscode.Disposable} 注册产生的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(this.id, async () => {

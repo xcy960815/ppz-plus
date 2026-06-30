@@ -24,7 +24,7 @@ export class OperationCanceledError extends Error {
 /**
  * 在用户请求取消时抛出统一的取消错误。
  *
- * @param cancellationSignal 可选的任务取消信号。
+ * @param {CancellationSignal} cancellationSignal 可选的任务取消信号。
  */
 export function throwIfCancellationRequested(
 	cancellationSignal?: CancellationSignal
@@ -37,8 +37,8 @@ export function throwIfCancellationRequested(
 /**
  * 判断错误是否为用户主动取消。
  *
- * @param error 原始错误。
- * @returns 是否为用户取消错误。
+ * @param {unknown} error 原始错误。
+ * @returns {error is OperationCanceledError} 是否为用户取消错误。
  */
 export function isOperationCanceledError(
 	error: unknown

@@ -7,7 +7,7 @@ export class MySqlRuntimeLoader {
 	/**
 	 * 按需加载 mysql2 promise 运行时模块。
 	 *
-	 * @returns 动态导入的 mysql2 promise 模块。
+	 * @returns {Promise<MySqlRuntimeModule>} 动态导入的 mysql2 promise 模块。
 	 */
 	public async loadMySqlPromiseModule(): Promise<MySqlRuntimeModule> {
 		try {

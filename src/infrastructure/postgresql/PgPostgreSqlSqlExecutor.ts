@@ -31,10 +31,10 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 执行 PostgreSQL SQL 并返回统一结果模型。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 本次执行要连接的 database。
-	 * @param sql 用户输入的 SQL 文本。
-	 * @returns 统一 SQL 执行结果。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string | undefined} databaseName 本次执行要连接的 database。
+	 * @param {string} sql 用户输入的 SQL 文本。
+	 * @returns {Promise<SqlExecutionResult>} 统一 SQL 执行结果。
 	 */
 	public async executeSql(
 		connection: PostgreSqlConnectionConfig,
@@ -119,8 +119,8 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 归一化单个 pg 执行结果。
 	 *
-	 * @param rawResult pg 返回的单个结果。
-	 * @returns 单个 SQL 结果集。
+	 * @param {PgQueryResult} rawResult pg 返回的单个结果。
+	 * @returns {SqlExecutionResultSet} 单个 SQL 结果集。
 	 */
 	private normalizeResultSet(rawResult: PgQueryResult): SqlExecutionResultSet {
 		const rows = this.readRows(rawResult);
@@ -149,7 +149,7 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 创建空的语句结果集兜底。
 	 *
-	 * @returns 空的非查询结果集。
+	 * @returns {SqlExecutionResultSet} 空的非查询结果集。
 	 */
 	private createEmptyStatementResultSet(): SqlExecutionResultSet {
 		return {
@@ -164,8 +164,8 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 从 pg 结果中读取原始行集合。
 	 *
-	 * @param rawResult pg 返回的单个结果。
-	 * @returns 原始行集合。
+	 * @param {PgQueryResult} rawResult pg 返回的单个结果。
+	 * @returns {readonly Record<string, unknown>[]} 原始行集合。
 	 */
 	private readRows(
 		rawResult: PgQueryResult
@@ -210,8 +210,8 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 将 pg 行集合归一化为可安全渲染的记录数组。
 	 *
-	 * @param rows pg 返回的原始行集合。
-	 * @returns 可序列化的 SQL 行数据。
+	 * @param {readonly Record<string, unknown>[]} rows pg 返回的原始行集合。
+	 * @returns {readonly Record<string, SqlExecutionCellValue>[]} 可序列化的 SQL 行数据。
 	 */
 	private normalizeRows(
 		rows: readonly Record<string, unknown>[]
@@ -222,8 +222,8 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 将单条 pg 行归一化为可序列化对象。
 	 *
-	 * @param row pg 返回的原始行。
-	 * @returns 可渲染的行对象。
+	 * @param {Record<string, unknown>} row pg 返回的原始行。
+	 * @returns {Record<string, SqlExecutionCellValue>} 可渲染的行对象。
 	 */
 	private normalizeRow(
 		row: Record<string, unknown>
@@ -239,8 +239,8 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 将 pg 单元格值归一化为 Webview 可安全展示的值。
 	 *
-	 * @param value 原始单元格值。
-	 * @returns 可序列化单元格值。
+	 * @param {unknown} value 原始单元格值。
+	 * @returns {SqlExecutionCellValue} 可序列化单元格值。
 	 */
 	private normalizeCellValue(value: unknown): SqlExecutionCellValue {
 		if (
@@ -282,8 +282,8 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 从非查询结果中提取影响行数。
 	 *
-	 * @param rawResult pg 返回的非查询执行结果。
-	 * @returns 影响行数；无法识别时返回 null。
+	 * @param {PgQueryResult} rawResult pg 返回的非查询执行结果。
+	 * @returns {number | null} 影响行数；无法识别时返回 null。
 	 */
 	private normalizeAffectedRows(rawResult: PgQueryResult): number | null {
 		return typeof rawResult.rowCount === 'number' ? rawResult.rowCount : null;
@@ -292,8 +292,8 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 将 pg 非查询执行摘要归一化为 key/value 列表。
 	 *
-	 * @param rawResult pg 返回的非查询执行结果。
-	 * @returns 可供旧 PPZ 风格 key/value 表格展示的执行摘要。
+	 * @param {PgQueryResult} rawResult pg 返回的非查询执行结果。
+	 * @returns {readonly SqlExecutionResultMetadataEntry[]} 可供旧 PPZ 风格 key/value 表格展示的执行摘要。
 	 */
 	private normalizeMetadata(
 		rawResult: PgQueryResult
@@ -319,8 +319,8 @@ export class PgPostgreSqlSqlExecutor implements PostgreSqlSqlExecutor {
 	/**
 	 * 在执行失败时根据 SQL 起始关键字粗略判断是否为查询。
 	 *
-	 * @param sql 用户输入的 SQL 文本。
-	 * @returns 是否看起来像查询 SQL。
+	 * @param {string} sql 用户输入的 SQL 文本。
+	 * @returns {boolean} 是否看起来像查询 SQL。
 	 */
 	private inferQuerySql(sql: string): boolean {
 		const firstKeyword = sql.trimStart().match(/^[a-z]+/i)?.[0].toUpperCase();

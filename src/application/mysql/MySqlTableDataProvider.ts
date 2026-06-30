@@ -120,10 +120,10 @@ export interface MySqlTableDataProvider {
 	/**
 	 * 列出选中 MySQL 表的字段。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly MySqlTableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	listColumns(
 		connection: MysqlConnectionConfig,
@@ -134,13 +134,13 @@ export interface MySqlTableDataProvider {
 	/**
 	 * 列出选中 MySQL 表的一页只读行数据。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载行数据的表。
-	 * @param pageIndex 从 0 开始的页码。
-	 * @param pageSize 每页请求的行数。
-	 * @param options 排序和过滤等查询选项。
-	 * @returns 分页行数据。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载行数据的表。
+	 * @param {number} pageIndex 从 0 开始的页码。
+	 * @param {number} pageSize 每页请求的行数。
+	 * @param {MySqlTableQueryOptions} options 排序和过滤等查询选项。
+	 * @returns {Promise<MySqlTableRowPage>} 分页行数据。
 	 */
 	listRowPage(
 		connection: MysqlConnectionConfig,
@@ -154,11 +154,11 @@ export interface MySqlTableDataProvider {
 	/**
 	 * 向选中 MySQL 表新增一条记录。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要新增记录的表。
-	 * @param values 需要显式写入的字段值，未出现的字段使用数据库默认值。
-	 * @returns 单行新增结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要新增记录的表。
+	 * @param {MySqlTableInsertValues} values 需要显式写入的字段值，未出现的字段使用数据库默认值。
+	 * @returns {Promise<MySqlTableInsertResult>} 单行新增结果。
 	 */
 	insertRow(
 		connection: MysqlConnectionConfig,
@@ -170,12 +170,12 @@ export interface MySqlTableDataProvider {
 	/**
 	 * 更新选中 MySQL 表中的一条记录。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要更新记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @param values 需要更新的新字段值。
-	 * @returns 单行更新结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要更新记录的表。
+	 * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @param {MySqlTableUpdateValues} values 需要更新的新字段值。
+	 * @returns {Promise<MySqlTableUpdateResult>} 单行更新结果。
 	 */
 	updateRow(
 		connection: MysqlConnectionConfig,
@@ -188,11 +188,11 @@ export interface MySqlTableDataProvider {
 	/**
 	 * 删除选中 MySQL 表中的一条记录。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要删除记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @returns 单行删除结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要删除记录的表。
+	 * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @returns {Promise<MySqlTableDeleteResult>} 单行删除结果。
 	 */
 	deleteRow(
 		connection: MysqlConnectionConfig,

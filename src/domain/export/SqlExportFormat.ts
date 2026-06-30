@@ -48,8 +48,8 @@ export const SQL_EXPORT_FORMATS: readonly SqlExportFormat[] = [
 /**
  * 按格式标识读取导出格式描述。
  *
- * @param formatId 需要读取的导出格式标识。
- * @returns 对应的导出格式描述。
+ * @param {SqlExportFormatId} formatId 需要读取的导出格式标识。
+ * @returns {SqlExportFormat} 对应的导出格式描述。
  */
 export function getSqlExportFormat(formatId: SqlExportFormatId): SqlExportFormat {
 	const format = SQL_EXPORT_FORMATS.find((item) => item.id === formatId);

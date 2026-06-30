@@ -79,7 +79,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 向 VS Code 注册命令。
 	 *
-	 * @returns 命令注册的可释放句柄。
+	 * @returns {vscode.Disposable} 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(this.id, () => {
@@ -111,8 +111,8 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 处理连接表单提交动作。
 	 *
-	 * @param panel 当前连接表单面板。
-	 * @param message Webview 发回的表单消息。
+	 * @param {vscode.WebviewPanel} panel 当前连接表单面板。
+	 * @param {MySqlConnectionFormMessage} message Webview 发回的表单消息。
 	 */
 	private async handleConnectionFormMessage(
 		panel: vscode.WebviewPanel,
@@ -162,8 +162,8 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 将 Webview 表单字段转换为 MySQL 连接配置。
 	 *
-	 * @param payload Webview 发回的原始字段。
-	 * @returns 转换成功时返回连接配置，否则返回错误信息。
+	 * @param {MySqlConnectionFormPayload} payload Webview 发回的原始字段。
+	 * @returns {|} 转换成功时返回连接配置，否则返回错误信息。
 	 */
 	private createConfigFromFormPayload(payload: MySqlConnectionFormPayload):
 		| {
@@ -279,9 +279,9 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 提示用户填写 MySQL 连接详情。
 	 *
-	 * @param mode 用户选择的连接输入模式。
-	 * @param existingConfig 编辑时已有的连接配置。
-	 * @returns 最终得到的 MySQL 连接配置。
+	 * @param {ConnectionInputMode} mode 用户选择的连接输入模式。
+	 * @param {MysqlConnectionConfig} existingConfig 编辑时已有的连接配置。
+	 * @returns {Promise<MysqlConnectionConfig | undefined>} 最终得到的 MySQL 连接配置。
 	 */
 	public static async collectMySqlConfig(
 		mode: ConnectionInputMode,
@@ -411,9 +411,9 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 提示用户填写 PostgreSQL 连接详情。
 	 *
-	 * @param mode 用户选择的连接输入模式。
-	 * @param existingConfig 编辑时已有的连接配置。
-	 * @returns 最终得到的 PostgreSQL 连接配置。
+	 * @param {ConnectionInputMode} mode 用户选择的连接输入模式。
+	 * @param {PostgreSqlConnectionConfig} existingConfig 编辑时已有的连接配置。
+	 * @returns {Promise<PostgreSqlConnectionConfig | undefined>} 最终得到的 PostgreSQL 连接配置。
 	 */
 	public static async collectPostgreSqlConfig(
 		mode: ConnectionInputMode,
@@ -541,7 +541,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 创建连接表单 Webview HTML。
 	 *
-	 * @returns 可渲染到 Webview 的 HTML 文档。
+	 * @returns {string} 可渲染到 Webview 的 HTML 文档。
 	 */
 	private renderConnectionFormHtml(): string {
 		return `<!DOCTYPE html>
@@ -926,8 +926,8 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 校验 MySQL 连接 URL。
 	 *
-	 * @param value 原始 URL 字符串。
-	 * @returns 无效时返回的校验提示。
+	 * @param {string} value 原始 URL 字符串。
+	 * @returns {string | undefined} 无效时返回的校验提示。
 	 */
 	private static validateMysqlUrl(value: string): string | undefined {
 		try {
@@ -943,8 +943,8 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 校验 PostgreSQL 连接 URL。
 	 *
-	 * @param value 原始 URL 字符串。
-	 * @returns 无效时返回的校验提示。
+	 * @param {string} value 原始 URL 字符串。
+	 * @returns {string | undefined} 无效时返回的校验提示。
 	 */
 	private static validatePostgreSqlUrl(value: string): string | undefined {
 		try {
@@ -961,8 +961,8 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	/**
 	 * 解析端口输入字符串。
 	 *
-	 * @param value 原始端口值。
-	 * @returns 有效时解析出的端口号。
+	 * @param {string} value 原始端口值。
+	 * @returns {number | undefined} 有效时解析出的端口号。
 	 */
 	private static parsePort(value: string): number | undefined {
 		const parsedPort = Number(value);

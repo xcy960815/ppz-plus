@@ -31,7 +31,7 @@ export class OpenMySqlSqlTerminalCommand implements ExtensionCommand {
 	/**
 	 * 向 VS Code 注册命令。
 	 *
-	 * @returns 命令注册的可释放句柄。
+	 * @returns {vscode.Disposable} 命令注册的可释放句柄。
 	 */
 	public register(): vscode.Disposable {
 		return vscode.commands.registerCommand(
@@ -48,8 +48,8 @@ export class OpenMySqlSqlTerminalCommand implements ExtensionCommand {
 	/**
 	 * 从 Tree 节点解析 SQL 终端初始连接。
 	 *
-	 * @param node 可选的 MySQL Tree 节点。
-	 * @returns 初始选中的 MySQL 连接。
+	 * @param {MySqlConnectionsTreeNode} node 可选的 MySQL Tree 节点。
+	 * @returns {MysqlConnectionConfig | undefined} 初始选中的 MySQL 连接。
 	 */
 	private resolveInitialConnection(
 		node?: MySqlConnectionsTreeNode

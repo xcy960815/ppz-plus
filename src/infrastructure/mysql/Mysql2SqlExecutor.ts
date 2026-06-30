@@ -34,9 +34,9 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 执行 MySQL SQL 并返回统一结果模型。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param sql 用户输入的 SQL 文本。
-	 * @returns 统一 SQL 执行结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} sql 用户输入的 SQL 文本。
+	 * @returns {Promise<SqlExecutionResult>} 统一 SQL 执行结果。
 	 */
 	public async executeSql(
 		connection: MysqlConnectionConfig,
@@ -114,8 +114,8 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 为 MySQL URL 连接追加多语句执行选项。
 	 *
-	 * @param connectionUrl 用户保存的 MySQL 连接 URL。
-	 * @returns 带有 multipleStatements 参数的连接 URL。
+	 * @param {string} connectionUrl 用户保存的 MySQL 连接 URL。
+	 * @returns {string} 带有 multipleStatements 参数的连接 URL。
 	 */
 	private appendMultipleStatementsOption(connectionUrl: string): string {
 		if (/[?&]multipleStatements=/.test(connectionUrl)) {
@@ -130,9 +130,9 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 将 mysql2 rows/fields 返回值归一化为一个或多个 SQL 结果集。
 	 *
-	 * @param rows mysql2 返回的原始 rows。
-	 * @param fields mysql2 返回的原始 fields。
-	 * @returns 可供 SQL 终端渲染的结果集列表。
+	 * @param {MySqlQueryRows} rows mysql2 返回的原始 rows。
+	 * @param {MySqlQueryResultFields} fields mysql2 返回的原始 fields。
+	 * @returns {readonly SqlExecutionResultSet[]} 可供 SQL 终端渲染的结果集列表。
 	 */
 	private normalizeResultSets(
 		rows: MySqlQueryRows,
@@ -163,9 +163,9 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 判断 mysql2 返回值是否为多语句结果。
 	 *
-	 * @param rows mysql2 返回的原始 rows。
-	 * @param fields mysql2 返回的原始 fields。
-	 * @returns 是否包含多个结果集。
+	 * @param {MySqlQueryRows} rows mysql2 返回的原始 rows。
+	 * @param {MySqlQueryResultFields} fields mysql2 返回的原始 fields。
+	 * @returns {boolean} 是否包含多个结果集。
 	 */
 	private isMultipleStatementResult(
 		rows: MySqlQueryRows,
@@ -191,8 +191,8 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 判断返回值是否更像 mysql2 的 StatementResult。
 	 *
-	 * @param value mysql2 返回的单个结果。
-	 * @returns 是否包含非查询结果标志字段。
+	 * @param {unknown} value mysql2 返回的单个结果。
+	 * @returns {value is MySqlStatementResult} 是否包含非查询结果标志字段。
 	 */
 	private isStatementResult(
 		value: unknown
@@ -212,9 +212,9 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 归一化单个 SQL 结果集。
 	 *
-	 * @param rows mysql2 返回的单个 rows 或 StatementResult。
-	 * @param fields mysql2 返回的单个 fields。
-	 * @returns 单个 SQL 结果集。
+	 * @param {readonly MySqlQueryResultRow[] | MySqlStatementResult} rows mysql2 返回的单个 rows 或 StatementResult。
+	 * @param {readonly MySqlField[] | undefined} fields mysql2 返回的单个 fields。
+	 * @returns {SqlExecutionResultSet} 单个 SQL 结果集。
 	 */
 	private normalizeResultSet(
 		rows: readonly MySqlQueryResultRow[] | MySqlStatementResult,
@@ -244,7 +244,7 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 创建空的语句结果集兜底。
 	 *
-	 * @returns 空的非查询结果集。
+	 * @returns {SqlExecutionResultSet} 空的非查询结果集。
 	 */
 	private createEmptyStatementResultSet(): SqlExecutionResultSet {
 		return {
@@ -259,9 +259,9 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 将 mysql2 字段对象归一化为领域字段。
 	 *
-	 * @param fields mysql2 返回的字段元数据。
-	 * @param rows mysql2 返回的原始行集合。
-	 * @returns 可供 UI 和导出功能复用的字段列表。
+	 * @param {readonly MySqlField[] | undefined} fields mysql2 返回的字段元数据。
+	 * @param {readonly MySqlQueryResultRow[]} rows mysql2 返回的原始行集合。
+	 * @returns {readonly SqlExecutionField[]} 可供 UI 和导出功能复用的字段列表。
 	 */
 	private normalizeFields(
 		fields: readonly MySqlField[] | undefined,
@@ -284,8 +284,8 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 将 mysql2 字段数组归一化为字段名列表。
 	 *
-	 * @param fields mysql2 返回的字段元数据。
-	 * @returns 字段名列表。
+	 * @param {readonly MySqlField[]} fields mysql2 返回的字段元数据。
+	 * @returns {readonly string[]} 字段名列表。
 	 */
 	private normalizeFieldNames(fields: readonly MySqlField[]): readonly string[] {
 		return fields.map((field) => field.name);
@@ -294,8 +294,8 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 将 mysql2 行集合归一化为可安全渲染的记录数组。
 	 *
-	 * @param rows mysql2 返回的原始行集合。
-	 * @returns 可序列化的 SQL 行数据。
+	 * @param {readonly MySqlQueryResultRow[]} rows mysql2 返回的原始行集合。
+	 * @returns {readonly Record<string, SqlExecutionCellValue>[]} 可序列化的 SQL 行数据。
 	 */
 	private normalizeRows(
 		rows: readonly MySqlQueryResultRow[]
@@ -311,8 +311,8 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 将单条 mysql2 行归一化为可序列化对象。
 	 *
-	 * @param row mysql2 返回的原始行。
-	 * @returns 可渲染的行对象。
+	 * @param {Record<string, unknown>} row mysql2 返回的原始行。
+	 * @returns {Record<string, SqlExecutionCellValue>} 可渲染的行对象。
 	 */
 	private normalizeRow(
 		row: Record<string, unknown>
@@ -328,8 +328,8 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 将 mysql2 单元格值归一化为 Webview 可安全展示的值。
 	 *
-	 * @param value 原始单元格值。
-	 * @returns 可序列化单元格值。
+	 * @param {unknown} value 原始单元格值。
+	 * @returns {SqlExecutionCellValue} 可序列化单元格值。
 	 */
 	private normalizeCellValue(value: unknown): SqlExecutionCellValue {
 		if (
@@ -371,8 +371,8 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 从非查询结果中提取影响行数。
 	 *
-	 * @param result mysql2 返回的非查询执行结果。
-	 * @returns 影响行数；无法识别时返回 null。
+	 * @param {MySqlStatementResult} result mysql2 返回的非查询执行结果。
+	 * @returns {number | null} 影响行数；无法识别时返回 null。
 	 */
 	private extractAffectedRows(
 		result: MySqlStatementResult
@@ -383,8 +383,8 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 将 mysql2 非查询执行摘要归一化为 key/value 列表。
 	 *
-	 * @param result mysql2 返回的非查询执行结果。
-	 * @returns 可供旧 PPZ 风格 key/value 表格展示的执行摘要。
+	 * @param {MySqlStatementResult} result mysql2 返回的非查询执行结果。
+	 * @returns {readonly SqlExecutionResultMetadataEntry[]} 可供旧 PPZ 风格 key/value 表格展示的执行摘要。
 	 */
 	private normalizeMetadataFromStatementResult(
 		result: MySqlStatementResult
@@ -399,8 +399,8 @@ export class Mysql2SqlExecutor implements MySqlSqlExecutor {
 	/**
 	 * 在执行失败时根据 SQL 起始关键字粗略判断是否为查询。
 	 *
-	 * @param sql 用户输入的 SQL 文本。
-	 * @returns 是否看起来像查询 SQL。
+	 * @param {string} sql 用户输入的 SQL 文本。
+	 * @returns {boolean} 是否看起来像查询 SQL。
 	 */
 	private inferQuerySql(sql: string): boolean {
 		const firstKeyword = sql.trimStart().match(/^[a-z]+/i)?.[0].toUpperCase();

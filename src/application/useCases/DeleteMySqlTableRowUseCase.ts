@@ -21,11 +21,11 @@ export class DeleteMySqlTableRowUseCase {
 	/**
 	 * 删除指定 MySQL 表中的单条记录。
 	 *
-	 * @param connection MySQL 连接配置。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要删除记录的表。
-	 * @param identityValues 用于定位原行的字段值。
-	 * @returns 单行删除结果。
+	 * @param {MysqlConnectionConfig} connection MySQL 连接配置。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要删除记录的表。
+	 * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
+	 * @returns {Promise<MySqlTableDeleteResult>} 单行删除结果。
 	 */
 	public async execute(
 		connection: MysqlConnectionConfig,

@@ -31,8 +31,8 @@ export interface PostgreSqlMetadataProvider {
 	/**
 	 * 列出当前 PostgreSQL 连接可见的 database。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @returns 可见的 database 列表。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @returns {Promise<readonly PostgreSqlDatabaseMetadata[]>} 可见的 database 列表。
 	 */
 	listDatabases(
 		connection: PostgreSqlConnectionConfig
@@ -41,9 +41,9 @@ export interface PostgreSqlMetadataProvider {
 	/**
 	 * 列出指定 PostgreSQL database 下的 schema。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 需要连接并加载 schema 的 database。
-	 * @returns 可见的 schema 列表。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string} databaseName 需要连接并加载 schema 的 database。
+	 * @returns {Promise<readonly PostgreSqlSchemaMetadata[]>} 可见的 schema 列表。
 	 */
 	listSchemas(
 		connection: PostgreSqlConnectionConfig,
@@ -53,10 +53,10 @@ export interface PostgreSqlMetadataProvider {
 	/**
 	 * 列出指定 PostgreSQL schema 下的表。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 需要连接的 database。
-	 * @param schemaName 需要加载表的 schema。
-	 * @returns 该 schema 下可见的表。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string} databaseName 需要连接的 database。
+	 * @param {string} schemaName 需要加载表的 schema。
+	 * @returns {Promise<readonly PostgreSqlTableMetadata[]>} 该 schema 下可见的表。
 	 */
 	listTables(
 		connection: PostgreSqlConnectionConfig,

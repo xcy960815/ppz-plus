@@ -18,11 +18,11 @@ export class ListPostgreSqlTableColumnsUseCase {
 	/**
 	 * 加载选中 PostgreSQL 表的字段。
 	 *
-	 * @param connection PostgreSQL 连接配置。
-	 * @param databaseName 表所属的 database。
-	 * @param schemaName 表所属的 schema。
-	 * @param tableName 需要加载字段的表。
-	 * @returns 归一化后的字段元数据。
+	 * @param {PostgreSqlConnectionConfig} connection PostgreSQL 连接配置。
+	 * @param {string} databaseName 表所属的 database。
+	 * @param {string} schemaName 表所属的 schema。
+	 * @param {string} tableName 需要加载字段的表。
+	 * @returns {Promise<readonly TableColumnMetadata[]>} 归一化后的字段元数据。
 	 */
 	public async execute(
 		connection: PostgreSqlConnectionConfig,

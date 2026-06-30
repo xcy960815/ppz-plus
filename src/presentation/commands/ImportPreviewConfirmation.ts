@@ -12,13 +12,13 @@ import { showImportErrorReport } from './ImportErrorReportPresenter';
 /**
  * 展示导入预览确认弹窗。
  *
- * @param createImportErrorReportUseCase 用于创建错误报告文档的用例。
- * @param formatName 导入文件格式名称。
- * @param fileName 导入文件名。
- * @param targetName 导入目标表名称。
- * @param preview 导入预览结果。
- * @param mappings 可选的字段映射配置。
- * @returns 用户是否确认继续导入。
+ * @param {CreateImportErrorReportUseCase} createImportErrorReportUseCase 用于创建错误报告文档的用例。
+ * @param {string} formatName 导入文件格式名称。
+ * @param {string} fileName 导入文件名。
+ * @param {string} targetName 导入目标表名称。
+ * @param {ImportPreviewResult} preview 导入预览结果。
+ * @param {readonly ImportColumnMapping[]} mappings 可选的字段映射配置。
+ * @returns {Promise<boolean>} 用户是否确认继续导入。
  */
 export async function confirmImportPreview(
 	createImportErrorReportUseCase: CreateImportErrorReportUseCase,
@@ -60,8 +60,8 @@ export async function confirmImportPreview(
 /**
  * 将导入预览格式化为确认弹窗详情。
  *
- * @param preview 成功生成的导入预览。
- * @returns 可展示的预览文本。
+ * @param {ImportPreviewSuccessResult} preview 成功生成的导入预览。
+ * @returns {string} 可展示的预览文本。
  */
 function formatPreviewDetail(preview: ImportPreviewSuccessResult): string {
 	const previewRows = preview.rows.map((row, rowIndex) => {
@@ -93,8 +93,8 @@ function formatPreviewDetail(preview: ImportPreviewSuccessResult): string {
 /**
  * 格式化导入预览单元格值。
  *
- * @param value 导入预览单元格值。
- * @returns 适合弹窗展示的短文本。
+ * @param {ImportPreviewCellValue} value 导入预览单元格值。
+ * @returns {string} 适合弹窗展示的短文本。
  */
 function formatPreviewValue(value: ImportPreviewCellValue): string {
 	if (value === null) {

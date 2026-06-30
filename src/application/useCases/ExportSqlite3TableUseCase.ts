@@ -22,10 +22,10 @@ export class ExportSqlite3TableUseCase {
 	/**
 	 * 导出指定 SQLite3 表。
 	 *
-	 * @param connection SQLite3 连接配置。
-	 * @param target 表级导出目标。
-	 * @param kind 导出内容类型。
-	 * @returns 生成后的 SQL 导出文档。
+	 * @param {Sqlite3ConnectionConfig} connection SQLite3 连接配置。
+	 * @param {SqlExportTableTarget} target 表级导出目标。
+	 * @param {SqlExportKind} kind 导出内容类型。
+	 * @returns {Promise<SqlExportDocument>} 生成后的 SQL 导出文档。
 	 */
 	public async execute(
 		connection: Sqlite3ConnectionConfig,
