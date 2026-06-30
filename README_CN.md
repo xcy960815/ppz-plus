@@ -142,6 +142,15 @@ pnpm test
 
 近期目标仍然是稳定现有 MySQL、PostgreSQL 和 SQLite3 工作流，并保持架构具备后续扩展数据库的空间。MSSQL 和其他兼容数据库会在后续推进。
 
+## 支持作者
+
+PPZ Plus 是一个免费开源项目。如果它节省了你的时间，可以自愿支持作者。
+
+<p>
+  <img src="./resources/sponsor/wechat-pay.jpg" alt="微信支付收款码" width="220" />
+  <img src="./resources/sponsor/alipay.jpg" alt="支付宝收款码" width="220" />
+</p>
+
 ## 已知限制
 
 - 扩展仍处于 `0.0.1` 早期开发阶段。

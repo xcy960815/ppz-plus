@@ -16,6 +16,7 @@ export default defineConfig({
           { text: "指南", link: "/guide/install" },
           { text: "使用", link: "/guide/usage" },
           { text: "架构", link: "/guide/architecture" },
+          { text: "支持作者", link: "/support" },
           { text: "GitHub", link: "https://github.com/xcy960815/ppz-plus" },
         ],
         sidebar: [
@@ -25,6 +26,7 @@ export default defineConfig({
               { text: "安装", link: "/guide/install" },
               { text: "使用", link: "/guide/usage" },
               { text: "架构", link: "/guide/architecture" },
+              { text: "支持作者", link: "/support" },
             ],
           },
         ],
@@ -55,6 +57,7 @@ export default defineConfig({
           { text: "Guide", link: "/en/guide/install" },
           { text: "Usage", link: "/en/guide/usage" },
           { text: "Architecture", link: "/en/guide/architecture" },
+          { text: "Support", link: "/en/support" },
           { text: "GitHub", link: "https://github.com/xcy960815/ppz-plus" },
         ],
         sidebar: [
@@ -64,6 +67,7 @@ export default defineConfig({
               { text: "Install", link: "/en/guide/install" },
               { text: "Usage", link: "/en/guide/usage" },
               { text: "Architecture", link: "/en/guide/architecture" },
+              { text: "Support", link: "/en/support" },
             ],
           },
         ],

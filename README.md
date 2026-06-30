@@ -142,6 +142,15 @@ Progress is tracked in [`.agents/todolist.md`](./.agents/todolist.md).
 
 Near-term work remains focused on stabilizing the existing MySQL, PostgreSQL, and SQLite3 workflows while keeping the architecture ready for additional engines. MSSQL and compatible databases remain future work.
 
+## Support
+
+PPZ Plus is a free and open-source project. If it saves you time, you can support the author voluntarily.
+
+<p>
+  <img src="./resources/sponsor/wechat-pay.jpg" alt="WeChat Pay QR code" width="220" />
+  <img src="./resources/sponsor/alipay.jpg" alt="Alipay QR code" width="220" />
+</p>
+
 ## Known Limitations
 
 - The extension is still in early `0.0.1` development.
