@@ -21,6 +21,7 @@ export interface MySqlDriverOptions {
 	readonly user?: string;
 	readonly password?: string;
 	readonly database?: string;
+	readonly multipleStatements?: boolean;
 }
 
 /**

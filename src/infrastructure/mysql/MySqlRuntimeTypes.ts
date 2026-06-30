@@ -1,3 +1,5 @@
+import type { MySqlDriverConnectionInput } from './MySqlConnectionAdapter';
+
 /**
  * mysql2 底层驱动返回的单行数据形状。
  *
@@ -59,5 +61,7 @@ export interface MySqlRuntimeClient {
  * mysql2 promise 模块的最小运行时接口。
  */
 export interface MySqlRuntimeModule {
-	createConnection(options: unknown): Promise<MySqlRuntimeClient>;
+	createConnection(
+		options: MySqlDriverConnectionInput
+	): Promise<MySqlRuntimeClient>;
 }

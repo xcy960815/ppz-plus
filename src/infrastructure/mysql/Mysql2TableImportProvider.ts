@@ -15,6 +15,7 @@ import {
 } from '../../domain/tasks/CancellationSignal';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
+import type { MySqlRuntimeClient } from './MySqlRuntimeTypes';
 
 /**
  * 通过 mysql2 promise 驱动执行 MySQL 表级结构化数据导入。
@@ -54,12 +55,7 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 		cancellationSignal?: CancellationSignal
 	): Promise<TableImportResult> {
 		const startedAt = Date.now();
-		let runtimeConnection:
-			| {
-					query(sql: string, values?: readonly unknown[]): Promise<[unknown, unknown]>;
-					end(): Promise<void>;
-			  }
-			| undefined;
+		let runtimeConnection: MySqlRuntimeClient | undefined;
 
 		try {
 			if (rows.length === 0) {
@@ -221,7 +217,7 @@ export class Mysql2TableImportProvider implements MySqlTableImportProvider {
 			return 0;
 		}
 
-		const value = Reflect.get(result, propertyName);
+		const value = (result as Record<string, unknown>)[propertyName];
 		return typeof value === 'number' ? value : 0;
 	}
 
