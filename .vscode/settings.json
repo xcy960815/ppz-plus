@@ -10,9 +10,20 @@
 	"js/ts.tsc.autoDetect": "off",
 	"npm.packageManager": "pnpm",
 	"cSpell.words": [
+		"attname",
+		"attnum",
+		"attrelid",
+		"atttypid",
 		"contenteditable",
+		"datistemplate",
+		"datname",
 		"iconfont",
+		"ILIKE",
+		"indkey",
+		"indrelid",
 		"inputmode",
+		"nspname",
+		"Postgre",
 		"todolist"
 	]
 }

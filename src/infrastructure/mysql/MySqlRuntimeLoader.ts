@@ -1,3 +1,5 @@
+import type { MySqlRuntimeModule } from './MySqlRuntimeTypes';
+
 /**
  * 动态加载可选 MySQL 运行时依赖，避免建立静态 TypeScript 依赖边。
  */
@@ -7,12 +9,7 @@ export class MySqlRuntimeLoader {
 	 *
 	 * @returns 动态导入的 mysql2 promise 模块。
 	 */
-	public async loadMySqlPromiseModule(): Promise<{
-		createConnection(options: unknown): Promise<{
-			query(sql: string, values?: readonly unknown[]): Promise<[unknown, unknown]>;
-			end(): Promise<void>;
-		}>;
-	}> {
+	public async loadMySqlPromiseModule(): Promise<MySqlRuntimeModule> {
 		try {
 			/**
 			 * 使用间接动态导入，使仓库编译假设与依赖安装时机解耦。
@@ -22,15 +19,7 @@ export class MySqlRuntimeLoader {
 				'return import(modulePath);'
 			) as (modulePath: string) => Promise<unknown>;
 
-			return (await dynamicImport('mysql2/promise')) as {
-				createConnection(options: unknown): Promise<{
-					query(
-						sql: string,
-						values?: readonly unknown[]
-					): Promise<[unknown, unknown]>;
-					end(): Promise<void>;
-				}>;
-			};
+			return (await dynamicImport('mysql2/promise')) as MySqlRuntimeModule;
 		} catch (error) {
 			throw new Error(
 				[

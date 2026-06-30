@@ -15,6 +15,7 @@ import type {
 } from '../../application/mysql/MySqlTableDataProvider';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
+import type { MySqlRuntimeClient, MySqlQueryRows } from './MySqlRuntimeTypes';
 
 /**
  * 通过 mysql2 promise 驱动读取 MySQL 表字段和行数据。
@@ -257,9 +258,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	 * @returns 归一化后的字段元数据。
 	 */
 	private async listColumnsWithConnection(
-		runtimeConnection: {
-			query(sql: string, values?: readonly unknown[]): Promise<[unknown, unknown]>;
-		},
+		runtimeConnection: MySqlRuntimeClient,
 		schemaName: string,
 		tableName: string
 	): Promise<readonly MySqlTableColumnMetadata[]> {
@@ -289,7 +288,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	 * @returns 归一化后的字段元数据。
 	 */
 	private normalizeColumnRows(
-		rows: unknown
+		rows: MySqlQueryRows
 	): readonly MySqlTableColumnMetadata[] {
 		if (!Array.isArray(rows)) {
 			return [];
@@ -357,7 +356,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	 * @returns 归一化后的分页行数据。
 	 */
 	private normalizeRowPage(
-		rows: unknown,
+		rows: MySqlQueryRows,
 		columns: readonly MySqlTableColumnMetadata[],
 		pageIndex: number,
 		pageSize: number,
@@ -1033,7 +1032,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
 	 * @param rows mysql2 返回的 COUNT 查询行。
 	 * @returns 当前查询条件下的总行数。
 	 */
-	private readTotalRowCount(rows: unknown): number {
+	private readTotalRowCount(rows: MySqlQueryRows): number {
 		if (!Array.isArray(rows) || rows.length === 0) {
 			return 0;
 		}

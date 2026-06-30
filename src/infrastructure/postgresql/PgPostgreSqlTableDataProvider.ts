@@ -8,7 +8,7 @@ import type {
 } from '../../application/mysql/MySqlTableDataProvider';
 import type { PostgreSqlTableDataProvider } from '../../application/postgresql/PostgreSqlTableDataProvider';
 import { PostgreSqlConnectionAdapter } from './PostgreSqlConnectionAdapter';
-import type { PostgreSqlRuntimeClient } from './PostgreSqlRuntimeLoader';
+import type { PgRuntimeClient } from './PgRuntimeTypes';
 import { PostgreSqlRuntimeLoader } from './PostgreSqlRuntimeLoader';
 
 /**
@@ -167,7 +167,7 @@ export class PgPostgreSqlTableDataProvider
 	 * @returns 归一化后的字段元数据。
 	 */
 	private async listColumnsWithClient(
-		client: PostgreSqlRuntimeClient,
+		client: PgRuntimeClient,
 		schemaName: string,
 		tableName: string
 	): Promise<readonly MySqlTableColumnMetadata[]> {
@@ -218,7 +218,7 @@ export class PgPostgreSqlTableDataProvider
 	private async openClient(
 		connection: PostgreSqlConnectionConfig,
 		databaseName: string
-	): Promise<PostgreSqlRuntimeClient> {
+	): Promise<PgRuntimeClient> {
 		const postgreSql = this.postgreSqlRuntimeLoader.loadPostgreSqlModule();
 		const client = new postgreSql.Client(
 			this.postgreSqlConnectionAdapter.resolveDriverOptions(

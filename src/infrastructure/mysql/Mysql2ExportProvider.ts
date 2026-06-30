@@ -9,14 +9,7 @@ import type {
 import { SQL_EXPORT_FORMAT } from '../../domain/export/SqlExportFormat';
 import { MySqlConnectionAdapter } from './MySqlConnectionAdapter';
 import { MySqlRuntimeLoader } from './MySqlRuntimeLoader';
-
-/**
- * 表示导出期间复用的 mysql2 连接能力。
- */
-interface Mysql2ExportRuntimeConnection {
-	query(sql: string, values?: readonly unknown[]): Promise<[unknown, unknown]>;
-	end(): Promise<void>;
-}
+import type { MySqlRuntimeClient, MySqlField, MySqlQueryRows } from './MySqlRuntimeTypes';
 
 /**
  * 通过 mysql2 promise 驱动生成 MySQL 表级 DDL/DML。
@@ -224,7 +217,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	 * @returns 单表 SQL 文本块。
 	 */
 	private async exportTableBlock(
-		runtimeConnection: Mysql2ExportRuntimeConnection,
+		runtimeConnection: MySqlRuntimeClient,
 		target: SqlExportTableTarget,
 		kind: SqlExportKind
 	): Promise<string> {
@@ -249,7 +242,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	 * @returns 表名列表。
 	 */
 	private async listSchemaTables(
-		runtimeConnection: Mysql2ExportRuntimeConnection,
+		runtimeConnection: MySqlRuntimeClient,
 		target: SqlExportSchemaTarget
 	): Promise<readonly string[]> {
 		const [rows] = await runtimeConnection.query(
@@ -287,7 +280,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	 * @returns DDL SQL 文本。
 	 */
 	private async exportDdl(
-		runtimeConnection: Mysql2ExportRuntimeConnection,
+		runtimeConnection: MySqlRuntimeClient,
 		target: SqlExportTableTarget
 	): Promise<string> {
 		const [rows] = await runtimeConnection.query(
@@ -312,13 +305,13 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	 * @returns DML SQL 文本。
 	 */
 	private async exportDml(
-		runtimeConnection: Mysql2ExportRuntimeConnection,
+		runtimeConnection: MySqlRuntimeClient,
 		target: SqlExportTableTarget
 	): Promise<string> {
-		const [rows, fields] = await runtimeConnection.query(
+		const [rows, rawFields] = await runtimeConnection.query(
 			`SELECT * FROM ${this.escapeQualifiedTableName(target)}`
 		);
-		const columnNames = this.normalizeFieldNames(fields);
+		const columnNames = this.normalizeFieldNames(rawFields as readonly MySqlField[]);
 
 		if (columnNames.length === 0) {
 			return `-- ${target.schemaName}.${target.tableName} 未找到字段。`;
@@ -343,7 +336,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	 * @param rows mysql2 返回的原始行集合。
 	 * @returns CREATE TABLE SQL；无法识别时为空。
 	 */
-	private extractCreateTableSql(rows: unknown): string | undefined {
+	private extractCreateTableSql(rows: MySqlQueryRows): string | undefined {
 		if (!Array.isArray(rows)) {
 			return undefined;
 		}
@@ -367,18 +360,12 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
 	 * @param fields mysql2 返回的字段元数据。
 	 * @returns 字段名列表。
 	 */
-	private normalizeFieldNames(fields: unknown): readonly string[] {
-		if (!Array.isArray(fields)) {
-			return [];
-		}
-
+	private normalizeFieldNames(
+		fields: readonly MySqlField[]
+	): readonly string[] {
 		return fields
 			.map((field) => {
-				if (!field || typeof field !== 'object') {
-					return undefined;
-				}
-
-				const name = Reflect.get(field, 'name');
+				const name = field.name;
 				return typeof name === 'string' ? name : undefined;
 			})
 			.filter((name): name is string => name !== undefined);
