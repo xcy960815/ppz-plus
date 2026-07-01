@@ -2,7 +2,7 @@
 
 PPZ Plus 是一个用于在 VS Code 中操作 MySQL、PostgreSQL 和 SQLite3 数据库的扩展。它不是旧 PPZ 的原地续写，而是一次“能力迁移式重写”：保留旧产品里有价值的工作流，同时用清晰的 `presentation / application / domain / infrastructure` 分层重新实现。
 
-[English README](./README.md)
+[项目文档](https://xcy960815.github.io/ppz-plus/) · [English README](./README.md)
 
 ## 当前范围
 
