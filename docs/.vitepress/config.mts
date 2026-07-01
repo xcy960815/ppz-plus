@@ -5,7 +5,11 @@ export default defineConfig({
   description: "VS Code 数据库导入导出扩展。",
   base: "/ppz-plus/",
   cleanUrls: true,
-  head: [["meta", { name: "theme-color", content: "#3b82f6" }]],
+  head: [
+    ["meta", { name: "theme-color", content: "#3b82f6" }],
+    ["link", { rel: "icon", type: "image/png", href: "/ppz-plus/favicon.png" }],
+    ["link", { rel: "apple-touch-icon", href: "/ppz-plus/favicon.png" }],
+  ],
   locales: {
     root: {
       label: "简体中文",
