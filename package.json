@@ -1,9 +1,10 @@
 {
   "name": "ppz-plus",
-  "displayName": "ppz-plus",
-  "description": "VS Code 数据库导入导出工具",
+  "displayName": "PPZ Plus",
+  "description": "VS Code 数据库管理、导入导出工具",
   "version": "0.0.1",
   "publisher": "xcy960815",
+  "icon": "resources/ppz-plus.png",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -20,6 +21,21 @@
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "database",
+    "mysql",
+    "postgresql",
+    "sqlite",
+    "sqlite3",
+    "sql",
+    "import",
+    "export",
+    "vscode database"
+  ],
+  "galleryBanner": {
+    "color": "#174AA8",
+    "theme": "dark"
+  },
   "activationEvents": [
     "onWebviewPanel:ppzPlus.mysqlSqlTerminal",
     "onWebviewPanel:ppzPlus.postgreSqlSqlTerminal",
