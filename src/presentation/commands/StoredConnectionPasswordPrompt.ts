@@ -48,22 +48,28 @@ export class StoredConnectionPasswordPrompt {
   /**
    * 确保连接具备可直接访问数据库的本机密码。
    *
-   * @param {ConnectionConfig} connection 当前连接配置。
-   * @returns {Promise<ConnectionConfig | undefined>} 可直接使用的连接；用户取消时为空。
+   * @param {T} connection 当前连接配置。
+   * @returns {Promise<T | undefined>} 可直接使用的连接；用户取消时为空。
    */
-  public async ensureConnectionReady(
-    connection: ConnectionConfig,
-  ): Promise<ConnectionConfig | undefined> {
+  public async ensureConnectionReady<T extends ConnectionConfig>(
+    connection: T,
+  ): Promise<T | undefined> {
     if (!this.hasMissingLocalPassword(connection)) {
       return connection;
     }
 
+    if (connection.mode === "file") {
+      return connection;
+    }
+
+    const promptText =
+      connection.mode === "parameters"
+        ? `输入 ${connection.host}:${connection.port} 的本机连接密码`
+        : `输入 ${maskConnectionUrl(connection.url)} 的本机连接密码`;
+
     const password = await vscode.window.showInputBox({
       title: `PPZ Plus: 补录 ${connection.name} 的连接密码`,
-      prompt:
-        connection.mode === "parameters"
-          ? `输入 ${connection.host}:${connection.port} 的本机连接密码`
-          : `输入 ${maskConnectionUrl(connection.url)} 的本机连接密码`,
+      prompt: promptText,
       password: true,
       ignoreFocusOut: true,
       validateInput: (value) => (value.length > 0 ? undefined : "请输入连接密码。"),
@@ -81,11 +87,11 @@ export class StoredConnectionPasswordPrompt {
   /**
    * 将用户补录的密码写回运行时连接配置。
    *
-   * @param {ConnectionConfig} connection 当前连接配置。
+   * @param {T} connection 当前连接配置。
    * @param {string} password 用户补录的密码。
-   * @returns {ConnectionConfig} 已带上本机密码的连接配置。
+   * @returns {T} 已带上本机密码的连接配置。
    */
-  private attachPassword(connection: ConnectionConfig, password: string): ConnectionConfig {
+  private attachPassword<T extends ConnectionConfig>(connection: T, password: string): T {
     if (connection.mode === "file") {
       return connection;
     }
@@ -95,14 +101,14 @@ export class StoredConnectionPasswordPrompt {
         ...connection,
         password,
         hasPassword: true,
-      };
+      } as T;
     }
 
     return {
       ...connection,
       url: this.attachPasswordToUrl(connection, password),
       hasPassword: true,
-    };
+    } as T;
   }
 
   /**
