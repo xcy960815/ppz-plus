@@ -6,7 +6,7 @@ import type { RecordSqlExportTaskLogUseCase } from "../../application/useCases/R
 import type { SaveSqlExportDocumentUseCase } from "../../application/useCases/SaveSqlExportDocumentUseCase";
 import type { SqlExportDocument, SqlExportKind } from "../../domain/export/SqlExportDocument";
 import type { SqlExportFileSaveResult } from "../../domain/export/SqlExportFileSaveResult";
-import type { Sqlite3TableTreeNode } from "../explorer/MySqlConnectionsTreeNode";
+import type { Sqlite3TableTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 import type { ExtensionCommand } from "./ExtensionCommand";
 import { formatSqlExportCapabilityMessage } from "./SqlExportCapabilityMessage";
 import { presentSqlExportFileSaveResult, promptSqlExportFilePath } from "./SqlExportFilePresenter";

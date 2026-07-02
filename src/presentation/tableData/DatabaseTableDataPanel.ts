@@ -34,7 +34,7 @@ import type {
   MySqlTableTreeNode,
   PostgreSqlTableTreeNode,
   Sqlite3TableTreeNode,
-} from "../explorer/MySqlConnectionsTreeNode";
+} from "../explorer/DatabaseConnectionsTreeNode";
 import type { MySqlTableDataWebviewMessage } from "./MySqlTableDataWebviewMessage";
 
 /**
@@ -43,9 +43,9 @@ import type { MySqlTableDataWebviewMessage } from "./MySqlTableDataWebviewMessag
 type TableDataTreeNode = MySqlTableTreeNode | PostgreSqlTableTreeNode | Sqlite3TableTreeNode;
 
 /**
- * 保存单个 MySQL 表数据面板的可变状态。
+ * 保存单个数据库表数据面板的可变状态。
  */
-interface MySqlTablePanelState {
+interface DatabaseTablePanelState {
   readonly panel: vscode.WebviewPanel;
   readonly tableNode: TableDataTreeNode;
   pageIndex: number;
@@ -63,7 +63,7 @@ interface MySqlTablePanelState {
 /**
  * 保存表数据页可由 VS Code 恢复的轻量状态。
  */
-interface MySqlTablePanelSerializedState {
+interface DatabaseTablePanelSerializedState {
   readonly engine: "mysql" | "postgresql" | "sqlite3";
   readonly connectionId: string;
   readonly databaseName?: string;
@@ -79,9 +79,9 @@ interface MySqlTablePanelSerializedState {
 }
 
 /**
- * 管理 MySQL 表数据面板。
+ * 管理数据库表数据面板。
  */
-export class MySqlTableDataPanel
+export class DatabaseTableDataPanel
   implements ExtensionActivationParticipant, vscode.WebviewPanelSerializer
 {
   /**
@@ -97,7 +97,7 @@ export class MySqlTableDataPanel
   /**
    * 按完整表键保存已打开的表数据面板。
    */
-  private readonly panelStatesByKey = new Map<string, MySqlTablePanelState>();
+  private readonly panelStatesByKey = new Map<string, DatabaseTablePanelState>();
 
   /**
    * 创建表数据面板管理器。
@@ -139,7 +139,7 @@ export class MySqlTableDataPanel
    */
   public activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
-      vscode.window.registerWebviewPanelSerializer(MySqlTableDataPanel.viewType, this),
+      vscode.window.registerWebviewPanelSerializer(DatabaseTableDataPanel.viewType, this),
     );
   }
 
@@ -174,7 +174,7 @@ export class MySqlTableDataPanel
     }
 
     const tableNode = this.createRestoredTableNode(connection, restoredState);
-    const state: MySqlTablePanelState = {
+    const state: DatabaseTablePanelState = {
       panel,
       tableNode,
       pageIndex: restoredState.pageIndex,
@@ -210,7 +210,7 @@ export class MySqlTableDataPanel
     }
 
     const panel = vscode.window.createWebviewPanel(
-      MySqlTableDataPanel.viewType,
+      DatabaseTableDataPanel.viewType,
       `${tableNode.tableName} 表数据`,
       vscode.ViewColumn.Active,
       {
@@ -219,11 +219,11 @@ export class MySqlTableDataPanel
       },
     );
 
-    const state: MySqlTablePanelState = {
+    const state: DatabaseTablePanelState = {
       panel,
       tableNode,
       pageIndex: 0,
-      pageSize: MySqlTableDataPanel.defaultPageSize,
+      pageSize: DatabaseTableDataPanel.defaultPageSize,
       filterKeyword: "",
       filterConditions: [],
       sortDirection: "asc",
@@ -242,9 +242,9 @@ export class MySqlTableDataPanel
   /**
    * 为表数据页注册生命周期和消息处理。
    *
-   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @param {DatabaseTablePanelState} state 当前表数据面板状态。
    */
-  private registerPanelHandlers(state: MySqlTablePanelState): void {
+  private registerPanelHandlers(state: DatabaseTablePanelState): void {
     state.panel.onDidDispose(() => {
       this.panelStatesByKey.delete(this.createPanelKey(state.tableNode));
     });
@@ -257,9 +257,9 @@ export class MySqlTableDataPanel
    * 解析 VS Code 保存的表数据页 Webview 状态。
    *
    * @param {unknown} value 原始恢复状态。
-   * @returns {MySqlTablePanelSerializedState | undefined} 可用于恢复表数据页的轻量状态；无效时为空。
+   * @returns {DatabaseTablePanelSerializedState | undefined} 可用于恢复表数据页的轻量状态；无效时为空。
    */
-  private parseSerializedState(value: unknown): MySqlTablePanelSerializedState | undefined {
+  private parseSerializedState(value: unknown): DatabaseTablePanelSerializedState | undefined {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       return undefined;
     }
@@ -307,7 +307,7 @@ export class MySqlTableDataPanel
       pageSize:
         typeof pageSize === "number" && Number.isFinite(pageSize)
           ? Math.max(1, Math.floor(pageSize))
-          : MySqlTableDataPanel.defaultPageSize,
+          : DatabaseTableDataPanel.defaultPageSize,
       filterKeyword: typeof filterKeyword === "string" ? filterKeyword : "",
       filterConditions: this.parseFilterConditions(filterConditions),
       sortColumnName:
@@ -419,12 +419,12 @@ export class MySqlTableDataPanel
    * 根据恢复状态创建表节点。
    *
    * @param {ConnectionConfig} connection 已恢复的连接配置。
-   * @param {MySqlTablePanelSerializedState} restoredState 已解析的 Webview 状态。
+   * @param {DatabaseTablePanelSerializedState} restoredState 已解析的 Webview 状态。
    * @returns {TableDataTreeNode} 可供表数据页使用的表节点。
    */
   private createRestoredTableNode(
     connection: ConnectionConfig,
-    restoredState: MySqlTablePanelSerializedState,
+    restoredState: DatabaseTablePanelSerializedState,
   ): TableDataTreeNode {
     if (connection.engine === "postgresql") {
       const databaseName =
@@ -461,11 +461,11 @@ export class MySqlTableDataPanel
   /**
    * 处理分页和刷新的 Webview 动作。
    *
-   * @param {MySqlTablePanelState} state 正在更新的面板状态。
+   * @param {DatabaseTablePanelState} state 正在更新的面板状态。
    * @param {MySqlTableDataWebviewMessage} message Webview 发出的消息。
    */
   private async handleWebviewMessage(
-    state: MySqlTablePanelState,
+    state: DatabaseTablePanelState,
     message: MySqlTableDataWebviewMessage,
   ): Promise<void> {
     switch (message.type) {
@@ -585,20 +585,20 @@ export class MySqlTableDataPanel
   /**
    * 从当前面板状态中读取可写的 MySQL 表节点。
    *
-   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @param {DatabaseTablePanelState} state 当前表数据面板状态。
    * @returns {MySqlTableTreeNode | undefined} MySQL 表节点；非 MySQL 表时返回 undefined。
    */
-  private getMySqlTableNode(state: MySqlTablePanelState): MySqlTableTreeNode | undefined {
+  private getMySqlTableNode(state: DatabaseTablePanelState): MySqlTableTreeNode | undefined {
     return state.tableNode.kind === "table" ? state.tableNode : undefined;
   }
 
   /**
    * 从当前面板状态中读取可写的 SQLite3 表节点。
    *
-   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @param {DatabaseTablePanelState} state 当前表数据面板状态。
    * @returns {Sqlite3TableTreeNode | undefined} SQLite3 表节点；非 SQLite3 表时返回 undefined。
    */
-  private getSqlite3TableNode(state: MySqlTablePanelState): Sqlite3TableTreeNode | undefined {
+  private getSqlite3TableNode(state: DatabaseTablePanelState): Sqlite3TableTreeNode | undefined {
     return state.tableNode.kind === "sqlite3Table" ? state.tableNode : undefined;
   }
 
@@ -638,10 +638,10 @@ export class MySqlTableDataPanel
   /**
    * 收集字段值并新增一条表记录。
    *
-   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @param {DatabaseTablePanelState} state 当前表数据面板状态。
    */
   private async insertRow(
-    state: MySqlTablePanelState,
+    state: DatabaseTablePanelState,
     sourceRow?: Record<string, MySqlTableCellValue>,
   ): Promise<void> {
     try {
@@ -702,10 +702,10 @@ export class MySqlTableDataPanel
   /**
    * 以当前聚焦行作为默认值新增一条表记录。
    *
-   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @param {DatabaseTablePanelState} state 当前表数据面板状态。
    * @param {number} rowIndex 当前页行索引。
    */
-  private async copyRow(state: MySqlTablePanelState, rowIndex: number): Promise<void> {
+  private async copyRow(state: DatabaseTablePanelState, rowIndex: number): Promise<void> {
     const row = state.latestRows[rowIndex];
 
     if (!row) {
@@ -758,10 +758,10 @@ export class MySqlTableDataPanel
   /**
    * 编辑当前页中的一条表记录。
    *
-   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @param {DatabaseTablePanelState} state 当前表数据面板状态。
    * @param {number} rowIndex 当前页行索引。
    */
-  private async editRow(state: MySqlTablePanelState, rowIndex: number): Promise<void> {
+  private async editRow(state: DatabaseTablePanelState, rowIndex: number): Promise<void> {
     try {
       const tableNode = this.getMySqlTableNode(state);
       const sqlite3TableNode = this.getSqlite3TableNode(state);
@@ -836,7 +836,7 @@ export class MySqlTableDataPanel
    * @param edits 前端收集的逐行字段修改。
    */
   private async saveEditedRows(
-    state: MySqlTablePanelState,
+    state: DatabaseTablePanelState,
     edits: readonly {
       readonly rowIndex: number;
       readonly values: Record<string, string | number | boolean | null>;
@@ -969,10 +969,10 @@ export class MySqlTableDataPanel
   /**
    * 删除当前页中的一条表记录。
    *
-   * @param {MySqlTablePanelState} state 当前表数据面板状态。
+   * @param {DatabaseTablePanelState} state 当前表数据面板状态。
    * @param {number} rowIndex 当前页行索引。
    */
-  private async deleteRow(state: MySqlTablePanelState, rowIndex: number): Promise<void> {
+  private async deleteRow(state: DatabaseTablePanelState, rowIndex: number): Promise<void> {
     try {
       const tableNode = this.getMySqlTableNode(state);
       const sqlite3TableNode = this.getSqlite3TableNode(state);
@@ -1132,9 +1132,9 @@ export class MySqlTableDataPanel
   /**
    * 加载表字段和行数据，并渲染当前面板状态。
    *
-   * @param {MySqlTablePanelState} state 正在渲染的面板状态。
+   * @param {DatabaseTablePanelState} state 正在渲染的面板状态。
    */
-  private async renderTableData(state: MySqlTablePanelState): Promise<void> {
+  private async renderTableData(state: DatabaseTablePanelState): Promise<void> {
     state.panel.title = `${state.tableNode.tableName} 表数据`;
     state.panel.webview.html = this.renderLoadingHtml(state.tableNode);
 
@@ -1158,11 +1158,11 @@ export class MySqlTableDataPanel
   /**
    * 根据表节点类型加载字段和分页行数据。
    *
-   * @param {MySqlTablePanelState} state 正在渲染的面板状态。
+   * @param {DatabaseTablePanelState} state 正在渲染的面板状态。
    * @returns 字段和分页行数据。
    */
   private async loadTableData(
-    state: MySqlTablePanelState,
+    state: DatabaseTablePanelState,
   ): Promise<readonly [readonly MySqlTableColumnMetadata[], MySqlTableRowPage]> {
     if (state.tableNode.kind === "postgresqlTable") {
       return Promise.all([
@@ -1220,10 +1220,10 @@ export class MySqlTableDataPanel
   /**
    * 将当前面板状态转换为表数据查询选项。
    *
-   * @param {MySqlTablePanelState} state 当前面板状态。
+   * @param {DatabaseTablePanelState} state 当前面板状态。
    * @returns {MySqlTableQueryOptions} 排序和过滤查询选项。
    */
-  private createQueryOptions(state: MySqlTablePanelState): MySqlTableQueryOptions {
+  private createQueryOptions(state: DatabaseTablePanelState): MySqlTableQueryOptions {
     const filterKeyword = state.filterKeyword.trim();
     const hasFilterConditions = state.filterConditions.length > 0;
     return {
@@ -1264,10 +1264,10 @@ export class MySqlTableDataPanel
   /**
    * 从当前面板状态创建可保存到 Webview 的轻量状态。
    *
-   * @param {MySqlTablePanelState} state 当前表数据面板状态。
-   * @returns {MySqlTablePanelSerializedState} 可由 VS Code 恢复的表数据页状态。
+   * @param {DatabaseTablePanelState} state 当前表数据面板状态。
+   * @returns {DatabaseTablePanelSerializedState} 可由 VS Code 恢复的表数据页状态。
    */
-  private createSerializedState(state: MySqlTablePanelState): MySqlTablePanelSerializedState {
+  private createSerializedState(state: DatabaseTablePanelState): DatabaseTablePanelSerializedState {
     return {
       engine:
         state.tableNode.kind === "postgresqlTable"
@@ -1397,13 +1397,13 @@ export class MySqlTableDataPanel
   /**
    * 渲染完整的表数据 HTML 文档。
    *
-   * @param {MySqlTablePanelState} state 当前面板状态。
+   * @param {DatabaseTablePanelState} state 当前面板状态。
    * @param {readonly MySqlTableColumnMetadata[]} columns 当前选中表的字段元数据。
    * @param {MySqlTableRowPage} rowPage 当前选中表的分页行数据。
    * @returns {string} 渲染到 Webview 内的 HTML 文档。
    */
   private renderTableHtml(
-    state: MySqlTablePanelState,
+    state: DatabaseTablePanelState,
     columns: readonly MySqlTableColumnMetadata[],
     rowPage: MySqlTableRowPage,
   ): string {

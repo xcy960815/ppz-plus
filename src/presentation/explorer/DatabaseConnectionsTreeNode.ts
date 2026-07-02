@@ -8,7 +8,7 @@ import type {
 /**
  * 表示资源树中渲染的连接节点。
  */
-export interface MySqlConnectionTreeNode {
+export interface DatabaseConnectionTreeNode {
   readonly kind: "connection";
   readonly connection: ConnectionConfig;
 }
@@ -75,10 +75,10 @@ export interface Sqlite3TableTreeNode {
 }
 
 /**
- * 表示 MySQL 资源视图中渲染的全部 Tree 节点类型。
+ * 表示数据库资源视图中渲染的全部 Tree 节点类型。
  */
-export type MySqlConnectionsTreeNode =
-  | MySqlConnectionTreeNode
+export type DatabaseConnectionsTreeNode =
+  | DatabaseConnectionTreeNode
   | MySqlSchemaTreeNode
   | MySqlTableTreeNode
   | PostgreSqlDatabaseTreeNode

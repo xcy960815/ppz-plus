@@ -12,7 +12,7 @@ import type {
 import type { SqlExportKind } from "../../domain/export/SqlExportDocument";
 import { isOperationCanceledError } from "../../domain/tasks/CancellationSignal";
 import type { ExtensionCommand } from "./ExtensionCommand";
-import type { MySqlSchemaTreeNode } from "../explorer/MySqlConnectionsTreeNode";
+import type { MySqlSchemaTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 import { formatSqlExportCapabilityMessage } from "./SqlExportCapabilityMessage";
 import {
   createVsCodeCancellationSignal,

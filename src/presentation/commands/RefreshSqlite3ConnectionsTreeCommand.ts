@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import type { ExtensionCommand } from "./ExtensionCommand";
-import { MySqlConnectionsTreeDataProvider } from "../explorer/MySqlConnectionsTreeDataProvider";
+import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3ConnectionsTreeDataProvider";
 
 /**
@@ -25,7 +25,7 @@ export class RefreshSqlite3ConnectionsTreeCommand implements ExtensionCommand {
    * @param sqlite3TreeDataProvider SQLite3 专属连接树。
    */
   public constructor(
-    private readonly databaseTreeDataProvider: MySqlConnectionsTreeDataProvider,
+    private readonly databaseTreeDataProvider: DatabaseConnectionsTreeDataProvider,
     private readonly sqlite3TreeDataProvider: Sqlite3ConnectionsTreeDataProvider,
   ) {}
 

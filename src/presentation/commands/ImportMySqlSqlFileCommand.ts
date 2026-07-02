@@ -14,7 +14,7 @@ import {
   createVsCodeCancellationSignal,
   showTaskCanceledMessage,
 } from "./TaskCancellationPresenter";
-import type { MySqlConnectionsTreeNode } from "../explorer/MySqlConnectionsTreeNode";
+import type { DatabaseConnectionsTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 
 /**
  * 从 VS Code 入口导入 MySQL SQL 文件。
@@ -51,7 +51,7 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
    * @returns {vscode.Disposable} 命令注册的可释放句柄。
    */
   public register(): vscode.Disposable {
-    return vscode.commands.registerCommand(this.id, async (node?: MySqlConnectionsTreeNode) => {
+    return vscode.commands.registerCommand(this.id, async (node?: DatabaseConnectionsTreeNode) => {
       const connection = this.resolveInitialConnection(node) ?? (await this.pickConnection());
       if (!connection) {
         return;
@@ -75,11 +75,11 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
   /**
    * 从 Tree 节点解析初始 MySQL 连接。
    *
-   * @param {MySqlConnectionsTreeNode} node 可选的 MySQL Tree 节点。
+   * @param {DatabaseConnectionsTreeNode} node 可选的 MySQL Tree 节点。
    * @returns {MysqlConnectionConfig | undefined} 可直接用于导入的 MySQL 连接。
    */
   private resolveInitialConnection(
-    node?: MySqlConnectionsTreeNode,
+    node?: DatabaseConnectionsTreeNode,
   ): MysqlConnectionConfig | undefined {
     return node?.connection.engine === "mysql" ? node.connection : undefined;
   }

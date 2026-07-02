@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import type { MysqlConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type { ExtensionCommand } from "./ExtensionCommand";
-import type { MySqlConnectionsTreeNode } from "../explorer/MySqlConnectionsTreeNode";
+import type { DatabaseConnectionsTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 import { MySqlSqlTerminalPanel } from "../sql/MySqlSqlTerminalPanel";
 
 /**
@@ -34,7 +34,7 @@ export class OpenMySqlSqlTerminalCommand implements ExtensionCommand {
   public register(): vscode.Disposable {
     return vscode.commands.registerCommand(
       this.id,
-      async (node?: MySqlConnectionsTreeNode, initialSql?: string) => {
+      async (node?: DatabaseConnectionsTreeNode, initialSql?: string) => {
         await this.mySqlSqlTerminalPanel.open(this.resolveInitialConnection(node), initialSql);
       },
     );
@@ -43,11 +43,11 @@ export class OpenMySqlSqlTerminalCommand implements ExtensionCommand {
   /**
    * 从 Tree 节点解析 SQL 终端初始连接。
    *
-   * @param {MySqlConnectionsTreeNode} node 可选的 MySQL Tree 节点。
+   * @param {DatabaseConnectionsTreeNode} node 可选的 MySQL Tree 节点。
    * @returns {MysqlConnectionConfig | undefined} 初始选中的 MySQL 连接。
    */
   private resolveInitialConnection(
-    node?: MySqlConnectionsTreeNode,
+    node?: DatabaseConnectionsTreeNode,
   ): MysqlConnectionConfig | undefined {
     if (!node) {
       return undefined;

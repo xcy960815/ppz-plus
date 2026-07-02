@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import type { Sqlite3ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type { ExtensionCommand } from "./ExtensionCommand";
-import type { MySqlConnectionsTreeNode } from "../explorer/MySqlConnectionsTreeNode";
+import type { DatabaseConnectionsTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 import { Sqlite3SqlTerminalPanel } from "../sql/Sqlite3SqlTerminalPanel";
 
 /**
@@ -34,7 +34,7 @@ export class OpenSqlite3SqlTerminalCommand implements ExtensionCommand {
   public register(): vscode.Disposable {
     return vscode.commands.registerCommand(
       this.id,
-      async (node?: MySqlConnectionsTreeNode, initialSql?: string) => {
+      async (node?: DatabaseConnectionsTreeNode, initialSql?: string) => {
         await this.sqlite3SqlTerminalPanel.open(this.resolveInitialConnection(node), initialSql);
       },
     );
@@ -43,11 +43,11 @@ export class OpenSqlite3SqlTerminalCommand implements ExtensionCommand {
   /**
    * 从 Tree 节点解析 SQL 终端初始连接。
    *
-   * @param {MySqlConnectionsTreeNode} node 可选的数据库 Tree 节点。
+   * @param {DatabaseConnectionsTreeNode} node 可选的数据库 Tree 节点。
    * @returns {Sqlite3ConnectionConfig | undefined} 初始选中的 SQLite3 连接。
    */
   private resolveInitialConnection(
-    node?: MySqlConnectionsTreeNode,
+    node?: DatabaseConnectionsTreeNode,
   ): Sqlite3ConnectionConfig | undefined {
     if (!node) {
       return undefined;
