@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import type { ClearPpzStateUseCase } from "../../application/useCases/ClearPpzStateUseCase";
-import { MySqlConnectionsTreeDataProvider } from "../explorer/MySqlConnectionsTreeDataProvider";
+import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3ConnectionsTreeDataProvider";
 import type { ExtensionCommand } from "./ExtensionCommand";
 import { showUserErrorMessage } from "./UserErrorPresenter";
@@ -29,7 +29,7 @@ export class ClearPpzStateCommand implements ExtensionCommand {
    */
   public constructor(
     private readonly clearPpzStateUseCase: ClearPpzStateUseCase,
-    private readonly databaseTreeDataProvider: MySqlConnectionsTreeDataProvider,
+    private readonly databaseTreeDataProvider: DatabaseConnectionsTreeDataProvider,
     private readonly sqlite3TreeDataProvider: Sqlite3ConnectionsTreeDataProvider,
   ) {}
 

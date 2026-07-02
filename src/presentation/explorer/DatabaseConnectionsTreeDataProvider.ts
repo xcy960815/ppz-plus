@@ -10,23 +10,23 @@ import type { ListSqlite3TablesUseCase } from "../../application/useCases/ListSq
 import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
 import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type {
-  MySqlConnectionTreeNode,
-  MySqlConnectionsTreeNode,
+  DatabaseConnectionTreeNode,
+  DatabaseConnectionsTreeNode,
   MySqlSchemaTreeNode,
   MySqlTableTreeNode,
   PostgreSqlDatabaseTreeNode,
   PostgreSqlSchemaTreeNode,
   PostgreSqlTableTreeNode,
   Sqlite3TableTreeNode,
-} from "./MySqlConnectionsTreeNode";
+} from "./DatabaseConnectionsTreeNode";
 import { showUserErrorMessage } from "../commands/UserErrorPresenter";
 
 /**
- * 为当前扩展会话提供 MySQL 连接资源树。
+ * 为当前扩展会话提供统一的数据库连接资源树。
  */
-export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider<MySqlConnectionsTreeNode> {
+export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvider<DatabaseConnectionsTreeNode> {
   /**
-   * 保存 MySQL 资源树使用的 VS Code 视图标识。
+   * 保存数据库资源树使用的 VS Code 视图标识。
    */
   public static readonly viewId = "ppzPlus.mysqlConnections";
 
@@ -79,7 +79,7 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
    * 为资源视图发出 Tree 刷新事件。
    */
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<
-    MySqlConnectionsTreeNode | undefined
+    DatabaseConnectionsTreeNode | undefined
   >();
 
   /**
@@ -88,7 +88,7 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
   public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   /**
-   * 创建 MySQL 连接 Tree 数据提供者。
+   * 创建数据库连接 Tree 数据提供者。
    *
    * @param listStoredConnectionsUseCase 用于加载已保存连接的用例。
    * @param listMySqlSchemasUseCase 用于加载 MySQL schema 的用例。
@@ -118,10 +118,10 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
   /**
    * 返回指定节点对应的 TreeItem 表现。
    *
-   * @param {MySqlConnectionsTreeNode} element 正在渲染的 Tree 节点。
+   * @param {DatabaseConnectionsTreeNode} element 正在渲染的 Tree 节点。
    * @returns {vscode.TreeItem} 该节点对应的 VS Code TreeItem。
    */
-  public getTreeItem(element: MySqlConnectionsTreeNode): vscode.TreeItem {
+  public getTreeItem(element: DatabaseConnectionsTreeNode): vscode.TreeItem {
     if (element.kind === "connection") {
       return this.createConnectionTreeItem(element);
     }
@@ -152,12 +152,12 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
   /**
    * 加载指定 Tree 节点的子节点。
    *
-   * @param {MySqlConnectionsTreeNode} element 父级 Tree 节点；根层级时为空。
-   * @returns {Promise<MySqlConnectionsTreeNode[]>} 需要渲染的子节点。
+   * @param {DatabaseConnectionsTreeNode} element 父级 Tree 节点；根层级时为空。
+   * @returns {Promise<DatabaseConnectionsTreeNode[]>} 需要渲染的子节点。
    */
   public async getChildren(
-    element?: MySqlConnectionsTreeNode,
-  ): Promise<MySqlConnectionsTreeNode[]> {
+    element?: DatabaseConnectionsTreeNode,
+  ): Promise<DatabaseConnectionsTreeNode[]> {
     try {
       if (!element) {
         const connections = await this.listStoredConnectionsUseCase.execute();
@@ -252,10 +252,10 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
   /**
    * 创建连接节点的可视化表示。
    *
-   * @param {MySqlConnectionTreeNode} element 连接 Tree 节点。
+   * @param {DatabaseConnectionTreeNode} element 连接 Tree 节点。
    * @returns {vscode.TreeItem} 连接节点对应的 TreeItem。
    */
-  private createConnectionTreeItem(element: MySqlConnectionTreeNode): vscode.TreeItem {
+  private createConnectionTreeItem(element: DatabaseConnectionTreeNode): vscode.TreeItem {
     /**
      * 解析 TreeItem 使用的简短端点描述。
      */
@@ -266,10 +266,10 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
     );
     treeItem.contextValue =
       element.connection.engine === "sqlite3"
-        ? MySqlConnectionsTreeDataProvider.sqlite3ConnectionContextValue
+        ? DatabaseConnectionsTreeDataProvider.sqlite3ConnectionContextValue
         : element.connection.engine === "postgresql"
-          ? MySqlConnectionsTreeDataProvider.postgreSqlConnectionContextValue
-          : MySqlConnectionsTreeDataProvider.connectionContextValue;
+          ? DatabaseConnectionsTreeDataProvider.postgreSqlConnectionContextValue
+          : DatabaseConnectionsTreeDataProvider.connectionContextValue;
     treeItem.description = description;
     treeItem.iconPath = new vscode.ThemeIcon("database");
     return treeItem;
@@ -286,7 +286,7 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
       element.schemaName,
       vscode.TreeItemCollapsibleState.Collapsed,
     );
-    treeItem.contextValue = MySqlConnectionsTreeDataProvider.schemaContextValue;
+    treeItem.contextValue = DatabaseConnectionsTreeDataProvider.schemaContextValue;
     treeItem.id = `${element.connection.id}.${element.schemaName}`;
     treeItem.iconPath = new vscode.ThemeIcon("folder-library");
     return treeItem;
@@ -303,7 +303,7 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
       element.databaseName,
       vscode.TreeItemCollapsibleState.Collapsed,
     );
-    treeItem.contextValue = MySqlConnectionsTreeDataProvider.postgreSqlDatabaseContextValue;
+    treeItem.contextValue = DatabaseConnectionsTreeDataProvider.postgreSqlDatabaseContextValue;
     treeItem.id = `${element.connection.id}.${element.databaseName}`;
     treeItem.description = element.isDefault ? "默认" : undefined;
     treeItem.iconPath = new vscode.ThemeIcon("database");
@@ -321,7 +321,7 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
       element.schemaName,
       vscode.TreeItemCollapsibleState.Collapsed,
     );
-    treeItem.contextValue = MySqlConnectionsTreeDataProvider.postgreSqlSchemaContextValue;
+    treeItem.contextValue = DatabaseConnectionsTreeDataProvider.postgreSqlSchemaContextValue;
     treeItem.id = `${element.connection.id}.${element.databaseName}.${element.schemaName}`;
     treeItem.description = element.databaseName;
     treeItem.iconPath = new vscode.ThemeIcon("folder-library");
@@ -336,7 +336,7 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
    */
   private createPostgreSqlTableTreeItem(element: PostgreSqlTableTreeNode): vscode.TreeItem {
     const treeItem = new vscode.TreeItem(element.tableName, vscode.TreeItemCollapsibleState.None);
-    treeItem.contextValue = MySqlConnectionsTreeDataProvider.postgreSqlTableContextValue;
+    treeItem.contextValue = DatabaseConnectionsTreeDataProvider.postgreSqlTableContextValue;
     treeItem.id = `${element.connection.id}.${element.databaseName}.${element.schemaName}.${element.tableName}`;
     treeItem.description = element.schemaName;
     treeItem.iconPath = new vscode.ThemeIcon("table");
@@ -356,7 +356,7 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
    */
   private createSqlite3TableTreeItem(element: Sqlite3TableTreeNode): vscode.TreeItem {
     const treeItem = new vscode.TreeItem(element.tableName, vscode.TreeItemCollapsibleState.None);
-    treeItem.contextValue = MySqlConnectionsTreeDataProvider.sqlite3TableContextValue;
+    treeItem.contextValue = DatabaseConnectionsTreeDataProvider.sqlite3TableContextValue;
     treeItem.id = `${element.connection.id}.main.${element.tableName}`;
     treeItem.description = element.tableType === "view" ? "view" : undefined;
     treeItem.iconPath = new vscode.ThemeIcon(element.tableType === "view" ? "eye" : "table");
@@ -376,7 +376,7 @@ export class MySqlConnectionsTreeDataProvider implements vscode.TreeDataProvider
    */
   private createTableTreeItem(element: MySqlTableTreeNode): vscode.TreeItem {
     const treeItem = new vscode.TreeItem(element.tableName, vscode.TreeItemCollapsibleState.None);
-    treeItem.contextValue = MySqlConnectionsTreeDataProvider.tableContextValue;
+    treeItem.contextValue = DatabaseConnectionsTreeDataProvider.tableContextValue;
     treeItem.id = `${element.connection.id}.${element.schemaName}.${element.tableName}`;
     treeItem.description = element.schemaName;
     treeItem.iconPath = new vscode.ThemeIcon("table");

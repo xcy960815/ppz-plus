@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import type { PostgreSqlConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type { ExtensionCommand } from "./ExtensionCommand";
-import type { MySqlConnectionsTreeNode } from "../explorer/MySqlConnectionsTreeNode";
+import type { DatabaseConnectionsTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 import { PostgreSqlSqlTerminalPanel } from "../sql/PostgreSqlSqlTerminalPanel";
 
 /**
@@ -34,7 +34,7 @@ export class OpenPostgreSqlSqlTerminalCommand implements ExtensionCommand {
   public register(): vscode.Disposable {
     return vscode.commands.registerCommand(
       this.id,
-      async (node?: MySqlConnectionsTreeNode, initialSql?: string) => {
+      async (node?: DatabaseConnectionsTreeNode, initialSql?: string) => {
         const initialTarget = this.resolveInitialTarget(node);
         await this.postgreSqlSqlTerminalPanel.open(
           initialTarget?.connection,
@@ -48,10 +48,10 @@ export class OpenPostgreSqlSqlTerminalCommand implements ExtensionCommand {
   /**
    * 从 Tree 节点解析 SQL 终端初始目标。
    *
-   * @param {MySqlConnectionsTreeNode} node 可选的数据库 Tree 节点。
+   * @param {DatabaseConnectionsTreeNode} node 可选的数据库 Tree 节点。
    * @returns {|} 初始选中的 PostgreSQL 连接和 database。
    */
-  private resolveInitialTarget(node?: MySqlConnectionsTreeNode):
+  private resolveInitialTarget(node?: DatabaseConnectionsTreeNode):
     | {
         readonly connection: PostgreSqlConnectionConfig;
         readonly databaseName?: string;

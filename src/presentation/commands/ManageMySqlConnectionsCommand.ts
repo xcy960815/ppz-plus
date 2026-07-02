@@ -19,8 +19,8 @@ import type {
 import type { ExtensionCommand } from "./ExtensionCommand";
 import { AddMySqlConnectionCommand } from "./AddMySqlConnectionCommand";
 import { AddSqlite3ConnectionCommand } from "./AddSqlite3ConnectionCommand";
-import type { MySqlConnectionTreeNode } from "../explorer/MySqlConnectionsTreeNode";
-import { MySqlConnectionsTreeDataProvider } from "../explorer/MySqlConnectionsTreeDataProvider";
+import type { DatabaseConnectionTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
+import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3ConnectionsTreeDataProvider";
 
 /**
@@ -52,7 +52,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
     private readonly saveConnectionConfigUseCase: SaveConnectionConfigUseCase,
     private readonly deleteStoredConnectionUseCase: DeleteStoredConnectionUseCase,
     private readonly testConnectionUseCase: TestConnectionUseCase,
-    private readonly treeDataProvider: MySqlConnectionsTreeDataProvider,
+    private readonly treeDataProvider: DatabaseConnectionsTreeDataProvider,
     private readonly sqlite3TreeDataProvider: Sqlite3ConnectionsTreeDataProvider,
   ) {}
 
@@ -62,7 +62,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
    * @returns {vscode.Disposable} 命令注册的可释放句柄。
    */
   public register(): vscode.Disposable {
-    return vscode.commands.registerCommand(this.id, async (treeNode?: MySqlConnectionTreeNode) => {
+    return vscode.commands.registerCommand(this.id, async (treeNode?: DatabaseConnectionTreeNode) => {
       const selectedConnection =
         treeNode?.kind === "connection" ? treeNode.connection : await this.pickConnection();
       if (!selectedConnection) {

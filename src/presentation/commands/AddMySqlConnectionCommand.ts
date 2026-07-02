@@ -18,7 +18,7 @@ import {
   withConnectionTestProgress,
 } from "./MySqlConnectionProgressPresenter";
 import { extractUserErrorMessage, showUserErrorMessage } from "./UserErrorPresenter";
-import { MySqlConnectionsTreeDataProvider } from "../explorer/MySqlConnectionsTreeDataProvider";
+import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 
 /**
  * 描述连接表单 Webview 发回的保存动作。
@@ -81,7 +81,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
   public constructor(
     private readonly saveConnectionConfigUseCase: SaveConnectionConfigUseCase,
     private readonly testConnectionUseCase: TestConnectionUseCase,
-    private readonly treeDataProvider: MySqlConnectionsTreeDataProvider,
+    private readonly treeDataProvider: DatabaseConnectionsTreeDataProvider,
   ) {}
 
   /**

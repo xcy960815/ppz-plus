@@ -5,8 +5,8 @@ import type {
   MySqlTableTreeNode,
   PostgreSqlTableTreeNode,
   Sqlite3TableTreeNode,
-} from "../explorer/MySqlConnectionsTreeNode";
-import { MySqlTableDataPanel } from "../tableData/MySqlTableDataPanel";
+} from "../explorer/DatabaseConnectionsTreeNode";
+import { DatabaseTableDataPanel } from "../tableData/DatabaseTableDataPanel";
 
 /**
  * 表示可以打开表数据页的表节点。
@@ -14,7 +14,7 @@ import { MySqlTableDataPanel } from "../tableData/MySqlTableDataPanel";
 type TableDataTreeNode = MySqlTableTreeNode | PostgreSqlTableTreeNode | Sqlite3TableTreeNode;
 
 /**
- * 为选中的 MySQL 表节点打开只读数据页。
+ * 为选中的表节点打开数据页。
  */
 export class OpenMySqlTableDataCommand implements ExtensionCommand {
   /**
@@ -30,9 +30,9 @@ export class OpenMySqlTableDataCommand implements ExtensionCommand {
   /**
    * 创建打开表数据命令。
    *
-   * @param mySqlTableDataPanel 用于渲染表数据的面板管理器。
+   * @param databaseTableDataPanel 用于渲染表数据的面板管理器。
    */
-  public constructor(private readonly mySqlTableDataPanel: MySqlTableDataPanel) {}
+  public constructor(private readonly databaseTableDataPanel: DatabaseTableDataPanel) {}
 
   /**
    * 向 VS Code 注册命令。
@@ -51,7 +51,7 @@ export class OpenMySqlTableDataCommand implements ExtensionCommand {
         return;
       }
 
-      await this.mySqlTableDataPanel.open(tableNode);
+      await this.databaseTableDataPanel.open(tableNode);
     });
   }
 }

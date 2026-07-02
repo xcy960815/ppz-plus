@@ -12,7 +12,7 @@ import {
   withConnectionTestProgress,
 } from "./MySqlConnectionProgressPresenter";
 import { extractUserErrorMessage, showUserErrorMessage } from "./UserErrorPresenter";
-import { MySqlConnectionsTreeDataProvider } from "../explorer/MySqlConnectionsTreeDataProvider";
+import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3ConnectionsTreeDataProvider";
 
 /**
@@ -40,7 +40,7 @@ export class AddSqlite3ConnectionCommand implements ExtensionCommand {
   public constructor(
     private readonly saveConnectionConfigUseCase: SaveConnectionConfigUseCase,
     private readonly testConnectionUseCase: TestConnectionUseCase,
-    private readonly treeDataProvider: MySqlConnectionsTreeDataProvider,
+    private readonly treeDataProvider: DatabaseConnectionsTreeDataProvider,
     private readonly sqlite3TreeDataProvider: Sqlite3ConnectionsTreeDataProvider,
   ) {}
 

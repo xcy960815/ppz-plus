@@ -7,7 +7,7 @@ import type { SaveSqlExportDocumentUseCase } from "../../application/useCases/Sa
 import type { SqlExportDocument, SqlExportKind } from "../../domain/export/SqlExportDocument";
 import type { SqlExportFileSaveResult } from "../../domain/export/SqlExportFileSaveResult";
 import type { ExtensionCommand } from "./ExtensionCommand";
-import type { PostgreSqlDatabaseTreeNode } from "../explorer/MySqlConnectionsTreeNode";
+import type { PostgreSqlDatabaseTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 import { formatSqlExportCapabilityMessage } from "./SqlExportCapabilityMessage";
 import { presentSqlExportFileSaveResult, promptSqlExportFilePath } from "./SqlExportFilePresenter";
 import { showUserErrorMessage } from "./UserErrorPresenter";

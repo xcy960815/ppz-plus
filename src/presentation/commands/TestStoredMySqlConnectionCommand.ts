@@ -9,7 +9,7 @@ import {
   withConnectionTestProgress,
 } from "./MySqlConnectionProgressPresenter";
 import { showUserErrorMessage } from "./UserErrorPresenter";
-import type { MySqlConnectionTreeNode } from "../explorer/MySqlConnectionsTreeNode";
+import type { DatabaseConnectionTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 
 /**
  * 测试从资源树或选择器中选中的数据库连接。
@@ -42,7 +42,7 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
    * @returns {vscode.Disposable} 命令注册的可释放句柄。
    */
   public register(): vscode.Disposable {
-    return vscode.commands.registerCommand(this.id, async (treeNode?: MySqlConnectionTreeNode) => {
+    return vscode.commands.registerCommand(this.id, async (treeNode?: DatabaseConnectionTreeNode) => {
       const connection =
         treeNode?.kind === "connection" ? treeNode.connection : await this.pickConnection();
 

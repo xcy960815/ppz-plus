@@ -26,7 +26,7 @@ import {
   showTaskCanceledMessage,
 } from "./TaskCancellationPresenter";
 import { showUserErrorMessage } from "./UserErrorPresenter";
-import type { MySqlConnectionsTreeNode } from "../explorer/MySqlConnectionsTreeNode";
+import type { DatabaseConnectionsTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 
 /**
  * 从 VS Code 入口导入 MySQL JSON 文件。
@@ -69,7 +69,7 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
    * @returns {vscode.Disposable} 命令注册的可释放句柄。
    */
   public register(): vscode.Disposable {
-    return vscode.commands.registerCommand(this.id, async (node?: MySqlConnectionsTreeNode) => {
+    return vscode.commands.registerCommand(this.id, async (node?: DatabaseConnectionsTreeNode) => {
       const selection = await this.resolveImportSelection(node);
       if (!selection) {
         return;
@@ -122,10 +122,10 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
   /**
    * 解析或提示用户选择 JSON 导入目标。
    *
-   * @param {MySqlConnectionsTreeNode} node 可选的 MySQL Tree 节点。
+   * @param {DatabaseConnectionsTreeNode} node 可选的 MySQL Tree 节点。
    * @returns 完整 JSON 导入选择。
    */
-  private async resolveImportSelection(node?: MySqlConnectionsTreeNode): Promise<
+  private async resolveImportSelection(node?: DatabaseConnectionsTreeNode): Promise<
     | {
         readonly connection: MysqlConnectionConfig;
         readonly target: JsonTableImportTarget;

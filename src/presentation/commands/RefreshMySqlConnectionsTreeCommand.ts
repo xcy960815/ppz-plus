@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import type { ExtensionCommand } from "./ExtensionCommand";
-import { MySqlConnectionsTreeDataProvider } from "../explorer/MySqlConnectionsTreeDataProvider";
+import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 
 /**
  * 刷新 MySQL 连接资源树。
@@ -22,7 +22,7 @@ export class RefreshMySqlConnectionsTreeCommand implements ExtensionCommand {
    *
    * @param treeDataProvider 命令触发刷新的 Tree 数据提供者。
    */
-  public constructor(private readonly treeDataProvider: MySqlConnectionsTreeDataProvider) {}
+  public constructor(private readonly treeDataProvider: DatabaseConnectionsTreeDataProvider) {}
 
   /**
    * 向 VS Code 注册命令。

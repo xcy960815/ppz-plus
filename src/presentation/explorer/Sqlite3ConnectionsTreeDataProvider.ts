@@ -5,12 +5,12 @@ import type { ListStoredConnectionsUseCase } from "../../application/useCases/Li
 import type { Sqlite3ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import { OpenMySqlTableDataCommand } from "../commands/OpenMySqlTableDataCommand";
 import { showUserErrorMessage } from "../commands/UserErrorPresenter";
-import type { MySqlConnectionTreeNode, Sqlite3TableTreeNode } from "./MySqlConnectionsTreeNode";
+import type { DatabaseConnectionTreeNode, Sqlite3TableTreeNode } from "./DatabaseConnectionsTreeNode";
 
 /**
  * 表示 SQLite3 资源视图中渲染的节点类型。
  */
-export type Sqlite3ConnectionsTreeNode = MySqlConnectionTreeNode | Sqlite3TableTreeNode;
+export type Sqlite3ConnectionsTreeNode = DatabaseConnectionTreeNode | Sqlite3TableTreeNode;
 
 /**
  * 为当前扩展会话提供 SQLite3 连接资源树。
