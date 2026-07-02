@@ -8,6 +8,8 @@ import {
   describeConnectionEngine,
   withConnectionTestProgress,
 } from "./MySqlConnectionProgressPresenter";
+import { describeConnectionTarget as formatConnectionTarget } from "./ConnectionDisplayFormatter";
+import type { StoredConnectionPasswordPrompt } from "./StoredConnectionPasswordPrompt";
 import { showUserErrorMessage } from "./UserErrorPresenter";
 import type { DatabaseConnectionTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 
@@ -30,10 +32,12 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
    *
    * @param listStoredConnectionsUseCase 用于读取已保存连接的用例。
    * @param testConnectionUseCase 用于测试所选连接的用例。
+   * @param storedConnectionPasswordPrompt 用于补录已保存连接缺失的本机密码。
    */
   public constructor(
     private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
     private readonly testConnectionUseCase: TestConnectionUseCase,
+    private readonly storedConnectionPasswordPrompt: StoredConnectionPasswordPrompt,
   ) {}
 
   /**
@@ -42,26 +46,35 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
    * @returns {vscode.Disposable} 命令注册的可释放句柄。
    */
   public register(): vscode.Disposable {
-    return vscode.commands.registerCommand(this.id, async (treeNode?: DatabaseConnectionTreeNode) => {
-      const connection =
-        treeNode?.kind === "connection" ? treeNode.connection : await this.pickConnection();
+    return vscode.commands.registerCommand(
+      this.id,
+      async (treeNode?: DatabaseConnectionTreeNode) => {
+        const connection =
+          treeNode?.kind === "connection" ? treeNode.connection : await this.pickConnection();
 
-      if (!connection) {
-        return;
-      }
+        if (!connection) {
+          return;
+        }
 
-      try {
-        await withConnectionTestProgress(connection, () =>
-          this.testConnectionUseCase.execute(connection),
-        );
-        await vscode.window.showInformationMessage(`“${connection.name}”连接测试通过。`);
-      } catch (error) {
-        await showUserErrorMessage({
-          operation: `测试 ${describeConnectionEngine(connection)} 连接`,
-          error,
-        });
-      }
-    });
+        try {
+          const readyConnection =
+            await this.storedConnectionPasswordPrompt.ensureConnectionReady(connection);
+          if (!readyConnection) {
+            return;
+          }
+
+          await withConnectionTestProgress(readyConnection, () =>
+            this.testConnectionUseCase.execute(readyConnection),
+          );
+          await vscode.window.showInformationMessage(`“${readyConnection.name}”连接测试通过。`);
+        } catch (error) {
+          await showUserErrorMessage({
+            operation: `测试 ${describeConnectionEngine(connection)} 连接`,
+            error,
+          });
+        }
+      },
+    );
   }
 
   /**
@@ -101,14 +114,6 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
    * @returns {string} 连接目标描述。
    */
   private describeConnectionTarget(connection: ConnectionConfig): string {
-    if (connection.mode === "parameters") {
-      return `${connection.host}:${connection.port}`;
-    }
-
-    if (connection.mode === "file") {
-      return connection.dbPath;
-    }
-
-    return connection.url;
+    return formatConnectionTarget(connection);
   }
 }
