@@ -29,11 +29,13 @@ export interface MysqlParameterConnectionConfig extends MysqlBaseConnectionConfi
   readonly username: string;
   readonly password?: string;
   readonly database?: string;
+  readonly hasPassword?: boolean;
 }
 
 export interface MysqlUrlConnectionConfig extends MysqlBaseConnectionConfig {
   readonly mode: "url";
   readonly url: string;
+  readonly hasPassword?: boolean;
 }
 
 /**
@@ -48,11 +50,13 @@ export interface PostgreSqlParameterConnectionConfig extends PostgreSqlBaseConne
   readonly username: string;
   readonly password?: string;
   readonly database?: string;
+  readonly hasPassword?: boolean;
 }
 
 export interface PostgreSqlUrlConnectionConfig extends PostgreSqlBaseConnectionConfig {
   readonly mode: "url";
   readonly url: string;
+  readonly hasPassword?: boolean;
 }
 
 /**

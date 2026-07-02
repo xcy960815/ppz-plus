@@ -8,6 +8,8 @@ import type {
 } from "../../domain/connections/ConnectionConfig";
 import type { SqlExecutionResult } from "../../domain/query/SqlExecutionResult";
 import type { ExtensionActivationParticipant } from "../bootstrap/ExtensionActivationParticipant";
+import { maskConnectionUrl } from "../commands/ConnectionDisplayFormatter";
+import type { StoredConnectionPasswordPrompt } from "../commands/StoredConnectionPasswordPrompt";
 import { SqlExecutionResultRenderer } from "./SqlExecutionResultRenderer";
 import type { PostgreSqlSqlTerminalWebviewMessage } from "./PostgreSqlSqlTerminalWebviewMessage";
 
@@ -57,10 +59,12 @@ export class PostgreSqlSqlTerminalPanel
    *
    * @param listStoredConnectionsUseCase 用于列出已保存连接的用例。
    * @param executePostgreSqlSqlUseCase 用于执行 PostgreSQL SQL 的用例。
+   * @param storedConnectionPasswordPrompt 用于补录已保存连接缺失的本机密码。
    */
   public constructor(
     private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
     private readonly executePostgreSqlSqlUseCase: ExecutePostgreSqlSqlUseCase,
+    private readonly storedConnectionPasswordPrompt: StoredConnectionPasswordPrompt,
   ) {}
 
   /**
@@ -208,8 +212,27 @@ export class PostgreSqlSqlTerminalPanel
       return;
     }
 
+    const readyConnection =
+      await this.storedConnectionPasswordPrompt.ensureConnectionReady(selectedConnection);
+
+    if (!readyConnection) {
+      state.result = {
+        sql: message.sql,
+        success: false,
+        isQuery: false,
+        fields: [],
+        rows: [],
+        affectedRows: null,
+        durationMs: 0,
+        resultSets: [],
+        errorMessage: "已取消补录 PostgreSQL 连接密码。",
+      };
+      await this.render(state);
+      return;
+    }
+
     state.result = await this.executePostgreSqlSqlUseCase.execute(
-      selectedConnection,
+      readyConnection,
       state.selectedDatabaseName,
       message.sql,
     );
@@ -609,7 +632,7 @@ export class PostgreSqlSqlTerminalPanel
     }
 
     const database = databaseName ? ` [${databaseName}]` : "";
-    return `${connection.name} (${connection.url})${database}`;
+    return `${connection.name} (${maskConnectionUrl(connection.url)})${database}`;
   }
 
   /**

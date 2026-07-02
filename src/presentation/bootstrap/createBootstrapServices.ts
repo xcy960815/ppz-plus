@@ -148,16 +148,17 @@ export interface BootstrapServices {
  * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
  * @returns {BootstrapServices} 已按职责分组完成的服务集合。
  */
-export function createBootstrapServices(
-  context: vscode.ExtensionContext,
-): BootstrapServices {
+export function createBootstrapServices(context: vscode.ExtensionContext): BootstrapServices {
   const capabilityCatalog = new InMemoryDatabaseCapabilityCatalog([
     MYSQL_MVP_CAPABILITY_DECLARATION,
     POSTGRESQL_TREE_CAPABILITY_DECLARATION,
     SQLITE3_MVP_CAPABILITY_DECLARATION,
   ]);
 
-  const globalStateConnectionRepository = new GlobalStateConnectionRepository(context.globalState);
+  const globalStateConnectionRepository = new GlobalStateConnectionRepository(
+    context.globalState,
+    context.secrets,
+  );
   const globalStateSqlExportTaskLogRepository = new GlobalStateSqlExportTaskLogRepository(
     context.globalState,
   );

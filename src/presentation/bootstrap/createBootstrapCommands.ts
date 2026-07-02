@@ -57,6 +57,7 @@ export function createBootstrapCommands(
       services.testConnectionUseCase,
       presentation.databaseConnectionsTreeDataProvider,
       presentation.sqlite3ConnectionsTreeDataProvider,
+      presentation.storedConnectionPasswordPrompt,
     ),
     new ManageSqlite3ConnectionsCommand(),
     new RefreshMySqlConnectionsTreeCommand(presentation.databaseConnectionsTreeDataProvider),
@@ -67,6 +68,7 @@ export function createBootstrapCommands(
     new TestStoredMySqlConnectionCommand(
       services.listStoredConnectionsUseCase,
       services.testConnectionUseCase,
+      presentation.storedConnectionPasswordPrompt,
     ),
     new TestStoredSqlite3ConnectionCommand(),
     new ClearPpzStateCommand(
@@ -83,6 +85,7 @@ export function createBootstrapCommands(
       services.createImportErrorReportUseCase,
       services.previewMySqlSqlFileImportUseCase,
       services.importMySqlSqlFileUseCase,
+      presentation.storedConnectionPasswordPrompt,
     ),
     new ImportMySqlCsvFileCommand(
       services.listStoredConnectionsUseCase,
@@ -92,6 +95,7 @@ export function createBootstrapCommands(
       services.prepareMySqlCsvImportMappingUseCase,
       services.previewMySqlCsvFileImportUseCase,
       services.importMySqlCsvFileUseCase,
+      presentation.storedConnectionPasswordPrompt,
     ),
     new ImportMySqlJsonFileCommand(
       services.listStoredConnectionsUseCase,
@@ -101,6 +105,7 @@ export function createBootstrapCommands(
       services.prepareMySqlJsonImportMappingUseCase,
       services.previewMySqlJsonFileImportUseCase,
       services.importMySqlJsonFileUseCase,
+      presentation.storedConnectionPasswordPrompt,
     ),
     ...createMySqlTableExportCommands(services),
     ...createMySqlSchemaExportCommands(services),
@@ -125,9 +130,7 @@ export function createBootstrapCommands(
  * @param {BootstrapServices} services 启动期服务集合。
  * @returns {readonly ExtensionCommand[]} MySQL 表导出命令。
  */
-function createMySqlTableExportCommands(
-  services: BootstrapServices,
-): readonly ExtensionCommand[] {
+function createMySqlTableExportCommands(services: BootstrapServices): readonly ExtensionCommand[] {
   return [
     new ExportMySqlTableSqlCommand(
       {
@@ -168,9 +171,7 @@ function createMySqlTableExportCommands(
  * @param {BootstrapServices} services 启动期服务集合。
  * @returns {readonly ExtensionCommand[]} MySQL schema 导出命令。
  */
-function createMySqlSchemaExportCommands(
-  services: BootstrapServices,
-): readonly ExtensionCommand[] {
+function createMySqlSchemaExportCommands(services: BootstrapServices): readonly ExtensionCommand[] {
   return [
     new ExportMySqlSchemaSqlCommand(
       {

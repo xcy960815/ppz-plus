@@ -9,7 +9,9 @@ import type { PreviewMySqlSqlFileImportUseCase } from "../../application/useCase
 import type { MysqlConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import { isOperationCanceledError } from "../../domain/tasks/CancellationSignal";
 import type { ExtensionCommand } from "./ExtensionCommand";
+import { describeConnectionTarget } from "./ConnectionDisplayFormatter";
 import { showImportErrorReport } from "./ImportErrorReportPresenter";
+import type { StoredConnectionPasswordPrompt } from "./StoredConnectionPasswordPrompt";
 import {
   createVsCodeCancellationSignal,
   showTaskCanceledMessage,
@@ -37,12 +39,14 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
    * @param createImportErrorReportUseCase 用于生成导入错误报告。
    * @param previewMySqlSqlFileImportUseCase 用于生成 SQL 文件导入预览的用例。
    * @param importMySqlSqlFileUseCase 用于执行 SQL 文件导入的用例。
+   * @param storedConnectionPasswordPrompt 用于补录已保存连接缺失的本机密码。
    */
   public constructor(
     private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
     private readonly createImportErrorReportUseCase: CreateImportErrorReportUseCase,
     private readonly previewMySqlSqlFileImportUseCase: PreviewMySqlSqlFileImportUseCase,
     private readonly importMySqlSqlFileUseCase: ImportMySqlSqlFileUseCase,
+    private readonly storedConnectionPasswordPrompt: StoredConnectionPasswordPrompt,
   ) {}
 
   /**
@@ -57,18 +61,24 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
         return;
       }
 
+      const readyConnection =
+        await this.storedConnectionPasswordPrompt.ensureConnectionReady(connection);
+      if (!readyConnection) {
+        return;
+      }
+
       const filePath = await this.pickSqlFilePath();
       if (!filePath) {
         await vscode.window.showInformationMessage("未选择 SQL 文件。");
         return;
       }
 
-      const confirmed = await this.confirmImportPreview(connection, filePath);
+      const confirmed = await this.confirmImportPreview(readyConnection, filePath);
       if (!confirmed) {
         return;
       }
 
-      await this.importSqlFile(connection, filePath);
+      await this.importSqlFile(readyConnection, filePath);
     });
   }
 
@@ -103,10 +113,7 @@ export class ImportMySqlSqlFileCommand implements ExtensionCommand {
     const selectedConnection = await vscode.window.showQuickPick(
       connections.map((connection) => ({
         label: connection.name,
-        description:
-          connection.mode === "parameters"
-            ? `${connection.host}:${connection.port}`
-            : connection.url,
+        description: describeConnectionTarget(connection),
         connection,
       })),
       {

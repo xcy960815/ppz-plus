@@ -19,6 +19,11 @@ import type {
 import type { ExtensionCommand } from "./ExtensionCommand";
 import { AddMySqlConnectionCommand } from "./AddMySqlConnectionCommand";
 import { AddSqlite3ConnectionCommand } from "./AddSqlite3ConnectionCommand";
+import {
+  describeConnectionTarget as formatConnectionTarget,
+  maskConnectionUrl,
+} from "./ConnectionDisplayFormatter";
+import type { StoredConnectionPasswordPrompt } from "./StoredConnectionPasswordPrompt";
 import type { DatabaseConnectionTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3ConnectionsTreeDataProvider";
@@ -46,6 +51,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
    * @param testConnectionUseCase 用于测试所选连接的用例。
    * @param treeDataProvider 用于刷新混合数据库连接树。
    * @param sqlite3TreeDataProvider 用于刷新 SQLite3 连接树。
+   * @param storedConnectionPasswordPrompt 用于补录已保存连接缺失的本机密码。
    */
   public constructor(
     private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
@@ -54,6 +60,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
     private readonly testConnectionUseCase: TestConnectionUseCase,
     private readonly treeDataProvider: DatabaseConnectionsTreeDataProvider,
     private readonly sqlite3TreeDataProvider: Sqlite3ConnectionsTreeDataProvider,
+    private readonly storedConnectionPasswordPrompt: StoredConnectionPasswordPrompt,
   ) {}
 
   /**
@@ -62,44 +69,47 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
    * @returns {vscode.Disposable} 命令注册的可释放句柄。
    */
   public register(): vscode.Disposable {
-    return vscode.commands.registerCommand(this.id, async (treeNode?: DatabaseConnectionTreeNode) => {
-      const selectedConnection =
-        treeNode?.kind === "connection" ? treeNode.connection : await this.pickConnection();
-      if (!selectedConnection) {
-        return;
-      }
+    return vscode.commands.registerCommand(
+      this.id,
+      async (treeNode?: DatabaseConnectionTreeNode) => {
+        const selectedConnection =
+          treeNode?.kind === "connection" ? treeNode.connection : await this.pickConnection();
+        if (!selectedConnection) {
+          return;
+        }
 
-      const action = await vscode.window.showQuickPick(
-        [
-          { label: "查看详情", value: "details" as const },
-          { label: "测试连接", value: "test" as const },
-          { label: "编辑连接", value: "edit" as const },
-          { label: "删除连接", value: "delete" as const },
-        ],
-        {
-          title: `PPZ Plus: ${selectedConnection.name}`,
-          placeHolder: "选择要执行的操作",
-        },
-      );
-      if (!action) {
-        return;
-      }
+        const action = await vscode.window.showQuickPick(
+          [
+            { label: "查看详情", value: "details" as const },
+            { label: "测试连接", value: "test" as const },
+            { label: "编辑连接", value: "edit" as const },
+            { label: "删除连接", value: "delete" as const },
+          ],
+          {
+            title: `PPZ Plus: ${selectedConnection.name}`,
+            placeHolder: "选择要执行的操作",
+          },
+        );
+        if (!action) {
+          return;
+        }
 
-      switch (action.value) {
-        case "details":
-          await this.showConnectionDetails(selectedConnection);
-          return;
-        case "test":
-          await this.testConnection(selectedConnection);
-          return;
-        case "edit":
-          await this.editConnection(selectedConnection);
-          return;
-        case "delete":
-          await this.deleteConnection(selectedConnection);
-          return;
-      }
-    });
+        switch (action.value) {
+          case "details":
+            await this.showConnectionDetails(selectedConnection);
+            return;
+          case "test":
+            await this.testConnection(selectedConnection);
+            return;
+          case "edit":
+            await this.editConnection(selectedConnection);
+            return;
+          case "delete":
+            await this.deleteConnection(selectedConnection);
+            return;
+        }
+      },
+    );
   }
 
   /**
@@ -163,7 +173,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
               `名称：${connection.name}`,
               `类型：${describeConnectionEngine(connection)}`,
               `模式：URL`,
-              `URL: ${connection.url}`,
+              `URL: ${maskConnectionUrl(connection.url)}`,
             ].join("\n");
 
     await vscode.window.showInformationMessage(message, { modal: true });
@@ -176,10 +186,16 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
    */
   private async testConnection(connection: ConnectionConfig): Promise<void> {
     try {
-      await withConnectionTestProgress(connection, () =>
-        this.testConnectionUseCase.execute(connection),
+      const readyConnection =
+        await this.storedConnectionPasswordPrompt.ensureConnectionReady(connection);
+      if (!readyConnection) {
+        return;
+      }
+
+      await withConnectionTestProgress(readyConnection, () =>
+        this.testConnectionUseCase.execute(readyConnection),
       );
-      await vscode.window.showInformationMessage(`“${connection.name}”连接测试通过。`);
+      await vscode.window.showInformationMessage(`“${readyConnection.name}”连接测试通过。`);
     } catch (error) {
       await showUserErrorMessage({
         operation: `测试 ${describeConnectionEngine(connection)} 连接`,
@@ -300,14 +316,6 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
    * @returns {string} 连接目标描述。
    */
   private describeConnectionTarget(connection: ConnectionConfig): string {
-    if (connection.mode === "parameters") {
-      return `${connection.host}:${connection.port}`;
-    }
-
-    if (connection.mode === "file") {
-      return connection.dbPath;
-    }
-
-    return connection.url;
+    return formatConnectionTarget(connection);
   }
 }

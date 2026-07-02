@@ -17,10 +17,12 @@ import type {
 import type { ImportColumnMapping } from "../../domain/import/ImportColumnMapping";
 import { isOperationCanceledError } from "../../domain/tasks/CancellationSignal";
 import type { ExtensionCommand } from "./ExtensionCommand";
+import { describeConnectionTarget } from "./ConnectionDisplayFormatter";
 import { promptImportColumnMapping } from "./ImportColumnMappingPrompt";
 import { confirmImportPreview } from "./ImportPreviewConfirmation";
 import { showImportErrorReport } from "./ImportErrorReportPresenter";
 import { createVsCodeImportTaskProgressReporter } from "./ImportTaskProgressPresenter";
+import type { StoredConnectionPasswordPrompt } from "./StoredConnectionPasswordPrompt";
 import {
   createVsCodeCancellationSignal,
   showTaskCanceledMessage,
@@ -52,6 +54,7 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
    * @param prepareMySqlJsonImportMappingUseCase 用于准备 JSON 字段映射配置。
    * @param previewMySqlJsonFileImportUseCase 用于生成 JSON 导入预览的用例。
    * @param importMySqlJsonFileUseCase 用于执行 JSON 文件导入的用例。
+   * @param storedConnectionPasswordPrompt 用于补录已保存连接缺失的本机密码。
    */
   public constructor(
     private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
@@ -61,6 +64,7 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
     private readonly prepareMySqlJsonImportMappingUseCase: PrepareMySqlJsonImportMappingUseCase,
     private readonly previewMySqlJsonFileImportUseCase: PreviewMySqlJsonFileImportUseCase,
     private readonly importMySqlJsonFileUseCase: ImportMySqlJsonFileUseCase,
+    private readonly storedConnectionPasswordPrompt: StoredConnectionPasswordPrompt,
   ) {}
 
   /**
@@ -138,22 +142,28 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
       return undefined;
     }
 
+    const readyConnection =
+      await this.storedConnectionPasswordPrompt.ensureConnectionReady(connection);
+    if (!readyConnection) {
+      return undefined;
+    }
+
     const schemaName =
       node?.kind === "schema" || node?.kind === "table"
         ? node.schemaName
-        : await this.pickSchema(connection);
+        : await this.pickSchema(readyConnection);
     if (!schemaName) {
       return undefined;
     }
 
     const tableName =
-      node?.kind === "table" ? node.tableName : await this.pickTable(connection, schemaName);
+      node?.kind === "table" ? node.tableName : await this.pickTable(readyConnection, schemaName);
     if (!tableName) {
       return undefined;
     }
 
     return {
-      connection,
+      connection: readyConnection,
       target: {
         schemaName,
         tableName,
@@ -180,10 +190,7 @@ export class ImportMySqlJsonFileCommand implements ExtensionCommand {
     const selectedConnection = await vscode.window.showQuickPick(
       connections.map((connection) => ({
         label: connection.name,
-        description:
-          connection.mode === "parameters"
-            ? `${connection.host}:${connection.port}`
-            : connection.url,
+        description: describeConnectionTarget(connection),
         connection,
       })),
       {

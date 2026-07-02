@@ -20,6 +20,8 @@ import type {
   Sqlite3TableTreeNode,
 } from "./DatabaseConnectionsTreeNode";
 import { showUserErrorMessage } from "../commands/UserErrorPresenter";
+import type { StoredConnectionPasswordPrompt } from "../commands/StoredConnectionPasswordPrompt";
+import { describeConnectionTarget } from "../commands/ConnectionDisplayFormatter";
 
 /**
  * 为当前扩展会话提供统一的数据库连接资源树。
@@ -97,6 +99,7 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
    * @param listPostgreSqlSchemasUseCase 用于加载 PostgreSQL schema 的用例。
    * @param listPostgreSqlTablesUseCase 用于加载 PostgreSQL 表的用例。
    * @param listSqlite3TablesUseCase 用于加载 SQLite3 表的用例。
+   * @param storedConnectionPasswordPrompt 用于补录已保存连接缺失的本机密码。
    */
   public constructor(
     private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
@@ -106,6 +109,7 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
     private readonly listPostgreSqlSchemasUseCase: ListPostgreSqlSchemasUseCase,
     private readonly listPostgreSqlTablesUseCase: ListPostgreSqlTablesUseCase,
     private readonly listSqlite3TablesUseCase: ListSqlite3TablesUseCase,
+    private readonly storedConnectionPasswordPrompt: StoredConnectionPasswordPrompt,
   ) {}
 
   /**
@@ -168,7 +172,12 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
       }
 
       if (element.kind === "connection") {
-        const connection = element.connection;
+        const connection = await this.ensureConnectionReady(element.connection);
+
+        if (!connection) {
+          return [];
+        }
+
         if (connection.engine === "postgresql") {
           const databases = await this.listPostgreSqlDatabasesUseCase.execute(connection);
           return databases.map((database) => ({
@@ -395,14 +404,18 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
    * @returns {string} 用户可读的连接描述。
    */
   private describeConnection(connection: ConnectionConfig): string {
-    if (connection.mode === "parameters") {
-      return `${connection.host}:${connection.port}`;
-    }
+    return describeConnectionTarget(connection);
+  }
 
-    if (connection.mode === "file") {
-      return connection.dbPath;
-    }
-
-    return connection.url;
+  /**
+   * 在真正访问数据库前，确保连接具备本机可用的密码。
+   *
+   * @param {ConnectionConfig} connection 当前连接配置。
+   * @returns {Promise<ConnectionConfig | undefined>} 可直接使用的连接；用户取消时为空。
+   */
+  private async ensureConnectionReady(
+    connection: ConnectionConfig,
+  ): Promise<ConnectionConfig | undefined> {
+    return this.storedConnectionPasswordPrompt.ensureConnectionReady(connection);
   }
 }
