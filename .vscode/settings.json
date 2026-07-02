@@ -27,5 +27,6 @@
     "Postgre",
     "regclass",
     "todolist"
-  ]
+  ],
+  "svn.ignoreMissingSvnWarning": true
 }
