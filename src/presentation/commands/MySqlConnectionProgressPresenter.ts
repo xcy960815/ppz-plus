@@ -9,6 +9,18 @@ import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig
  * @returns {string} 数据库引擎展示名称。
  */
 export function describeConnectionEngine(connection: ConnectionConfig): string {
+  if (connection.engine === "mssql") {
+    return "MSSQL";
+  }
+
+  if (connection.engine === "cockroachdb") {
+    return "CockroachDB";
+  }
+
+  if (connection.engine === "mariadb") {
+    return "MariaDB";
+  }
+
   if (connection.engine === "postgresql") {
     return "PostgreSQL";
   }

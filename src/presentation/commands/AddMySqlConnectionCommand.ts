@@ -8,10 +8,18 @@ import type { TestConnectionUseCase } from "../../application/useCases/TestConne
 import type {
   ConnectionInputMode,
   ConnectionConfig,
+  CockroachDbConnectionConfig,
+  MariaDbConnectionConfig,
+  MssqlConnectionConfig,
   MysqlConnectionConfig,
   PostgreSqlConnectionConfig,
   Sqlite3ConnectionConfig,
 } from "../../domain/connections/ConnectionConfig";
+import {
+  validateConnectionUrlForEngine,
+  validateMysqlUrl,
+  validatePostgreSqlUrl,
+} from "../../domain/connections/ConnectionUrlValidator";
 import type { ExtensionCommand } from "./ExtensionCommand";
 import {
   describeConnectionEngine,
@@ -39,7 +47,7 @@ interface MySqlConnectionFormSelectSqlite3FileMessage {
  * 描述连接表单 Webview 发回的原始字段。
  */
 interface MySqlConnectionFormPayload {
-  readonly engine: "mysql" | "postgresql" | "sqlite3";
+  readonly engine: ConnectionConfig["engine"];
   readonly name: string;
   readonly mode: Extract<ConnectionInputMode, "parameters" | "url">;
   readonly host: string;
@@ -49,6 +57,9 @@ interface MySqlConnectionFormPayload {
   readonly database: string;
   readonly url: string;
   readonly dbPath: string;
+  readonly encrypt: boolean;
+  readonly trustServerCertificate: boolean;
+  readonly ssl: boolean;
 }
 
 /**
@@ -201,10 +212,10 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
   }
 
   /**
-   * 将 Webview 表单字段转换为 MySQL 连接配置。
+   * 将 Webview 表单字段转换为连接配置。
    *
    * @param {MySqlConnectionFormPayload} payload Webview 发回的原始字段。
-   * @returns {|} 转换成功时返回连接配置，否则返回错误信息。
+   * @returns 转换成功时返回连接配置，否则返回错误信息。
    */
   private createConfigFromFormPayload(payload: MySqlConnectionFormPayload):
     | {
@@ -245,10 +256,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
     }
 
     if (payload.mode === "url") {
-      const urlValidation =
-        payload.engine === "postgresql"
-          ? AddMySqlConnectionCommand.validatePostgreSqlUrl(payload.url)
-          : AddMySqlConnectionCommand.validateMysqlUrl(payload.url);
+      const urlValidation = validateConnectionUrlForEngine(payload.engine, payload.url);
       if (urlValidation) {
         return {
           success: false,
@@ -266,6 +274,45 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
             name,
             url: payload.url.trim(),
           },
+        };
+      }
+
+      if (payload.engine === "mssql") {
+        return {
+          success: true,
+          value: {
+            id: randomUUID(),
+            engine: "mssql",
+            mode: "url",
+            name,
+            url: payload.url.trim(),
+          } satisfies MssqlConnectionConfig,
+        };
+      }
+
+      if (payload.engine === "cockroachdb") {
+        return {
+          success: true,
+          value: {
+            id: randomUUID(),
+            engine: "cockroachdb",
+            mode: "url",
+            name,
+            url: payload.url.trim(),
+          } satisfies CockroachDbConnectionConfig,
+        };
+      }
+
+      if (payload.engine === "mariadb") {
+        return {
+          success: true,
+          value: {
+            id: randomUUID(),
+            engine: "mariadb",
+            mode: "url",
+            name,
+            url: payload.url.trim(),
+          } satisfies MariaDbConnectionConfig,
         };
       }
 
@@ -322,6 +369,60 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       };
     }
 
+    if (payload.engine === "mssql") {
+      return {
+        success: true,
+        value: {
+          id: randomUUID(),
+          engine: "mssql",
+          mode: "parameters",
+          name,
+          host,
+          port,
+          username,
+          password: payload.password || undefined,
+          database: payload.database.trim() || undefined,
+          encrypt: payload.encrypt,
+          trustServerCertificate: payload.trustServerCertificate,
+        } satisfies MssqlConnectionConfig,
+      };
+    }
+
+    if (payload.engine === "cockroachdb") {
+      return {
+        success: true,
+        value: {
+          id: randomUUID(),
+          engine: "cockroachdb",
+          mode: "parameters",
+          name,
+          host,
+          port,
+          username,
+          password: payload.password || undefined,
+          database: payload.database.trim() || undefined,
+          ssl: payload.ssl,
+        } satisfies CockroachDbConnectionConfig,
+      };
+    }
+
+    if (payload.engine === "mariadb") {
+      return {
+        success: true,
+        value: {
+          id: randomUUID(),
+          engine: "mariadb",
+          mode: "parameters",
+          name,
+          host,
+          port,
+          username,
+          password: payload.password || undefined,
+          database: payload.database.trim() || undefined,
+        } satisfies MariaDbConnectionConfig,
+      };
+    }
+
     return {
       success: true,
       value: {
@@ -372,7 +473,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
           existingConfig?.mode === "url"
             ? existingConfig.url
             : "mysql://root:password@127.0.0.1:3306/mysql",
-        validateInput: (value) => AddMySqlConnectionCommand.validateMysqlUrl(value),
+        validateInput: (value) => validateMysqlUrl(value),
       });
       if (!url) {
         return undefined;
@@ -483,7 +584,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
           existingConfig?.mode === "url"
             ? existingConfig.url
             : "postgresql://postgres:password@127.0.0.1:5432/postgres",
-        validateInput: (value) => AddMySqlConnectionCommand.validatePostgreSqlUrl(value),
+        validateInput: (value) => validatePostgreSqlUrl(value),
       });
       if (!url) {
         return undefined;
@@ -794,10 +895,11 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 						<span>连接类型</span>
 						<div class="ppz-radio-group">
 							<label><input name="engine" type="radio" value="mysql" checked onchange="syncEngine()" /> MySQL</label>
-							<label class="unsupported-option" title="暂未支持"><input type="radio" disabled /> SQL Server</label>
+							<label><input name="engine" type="radio" value="mssql" onchange="syncEngine()" /> SQL Server</label>
 							<label><input name="engine" type="radio" value="postgresql" onchange="syncEngine()" /> PostgreSQL</label>
 							<label><input name="engine" type="radio" value="sqlite3" onchange="syncEngine()" /> SQLite3</label>
-							<label class="unsupported-option" title="暂未支持"><input type="radio" disabled /> CockroachDB</label>
+							<label><input name="engine" type="radio" value="cockroachdb" onchange="syncEngine()" /> CockroachDB</label>
+							<label><input name="engine" type="radio" value="mariadb" onchange="syncEngine()" /> MariaDB</label>
 						</div>
 					</div>
 					<br>
@@ -840,6 +942,18 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 						<span>database</span>
 						<input id="database" type="text" autocomplete="off" />
 					</label>
+					<label class="parameter-field mssql-option">
+						<span>encrypt</span>
+						<input id="encrypt" type="checkbox" checked />
+					</label>
+					<label class="parameter-field mssql-option">
+						<span>trust cert</span>
+						<input id="trustServerCertificate" type="checkbox" />
+					</label>
+					<label class="parameter-field cockroachdb-option">
+						<span>ssl</span>
+						<input id="ssl" type="checkbox" checked />
+					</label>
 					<label id="urlField" class="long-txt url-field">
 						<span>URL</span>
 						<input id="url" type="url" value="mysql://root:password@127.0.0.1:3306/mysql" autocomplete="off" />
@@ -860,7 +974,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	</div>
 
 	<div class="tttips">
-		* TiDB、StoneDB、MariaDB 等 MySQL 系数据库请使用 MySQL 驱动
+		* 新增的 SQL Server、CockroachDB、MariaDB 当前先保存连接配置，驱动能力按路线图继续接入
 	</div>
 
 	<script>
@@ -881,58 +995,105 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			const database = document.getElementById('database');
 			const url = document.getElementById('url');
 			const isSqlite3 = engine === 'sqlite3';
+			const defaults = connectionDefaults(engine);
 
 			document.getElementById('modeRow').style.display = isSqlite3 ? 'none' : 'inline-flex';
-			document.querySelectorAll('.parameter-field').forEach((field) => {
-				field.style.display = !isSqlite3 && selectedMode() === 'parameters' ? 'inline-flex' : 'none';
-			});
-			document.getElementById('urlField').style.display = !isSqlite3 && selectedMode() === 'url' ? 'inline-flex' : 'none';
-			document.getElementById('sqlite3FileField').style.display = isSqlite3 ? 'inline-flex' : 'none';
 
 			if (isSqlite3) {
+				syncMode();
 				document.getElementById('error').textContent = '';
 				return;
 			}
 
-			if (engine === 'postgresql') {
-				if (port.value === '3306') {
-					port.value = '5432';
-				}
-				if (username.value === 'root') {
-					username.value = 'postgres';
-				}
-				if (!database.value) {
-					database.value = 'postgres';
-				}
-				if (url.value.startsWith('mysql://')) {
-					url.value = 'postgresql://postgres:password@127.0.0.1:5432/postgres';
-				}
-			} else {
-				if (port.value === '5432') {
-					port.value = '3306';
-				}
-				if (username.value === 'postgres') {
-					username.value = 'root';
-				}
-				if (database.value === 'postgres') {
-					database.value = '';
-				}
-				if (url.value.startsWith('postgresql://') || url.value.startsWith('postgres://')) {
-					url.value = 'mysql://root:password@127.0.0.1:3306/mysql';
-				}
+			if (isKnownDefaultPort(port.value)) {
+				port.value = defaults.port;
 			}
+			if (isKnownDefaultUsername(username.value)) {
+				username.value = defaults.username;
+			}
+			if (!database.value || isKnownDefaultDatabase(database.value)) {
+				database.value = defaults.database;
+			}
+			if (isKnownDefaultUrl(url.value)) {
+				url.value = defaults.url;
+			}
+			syncMode();
 			document.getElementById('error').textContent = '';
 		}
 
 		function syncMode() {
 			const mode = selectedMode();
-			const isSqlite3 = selectedEngine() === 'sqlite3';
+			const engine = selectedEngine();
+			const isSqlite3 = engine === 'sqlite3';
 			document.querySelectorAll('.parameter-field').forEach((field) => {
 				field.style.display = !isSqlite3 && mode === 'parameters' ? 'inline-flex' : 'none';
+			});
+			document.querySelectorAll('.mssql-option').forEach((field) => {
+				field.style.display = !isSqlite3 && mode === 'parameters' && engine === 'mssql' ? 'inline-flex' : 'none';
+			});
+			document.querySelectorAll('.cockroachdb-option').forEach((field) => {
+				field.style.display = !isSqlite3 && mode === 'parameters' && engine === 'cockroachdb' ? 'inline-flex' : 'none';
 			});
 			document.getElementById('urlField').style.display = !isSqlite3 && mode === 'url' ? 'inline-flex' : 'none';
 			document.getElementById('sqlite3FileField').style.display = isSqlite3 ? 'inline-flex' : 'none';
 			document.getElementById('error').textContent = '';
+		}
+
+		function connectionDefaults(engine) {
+			const defaults = {
+				mysql: {
+					port: '3306',
+					username: 'root',
+					database: '',
+					url: 'mysql://root:password@127.0.0.1:3306/mysql'
+				},
+				postgresql: {
+					port: '5432',
+					username: 'postgres',
+					database: 'postgres',
+					url: 'postgresql://postgres:password@127.0.0.1:5432/postgres'
+				},
+				mssql: {
+					port: '1433',
+					username: 'sa',
+					database: 'master',
+					url: 'mssql://sa:password@127.0.0.1:1433/master'
+				},
+				cockroachdb: {
+					port: '26257',
+					username: 'root',
+					database: 'defaultdb',
+					url: 'postgresql://root:password@127.0.0.1:26257/defaultdb'
+				},
+				mariadb: {
+					port: '3306',
+					username: 'root',
+					database: '',
+					url: 'mysql://root:password@127.0.0.1:3306/mysql'
+				}
+			};
+			return defaults[engine] ?? defaults.mysql;
+		}
+
+		function isKnownDefaultPort(value) {
+			return ['', '3306', '5432', '1433', '26257'].includes(value);
+		}
+
+		function isKnownDefaultUsername(value) {
+			return ['', 'root', 'postgres', 'sa'].includes(value);
+		}
+
+		function isKnownDefaultDatabase(value) {
+			return ['mysql', 'postgres', 'master', 'defaultdb'].includes(value);
+		}
+
+		function isKnownDefaultUrl(value) {
+			return [
+				'mysql://root:password@127.0.0.1:3306/mysql',
+				'postgresql://postgres:password@127.0.0.1:5432/postgres',
+				'mssql://sa:password@127.0.0.1:1433/master',
+				'postgresql://root:password@127.0.0.1:26257/defaultdb'
+			].includes(value);
 		}
 
 		function selectUrlMode() {
@@ -956,12 +1117,15 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 				return payload.dbPath.trim() ? '' : '请选择 SQLite3 数据库文件。';
 			}
 			if (payload.mode === 'url') {
-				if (payload.engine === 'postgresql') {
+				if (payload.engine === 'postgresql' || payload.engine === 'cockroachdb') {
 					const url = payload.url.trim();
 					if (!url.startsWith('postgresql://') && !url.startsWith('postgres://')) {
 						return 'URL 必须以 postgresql:// 或 postgres:// 开头。';
 					}
 					return '';
+				}
+				if (payload.engine === 'mssql') {
+					return payload.url.trim().startsWith('mssql://') ? '' : 'URL 必须以 mssql:// 开头。';
 				}
 				if (!payload.url.trim().startsWith('mysql://')) {
 					return 'URL 必须以 mysql:// 开头。';
@@ -991,7 +1155,10 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 				password: readValue('password'),
 				database: readValue('database'),
 				url: readValue('url'),
-				dbPath: readValue('dbPath')
+				dbPath: readValue('dbPath'),
+				encrypt: document.getElementById('encrypt').checked,
+				trustServerCertificate: document.getElementById('trustServerCertificate').checked,
+				ssl: document.getElementById('ssl').checked
 			};
 			const error = validate(payload);
 			document.getElementById('error').textContent = error;
@@ -1020,38 +1187,6 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	</script>
 </body>
 </html>`;
-  }
-
-  /**
-   * 校验 MySQL 连接 URL。
-   *
-   * @param {string} value 原始 URL 字符串。
-   * @returns {string | undefined} 无效时返回的校验提示。
-   */
-  private static validateMysqlUrl(value: string): string | undefined {
-    try {
-      const parsedUrl = new URL(value.trim());
-      return parsedUrl.protocol === "mysql:" ? undefined : "URL 必须以 mysql:// 开头。";
-    } catch {
-      return "请输入有效的 mysql:// URL。";
-    }
-  }
-
-  /**
-   * 校验 PostgreSQL 连接 URL。
-   *
-   * @param {string} value 原始 URL 字符串。
-   * @returns {string | undefined} 无效时返回的校验提示。
-   */
-  private static validatePostgreSqlUrl(value: string): string | undefined {
-    try {
-      const parsedUrl = new URL(value.trim());
-      return parsedUrl.protocol === "postgresql:" || parsedUrl.protocol === "postgres:"
-        ? undefined
-        : "URL 必须以 postgresql:// 或 postgres:// 开头。";
-    } catch {
-      return "请输入有效的 postgresql:// 或 postgres:// URL。";
-    }
   }
 
   /**

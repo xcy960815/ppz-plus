@@ -54,7 +54,10 @@ import { TestConnectionUseCase } from "../../application/useCases/TestConnection
 import { UpdateMySqlTableRowUseCase } from "../../application/useCases/UpdateMySqlTableRowUseCase";
 import { UpdateSqlite3TableRowUseCase } from "../../application/useCases/UpdateSqlite3TableRowUseCase";
 import {
+  COCKROACHDB_PLANNED_CAPABILITY_DECLARATION,
+  MARIADB_PLANNED_CAPABILITY_DECLARATION,
   MYSQL_MVP_CAPABILITY_DECLARATION,
+  MSSQL_PLANNED_CAPABILITY_DECLARATION,
   POSTGRESQL_TREE_CAPABILITY_DECLARATION,
   SQLITE3_MVP_CAPABILITY_DECLARATION,
 } from "../../domain/capabilities/DatabaseCapabilityDeclaration";
@@ -153,6 +156,9 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
     MYSQL_MVP_CAPABILITY_DECLARATION,
     POSTGRESQL_TREE_CAPABILITY_DECLARATION,
     SQLITE3_MVP_CAPABILITY_DECLARATION,
+    MSSQL_PLANNED_CAPABILITY_DECLARATION,
+    COCKROACHDB_PLANNED_CAPABILITY_DECLARATION,
+    MARIADB_PLANNED_CAPABILITY_DECLARATION,
   ]);
 
   const globalStateConnectionRepository = new GlobalStateConnectionRepository(

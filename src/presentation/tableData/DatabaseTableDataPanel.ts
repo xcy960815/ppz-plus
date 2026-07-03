@@ -43,6 +43,11 @@ import type { MySqlTableDataWebviewMessage } from "./MySqlTableDataWebviewMessag
 type TableDataTreeNode = MySqlTableTreeNode | PostgreSqlTableTreeNode | Sqlite3TableTreeNode;
 
 /**
+ * 表示当前表数据页已经支持恢复的连接配置。
+ */
+type TableDataConnection = TableDataTreeNode["connection"];
+
+/**
  * 保存单个数据库表数据面板的可变状态。
  */
 interface DatabaseTablePanelState {
@@ -398,13 +403,13 @@ export class DatabaseTableDataPanel
    * 按连接 ID 和数据库引擎查找可恢复的连接配置。
    *
    * @param {string} connectionId 需要恢复的连接标识。
-   * @param {'mysql' | 'postgresql' | 'sqlite3'} engine 需要恢复的数据库引擎。
-   * @returns {Promise<ConnectionConfig | undefined>} 匹配的连接配置；不存在时为空。
+   * @param {DatabaseTablePanelSerializedState['engine']} engine 需要恢复的数据库引擎。
+   * @returns {Promise<TableDataConnection | undefined>} 匹配的连接配置；不存在时为空。
    */
   private async findRestoredConnection(
     connectionId: string,
-    engine: "mysql" | "postgresql" | "sqlite3",
-  ): Promise<ConnectionConfig | undefined> {
+    engine: DatabaseTablePanelSerializedState["engine"],
+  ): Promise<TableDataConnection | undefined> {
     const connections = await this.listStoredConnectionsUseCase.execute();
     const connection = connections.find((item) => item.id === connectionId);
 
@@ -412,18 +417,18 @@ export class DatabaseTableDataPanel
       return undefined;
     }
 
-    return connection;
+    return connection as TableDataConnection;
   }
 
   /**
    * 根据恢复状态创建表节点。
    *
-   * @param {ConnectionConfig} connection 已恢复的连接配置。
+   * @param {TableDataConnection} connection 已恢复的连接配置。
    * @param {DatabaseTablePanelSerializedState} restoredState 已解析的 Webview 状态。
    * @returns {TableDataTreeNode} 可供表数据页使用的表节点。
    */
   private createRestoredTableNode(
-    connection: ConnectionConfig,
+    connection: TableDataConnection,
     restoredState: DatabaseTablePanelSerializedState,
   ): TableDataTreeNode {
     if (connection.engine === "postgresql") {

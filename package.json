@@ -289,7 +289,7 @@
       "view/item/context": [
         {
           "command": "ppz-plus.manageMySqlConnections",
-          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection || viewItem == ppzPlus.sqlite3Connection)",
+          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection || viewItem == ppzPlus.sqlite3Connection || viewItem == ppzPlus.plannedConnection)",
           "group": "inline@1"
         },
         {
@@ -299,7 +299,7 @@
         },
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
-          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection || viewItem == ppzPlus.sqlite3Connection)",
+          "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection || viewItem == ppzPlus.sqlite3Connection || viewItem == ppzPlus.plannedConnection)",
           "group": "inline@3"
         },
         {

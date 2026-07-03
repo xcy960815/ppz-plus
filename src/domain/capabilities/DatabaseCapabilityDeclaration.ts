@@ -87,3 +87,63 @@ export const SQLITE3_MVP_CAPABILITY_DECLARATION = {
     exportDml: "supported",
   },
 } satisfies DatabaseCapabilityDeclaration;
+
+/**
+ * 声明 MSSQL 后续接入阶段的计划能力。
+ */
+export const MSSQL_PLANNED_CAPABILITY_DECLARATION = {
+  engine: "mssql",
+  capabilities: {
+    connectionManagement: "planned",
+    connectionTest: "planned",
+    treeExplorer: "planned",
+    schemaBrowse: "planned",
+    tableRead: "planned",
+    tablePagination: "planned",
+    tableSort: "planned",
+    tableFilter: "planned",
+    sqlExecute: "planned",
+    exportDdl: "planned",
+    exportDml: "planned",
+  },
+} satisfies DatabaseCapabilityDeclaration;
+
+/**
+ * 声明 CockroachDB 后续接入阶段的计划能力。
+ */
+export const COCKROACHDB_PLANNED_CAPABILITY_DECLARATION = {
+  engine: "cockroachdb",
+  capabilities: {
+    connectionManagement: "planned",
+    connectionTest: "planned",
+    treeExplorer: "planned",
+    schemaBrowse: "planned",
+    tableRead: "planned",
+    tablePagination: "planned",
+    tableSort: "planned",
+    tableFilter: "planned",
+    sqlExecute: "planned",
+    exportDdl: "planned",
+    exportDml: "planned",
+  },
+} satisfies DatabaseCapabilityDeclaration;
+
+/**
+ * 声明 MariaDB 后续接入阶段的计划能力。
+ */
+export const MARIADB_PLANNED_CAPABILITY_DECLARATION = {
+  engine: "mariadb",
+  capabilities: {
+    connectionManagement: "planned",
+    connectionTest: "planned",
+    treeExplorer: "planned",
+    schemaBrowse: "planned",
+    tableRead: "planned",
+    tablePagination: "planned",
+    tableSort: "planned",
+    tableFilter: "planned",
+    sqlExecute: "planned",
+    exportDdl: "planned",
+    exportDml: "planned",
+  },
+} satisfies DatabaseCapabilityDeclaration;

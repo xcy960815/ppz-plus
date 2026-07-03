@@ -78,18 +78,18 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
           return;
         }
 
-        const action = await vscode.window.showQuickPick(
-          [
-            { label: "查看详情", value: "details" as const },
-            { label: "测试连接", value: "test" as const },
-            { label: "编辑连接", value: "edit" as const },
-            { label: "删除连接", value: "delete" as const },
-          ],
-          {
-            title: `PPZ Plus: ${selectedConnection.name}`,
-            placeHolder: "选择要执行的操作",
-          },
-        );
+        const actions = [
+          { label: "查看详情", value: "details" as const },
+          ...(this.canTestConnection(selectedConnection)
+            ? [{ label: "测试连接", value: "test" as const }]
+            : []),
+          { label: "编辑连接", value: "edit" as const },
+          { label: "删除连接", value: "delete" as const },
+        ];
+        const action = await vscode.window.showQuickPick(actions, {
+          title: `PPZ Plus: ${selectedConnection.name}`,
+          placeHolder: "选择要执行的操作",
+        });
         if (!action) {
           return;
         }
@@ -153,15 +153,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
      */
     const message =
       connection.mode === "parameters"
-        ? [
-            `名称：${connection.name}`,
-            `类型：${describeConnectionEngine(connection)}`,
-            `模式：字段`,
-            `Host：${connection.host}`,
-            `Port：${connection.port}`,
-            `User：${connection.username}`,
-            `Database：${connection.database ?? "（无）"}`,
-          ].join("\n")
+        ? this.describeParameterConnectionDetails(connection)
         : connection.mode === "file"
           ? [
               `名称：${connection.name}`,
@@ -180,11 +172,51 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
   }
 
   /**
+   * 描述字段模式连接的详情。
+   *
+   * @param {ConnectionConfig} connection 当前连接配置。
+   * @returns {string} 可展示给用户的字段模式详情。
+   */
+  private describeParameterConnectionDetails(connection: ConnectionConfig): string {
+    if (connection.mode !== "parameters") {
+      return "";
+    }
+
+    const details = [
+      `名称：${connection.name}`,
+      `类型：${describeConnectionEngine(connection)}`,
+      `模式：字段`,
+      `Host：${connection.host}`,
+      `Port：${connection.port}`,
+      `User：${connection.username}`,
+      `Database：${connection.database ?? "（无）"}`,
+    ];
+
+    if (connection.engine === "mssql") {
+      details.push(`Encrypt：${connection.encrypt ? "是" : "否"}`);
+      details.push(`Trust Server Certificate：${connection.trustServerCertificate ? "是" : "否"}`);
+    }
+
+    if (connection.engine === "cockroachdb") {
+      details.push(`SSL：${connection.ssl ? "是" : "否"}`);
+    }
+
+    return details.join("\n");
+  }
+
+  /**
    * 测试已保存连接并展示结果。
    *
    * @param {ConnectionConfig} connection 当前选中的连接。
    */
   private async testConnection(connection: ConnectionConfig): Promise<void> {
+    if (!this.canTestConnection(connection)) {
+      await vscode.window.showInformationMessage(
+        `${describeConnectionEngine(connection)} 连接测试入口尚未接入。`,
+      );
+      return;
+    }
+
     try {
       const readyConnection =
         await this.storedConnectionPasswordPrompt.ensureConnectionReady(connection);
@@ -224,6 +256,13 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
       this.sqlite3TreeDataProvider.refresh();
       await vscode.window.showInformationMessage(
         `已更新 ${describeConnectionEngine(updatedConnection)} 连接“${updatedConnection.name}”。`,
+      );
+      return;
+    }
+
+    if (!this.canEditConnection(connection)) {
+      await vscode.window.showInformationMessage(
+        `${describeConnectionEngine(connection)} 连接编辑入口尚未接入，请删除后重新创建。`,
       );
       return;
     }
@@ -317,5 +356,33 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
    */
   private describeConnectionTarget(connection: ConnectionConfig): string {
     return formatConnectionTarget(connection);
+  }
+
+  /**
+   * 判断连接是否已经接入编辑表单。
+   *
+   * @param {ConnectionConfig} connection 当前连接配置。
+   * @returns {boolean} 已支持编辑时返回 true。
+   */
+  private canEditConnection(connection: ConnectionConfig): boolean {
+    return (
+      connection.engine === "mysql" ||
+      connection.engine === "postgresql" ||
+      connection.engine === "sqlite3"
+    );
+  }
+
+  /**
+   * 判断连接是否已经接入连接测试器。
+   *
+   * @param {ConnectionConfig} connection 当前连接配置。
+   * @returns {boolean} 已支持测试时返回 true。
+   */
+  private canTestConnection(connection: ConnectionConfig): boolean {
+    return (
+      connection.engine === "mysql" ||
+      connection.engine === "postgresql" ||
+      connection.engine === "sqlite3"
+    );
   }
 }

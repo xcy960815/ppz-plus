@@ -56,6 +56,13 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
           return;
         }
 
+        if (!this.canTestConnection(connection)) {
+          await vscode.window.showInformationMessage(
+            `${describeConnectionEngine(connection)} 连接测试入口尚未接入。`,
+          );
+          return;
+        }
+
         try {
           const readyConnection =
             await this.storedConnectionPasswordPrompt.ensureConnectionReady(connection);
@@ -83,10 +90,12 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
    * @returns {Promise<ConnectionConfig | undefined>} 用户选择的连接；未选择时为空。
    */
   private async pickConnection(): Promise<ConnectionConfig | undefined> {
-    const connections = await this.listStoredConnectionsUseCase.execute();
+    const connections = (await this.listStoredConnectionsUseCase.execute()).filter((connection) =>
+      this.canTestConnection(connection),
+    );
     if (connections.length === 0) {
       await vscode.window.showInformationMessage(
-        "暂无已保存的数据库连接，请先使用“PPZ Plus: 新增数据库连接”创建连接。",
+        "暂无可测试的数据库连接，请先创建已接入测试能力的连接。",
       );
       return undefined;
     }
@@ -115,5 +124,19 @@ export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
    */
   private describeConnectionTarget(connection: ConnectionConfig): string {
     return formatConnectionTarget(connection);
+  }
+
+  /**
+   * 判断连接是否已经接入连接测试器。
+   *
+   * @param {ConnectionConfig} connection 当前连接配置。
+   * @returns {boolean} 已支持测试时返回 true。
+   */
+  private canTestConnection(connection: ConnectionConfig): boolean {
+    return (
+      connection.engine === "mysql" ||
+      connection.engine === "postgresql" ||
+      connection.engine === "sqlite3"
+    );
   }
 }

@@ -1,11 +1,7 @@
 import type * as vscode from "vscode";
 
 import type { ConnectionRepository } from "../../application/connections/ConnectionRepository";
-import type {
-  ConnectionConfig,
-  MysqlConnectionConfig,
-  PostgreSqlConnectionConfig,
-} from "../../domain/connections/ConnectionConfig";
+import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 
 /**
  * 将非敏感连接配置保存到 VS Code 全局状态，并把密码保存到本机安全存储中。
@@ -232,12 +228,10 @@ export class GlobalStateConnectionRepository implements ConnectionRepository {
   /**
    * 从 URL 连接配置中解析密码。
    *
-   * @param {MysqlConnectionConfig | PostgreSqlConnectionConfig} connection URL 模式的连接配置。
+   * @param {ConnectionConfig} connection URL 模式的连接配置。
    * @returns {string | undefined} 解析出的密码。
    */
-  private extractPasswordFromUrl(
-    connection: MysqlConnectionConfig | PostgreSqlConnectionConfig,
-  ): string | undefined {
+  private extractPasswordFromUrl(connection: ConnectionConfig): string | undefined {
     if (connection.mode !== "url") {
       return undefined;
     }

@@ -78,6 +78,11 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
   public static readonly sqlite3TableContextValue = "ppzPlus.sqlite3Table";
 
   /**
+   * 保存 Tree 菜单使用的计划中连接节点上下文值。
+   */
+  public static readonly plannedConnectionContextValue = "ppzPlus.plannedConnection";
+
+  /**
    * 为资源视图发出 Tree 刷新事件。
    */
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<
@@ -199,12 +204,16 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
           }));
         }
 
-        const schemas = await this.listMySqlSchemasUseCase.execute(connection);
-        return schemas.map((schema) => ({
-          kind: "schema",
-          connection,
-          schemaName: schema.name,
-        }));
+        if (connection.engine === "mysql") {
+          const schemas = await this.listMySqlSchemasUseCase.execute(connection);
+          return schemas.map((schema) => ({
+            kind: "schema",
+            connection,
+            schemaName: schema.name,
+          }));
+        }
+
+        return [];
       }
 
       if (element.kind === "schema") {
@@ -271,14 +280,18 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
     const description = this.describeConnection(element.connection);
     const treeItem = new vscode.TreeItem(
       element.connection.name,
-      vscode.TreeItemCollapsibleState.Collapsed,
+      this.canExpandConnection(element.connection)
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : vscode.TreeItemCollapsibleState.None,
     );
     treeItem.contextValue =
       element.connection.engine === "sqlite3"
         ? DatabaseConnectionsTreeDataProvider.sqlite3ConnectionContextValue
         : element.connection.engine === "postgresql"
           ? DatabaseConnectionsTreeDataProvider.postgreSqlConnectionContextValue
-          : DatabaseConnectionsTreeDataProvider.connectionContextValue;
+          : element.connection.engine === "mysql"
+            ? DatabaseConnectionsTreeDataProvider.connectionContextValue
+            : DatabaseConnectionsTreeDataProvider.plannedConnectionContextValue;
     treeItem.description = description;
     treeItem.iconPath = new vscode.ThemeIcon("database");
     return treeItem;
@@ -405,6 +418,20 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
    */
   private describeConnection(connection: ConnectionConfig): string {
     return describeConnectionTarget(connection);
+  }
+
+  /**
+   * 判断连接是否已经接入 Tree 浏览能力。
+   *
+   * @param {ConnectionConfig} connection 当前连接配置。
+   * @returns {boolean} 已支持 Tree 浏览时返回 true。
+   */
+  private canExpandConnection(connection: ConnectionConfig): boolean {
+    return (
+      connection.engine === "mysql" ||
+      connection.engine === "postgresql" ||
+      connection.engine === "sqlite3"
+    );
   }
 
   /**

@@ -24,6 +24,7 @@
 - [workflow.md](.agents/workflow.md)：包管理、验证策略、代码注释、兼容分支禁令和 todo 维护规则。
 - [ui-migration.md](.agents/ui-migration.md)：旧 PPZ 页面类 UI 复刻规则和视觉迁移约束。
 - [legacy-ppz-analysis.md](.agents/legacy-ppz-analysis.md)：旧 PPZ 能力审计与 ppz-plus 重写基线。
+- [database-engine-expansion-plan.md](.agents/database-engine-expansion-plan.md)：MSSQL、CockroachDB、MariaDB 后续接入技术方案。
 - [todolist.md](.agents/todolist.md)：迁移清单、支持清单和完成状态。
 - [changelog-automation.md](.agents/changelog-automation.md)：changelog 与 release 自动化规则。
 
@@ -32,5 +33,6 @@
 1. 先读本文件，确认硬约束。
 2. 涉及实现结构时读 `.agents/architecture.md`。
 3. 涉及旧 PPZ 能力或界面迁移时读 `.agents/legacy-ppz-analysis.md` 和 `.agents/ui-migration.md`。
-4. 涉及任务进度或新增能力时读并维护 `.agents/todolist.md`。
-5. 涉及发布或 changelog 时读 `.agents/changelog-automation.md`。
+4. 涉及 MSSQL、CockroachDB、MariaDB 支持时读 `.agents/database-engine-expansion-plan.md`。
+5. 涉及任务进度或新增能力时读并维护 `.agents/todolist.md`。
+6. 涉及发布或 changelog 时读 `.agents/changelog-automation.md`。

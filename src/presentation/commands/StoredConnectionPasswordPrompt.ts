@@ -1,10 +1,6 @@
 import * as vscode from "vscode";
 
-import type {
-  ConnectionConfig,
-  MysqlConnectionConfig,
-  PostgreSqlConnectionConfig,
-} from "../../domain/connections/ConnectionConfig";
+import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type { SaveConnectionConfigUseCase } from "../../application/useCases/SaveConnectionConfigUseCase";
 import { maskConnectionUrl } from "./ConnectionDisplayFormatter";
 
@@ -114,14 +110,11 @@ export class StoredConnectionPasswordPrompt {
   /**
    * 把补录密码重新拼回 URL 连接配置。
    *
-   * @param {MysqlConnectionConfig | PostgreSqlConnectionConfig} connection URL 模式连接配置。
+   * @param {ConnectionConfig} connection URL 模式连接配置。
    * @param {string} password 用户补录的密码。
    * @returns {string} 含本机密码的运行时连接 URL。
    */
-  private attachPasswordToUrl(
-    connection: MysqlConnectionConfig | PostgreSqlConnectionConfig,
-    password: string,
-  ): string {
+  private attachPasswordToUrl(connection: ConnectionConfig, password: string): string {
     if (connection.mode !== "url") {
       return "";
     }

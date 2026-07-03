@@ -122,6 +122,7 @@ SQL 功能：
 文档与发布：
 
 - 参考 `/Users/opera/Documents/my-repositories/web-message` 的 VitePress 双语文档骨架建设 `ppz-plus` 文档站 ✅
+- MSSQL / CockroachDB / MariaDB 技术方案沉淀 `✅`
 
 ## 4. 数据库支持路线
 
@@ -153,6 +154,8 @@ SQL 功能：
 
 第四优先级：
 
+- 扩展数据库连接模型支持 MSSQL / CockroachDB / MariaDB `✅`
+- 新增连接表单可保存 MSSQL / CockroachDB / MariaDB 配置 `✅`
 - MSSQL 连接支持
 - MSSQL database / schema 结构
 - MSSQL 表数据读取
