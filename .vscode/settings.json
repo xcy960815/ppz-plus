@@ -26,7 +26,8 @@
     "nspname",
     "Postgre",
     "regclass",
-    "todolist"
+    "todolist",
+    "wechat"
   ],
   "svn.ignoreMissingSvnWarning": true
 }
