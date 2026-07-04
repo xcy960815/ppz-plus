@@ -154,6 +154,8 @@ SQL 功能：
 
 第四优先级：
 
+> 逐库逐批次的文件级执行清单见 `.agents/database-engine-expansion-plan.md` 的「实施细化清单」。每库按「连接测试 → Tree 浏览 → 表数据只读 → SQL 执行 → DML 导出 → DDL 导出」拆批，真库验证通过后再点亮对应能力并打勾。
+
 - 扩展数据库连接模型支持 MSSQL / CockroachDB / MariaDB `✅`
 - 新增连接表单可保存 MSSQL / CockroachDB / MariaDB 配置 `✅`
 - MSSQL 连接支持

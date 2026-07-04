@@ -44,6 +44,7 @@
   ],
   "dependencies": {
     "@vscode/sqlite3": "^5.1.14-vscode",
+    "mssql": "12.7.0",
     "mysql2": "^3.11.3",
     "pg": "^8.22.0"
   },

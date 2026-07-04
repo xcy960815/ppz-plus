@@ -382,7 +382,8 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
     return (
       connection.engine === "mysql" ||
       connection.engine === "postgresql" ||
-      connection.engine === "sqlite3"
+      connection.engine === "sqlite3" ||
+      connection.engine === "mssql"
     );
   }
 }

@@ -1,6 +1,6 @@
 # 数据库引擎扩展技术方案
 
-更新时间：2026-07-03
+更新时间：2026-07-04
 
 本文档记录 `ppz-plus` 后续接入 MSSQL、CockroachDB、MariaDB 的技术方案。这里描述的是新架构下的实施路径，不复用旧 PPZ 的适配器、Webview 脚本、样式或运行时代码。
 
@@ -546,6 +546,69 @@ DDL 完成真实验证后，再把 `exportDdl` 改为 `supported`。
 - 批量导出。
 - 数据库特有导入。
 - 高级 DDL 对象。
+
+## 实施细化清单（逐库逐批次）
+
+本节是「实施拆分」的文件级细化，作为可独立合入的批次执行清单，落地时以此为准。
+
+### 文件清单
+
+Domain：
+
+- 已有 `src/domain/connections/ConnectionConfig.ts` 已含 6 种 engine，仅在发现字段不足时补明确字段，不改成兼容兜底。
+- 修改 `src/domain/capabilities/DatabaseCapabilityDeclaration.ts`：按批次把三库声明中已完成能力逐项从 `planned` 改为 `supported`。
+- `src/domain/database/DatabaseEngine.ts` 无需新增 engine，仅补测试。
+
+Application（每库同构，按引擎建独立子目录，不泛化现有 MySQL/PostgreSQL use case）：
+
+- `src/application/mssql/`：`MssqlMetadataProvider` / `MssqlTableDataProvider` / `MssqlSqlExecutor` / `MssqlExportProvider`，以及 `ListMssqlDatabases/Schemas/Tables/TableColumns/TableRowPage`、`ExecuteMssqlSql`、导出批次再加 `ExportMssqlTable/Schema/Database` use case。
+- `src/application/cockroachdb/`：`CockroachDbMetadataProvider` / `CockroachDbTableDataProvider` / `CockroachDbSqlExecutor` / `CockroachDbExportProvider` 及对应 use case。
+- `src/application/mariadb/`：`MariaDbMetadataProvider` / `MariaDbTableDataProvider` / `MariaDbSqlExecutor` / `MariaDbExportProvider` 及对应 use case。
+- 可复用：`src/application/shared/TableDataTypes.ts`、`src/domain/query/SqlExecutionResult.ts`、`src/domain/export/*`。
+
+Infrastructure：
+
+- MSSQL 全新写：`src/infrastructure/mssql/` 下 `MssqlRuntimeLoader` / `MssqlRuntimeTypes` / `MssqlConnectionAdapter` / `MssqlConnectionTester` / `MssqlMetadataProvider` / `MssqlTableDataProvider` / `MssqlSqlExecutor` / `MssqlExportProvider`，建议拆出 `MssqlIdentifier` / `MssqlPaginationSql` / `MssqlFilterSql`。
+- CockroachDB 复用 `pg` 但独立封装：`src/infrastructure/cockroachdb/` 下 `CockroachDbRuntimeLoader`（可薄封装 `PostgreSqlRuntimeLoader`）/ `CockroachDbConnectionAdapter` / `PgCockroachDbMetadataProvider` / `PgCockroachDbTableDataProvider` / `PgCockroachDbSqlExecutor` / `PgCockroachDbExportProvider`。
+- MariaDB 复用 `mysql2` 但独立封装：`src/infrastructure/mariadb/` 下 `MariaDbRuntimeLoader`（可薄封装 `MySqlRuntimeLoader`）/ `MariaDbConnectionAdapter` / `Mysql2MariaDbMetadataProvider` / `Mysql2MariaDbTableDataProvider` / `Mysql2MariaDbSqlExecutor` / `Mysql2MariaDbExportProvider`。
+- 可抽共享 helper，但禁止在 MySQL/PostgreSQL provider 内写 `if engine === "mariadb"` / `if engine === "cockroachdb"`。
+
+Presentation：
+
+- `createBootstrapServices.ts`：注册 adapter/runtime/provider/use case；`CompositeDatabaseConnectionTester` 的 Map 增加对应 engine。
+- `createBootstrapCommands.ts`：加 SQL 终端命令、导出命令。
+- `DatabaseConnectionsTreeNode.ts`：增加 `mssqlDatabase/Schema/Table`、`cockroachDbDatabase/Schema/Table`、`mariaDbSchema/Table` 节点类型。
+- `DatabaseConnectionsTreeDataProvider.ts`：扩展 `canExpandConnection` / `getChildren` / `createConnectionTreeItem`，新增各库 TreeItem 创建函数和 contextValue。
+- `DatabaseTableDataPanel.ts`：扩展 `TableDataTreeNode`，在加载分支调用对应 use case；MSSQL/CockroachDB 初期只读，MariaDB 验证后可开放写操作。
+- `ManageMySqlConnectionsCommand.ts`：`canTestConnection` / `canEditConnection` 放开对应引擎，编辑路径接入新增连接表单的 collect 方法或补专用 collect。
+- 新增 `OpenMssqlSqlTerminalCommand` / `OpenCockroachDbSqlTerminalCommand` / `OpenMariaDbSqlTerminalCommand`。
+- `package.json`：commands / activationEvents / view 菜单 when 子句同步加 contextValue，只给 `supported` 能力开放菜单。
+- `OpenMySqlTableDataCommand` 目前是多引擎表数据入口，短期复用；命名收敛另起任务，不与三库接入绑进同一 PR。
+
+### 能力点亮批次（每库依序）
+
+1. 连接测试：adapter + tester 注册 + 真实连通后，`connectionTest` 改 `supported`；`connectionManagement` 待编辑/测试/详情闭环后再改。
+2. Tree：`treeExplorer`（可展开）、`schemaBrowse`（层级稳定）。
+3. 表数据：`tableRead` / `tablePagination` / `tableSort` / `tableFilter`（分页、排序 identifier 安全、过滤参数绑定正确）。
+4. SQL 终端：`sqlExecute`（结果归一到 `SqlExecutionResult`）。
+5. 导出：`exportDml` 与 `exportDdl` 分开点亮，DDL 未经真库验证前保持 `planned`。
+
+### 可独立合入批次
+
+每库按「连接测试 → Tree 浏览 → 表数据只读 → SQL 执行 → DML 导出 → DDL 导出」拆成 6 个可独立合入批次。MariaDB 若真库验证通过，可在表数据批次额外开放写操作，但能力矩阵无单独写能力键，不得把未验证写操作混入「表数据读取」验收。
+
+### 依赖与加载
+
+- MariaDB：不新增依赖，复用 `mysql2`；`MariaDbRuntimeLoader` 内部加载 `mysql2/promise` 或复用 `MySqlRuntimeLoader`。
+- CockroachDB：不新增依赖，复用 `pg`；`CockroachDbRuntimeLoader` 内部加载 `pg` 或复用 `PostgreSqlRuntimeLoader`。
+- MSSQL：新增 `mssql`（底层 tedious）。实现当天用 `pnpm view mssql version` 确认版本后 `pnpm add mssql@<固定版本>`，不用 `^`。
+- 加载方式参考 `MySqlRuntimeLoader`：presentation 不 import 驱动，infrastructure 延迟加载。
+
+### 收尾规则
+
+- 每批只更新 `.agents/todolist.md` 中真正完成的条目。
+- 每批必须 `pnpm exec tsc -p ./ --noEmit`，默认 `pnpm test` 全绿；真库集成测试另行声明是否执行。
+- 未做真库验证的能力不能写「已验证支持」，只能写「单测覆盖，需真实数据库验证」。
 
 ## 风险清单
 

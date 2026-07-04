@@ -68,6 +68,9 @@ import { NodeCsvFileReader } from "../../infrastructure/files/NodeCsvFileReader"
 import { NodeJsonFileReader } from "../../infrastructure/files/NodeJsonFileReader";
 import { NodeSqlExportFileWriter } from "../../infrastructure/files/NodeSqlExportFileWriter";
 import { NodeSqlFileReader } from "../../infrastructure/files/NodeSqlFileReader";
+import { MssqlConnectionAdapter } from "../../infrastructure/mssql/MssqlConnectionAdapter";
+import { MssqlConnectionTester } from "../../infrastructure/mssql/MssqlConnectionTester";
+import { MssqlRuntimeLoader } from "../../infrastructure/mssql/MssqlRuntimeLoader";
 import { MySqlConnectionAdapter } from "../../infrastructure/mysql/MySqlConnectionAdapter";
 import { MySqlRuntimeLoader } from "../../infrastructure/mysql/MySqlRuntimeLoader";
 import { Mysql2ExportProvider } from "../../infrastructure/mysql/Mysql2ExportProvider";
@@ -185,6 +188,7 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
   const mySqlConnectionAdapter = new MySqlConnectionAdapter();
   const postgreSqlConnectionAdapter = new PostgreSqlConnectionAdapter();
   const sqlite3ConnectionAdapter = new Sqlite3ConnectionAdapter();
+  const mssqlConnectionAdapter = new MssqlConnectionAdapter();
 
   const tcpConnectionTester = new TcpDatabaseConnectionTester(
     mySqlConnectionAdapter,
@@ -195,11 +199,17 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
     sqlite3ConnectionAdapter,
     sqlite3RuntimeLoader,
   );
+  const mssqlRuntimeLoader = new MssqlRuntimeLoader();
+  const mssqlConnectionTester = new MssqlConnectionTester(
+    mssqlConnectionAdapter,
+    mssqlRuntimeLoader,
+  );
   const connectionTester = new CompositeDatabaseConnectionTester(
     new Map<string, ConnectionTester>([
       ["mysql", tcpConnectionTester],
       ["postgresql", tcpConnectionTester],
       ["sqlite3", sqlite3ConnectionTester],
+      ["mssql", mssqlConnectionTester],
     ]),
   );
 
