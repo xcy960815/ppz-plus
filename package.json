@@ -93,6 +93,16 @@
         "icon": "$(beaker)"
       },
       {
+        "command": "ppz-plus.uploadConnectionConfig",
+        "title": "PPZ Plus: 上传连接配置到 VS Code 账号",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "ppz-plus.pullConnectionConfig",
+        "title": "PPZ Plus: 从 VS Code 账号拉取连接配置",
+        "icon": "$(cloud-download)"
+      },
+      {
         "command": "ppz-plus.openMySqlTableData",
         "title": "PPZ Plus: 打开 MySQL 表数据",
         "icon": "$(table)"
@@ -261,7 +271,7 @@
     "viewsWelcome": [
       {
         "view": "ppzPlus.helpAndFeedback",
-        "contents": "简介：VS Code 数据库导入导出工具\n\n当前版本：v0.0.1\n\n[$(github) GitHub](https://github.com/xcy960815/ppz-plus)\n\n[$(book) 使用帮助](https://xcy960815.github.io/ppz-plus/)\n\n[$(heart) 支持作者](https://xcy960815.github.io/ppz-plus/support)\n\n[$(comment-discussion) 反馈与 Bug](https://github.com/xcy960815/ppz-plus/issues/new)\n\n[$(trash) 清空 PPZ Plus](command:ppz-plus.clearPpzState)"
+        "contents": "简介：VS Code 数据库导入导出工具\n\n当前版本：v0.0.1\n\n[$(cloud-upload) 上传连接配置到 VS Code 账号](command:ppz-plus.uploadConnectionConfig)\n\n[$(cloud-download) 从 VS Code 账号拉取连接配置](command:ppz-plus.pullConnectionConfig)\n\n[$(github) GitHub](https://github.com/xcy960815/ppz-plus)\n\n[$(book) 使用帮助](https://xcy960815.github.io/ppz-plus/)\n\n[$(heart) 支持作者](https://xcy960815.github.io/ppz-plus/support)\n\n[$(comment-discussion) 反馈与 Bug](https://github.com/xcy960815/ppz-plus/issues/new)\n\n[$(trash) 清空 PPZ Plus](command:ppz-plus.clearPpzState)"
       }
     ],
     "menus": {
@@ -285,6 +295,16 @@
           "command": "ppz-plus.showSqlExportTaskLogs",
           "when": "view == ppzPlus.mysqlConnections",
           "group": "navigation@4"
+        },
+        {
+          "command": "ppz-plus.uploadConnectionConfig",
+          "when": "view == ppzPlus.mysqlConnections",
+          "group": "navigation@5"
+        },
+        {
+          "command": "ppz-plus.pullConnectionConfig",
+          "when": "view == ppzPlus.mysqlConnections",
+          "group": "navigation@6"
         }
       ],
       "view/item/context": [

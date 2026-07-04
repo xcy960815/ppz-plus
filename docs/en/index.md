@@ -26,6 +26,8 @@ features:
     details: Rebuilt from the ground up with presentation / application / domain / infrastructure layers — no legacy coupling.
   - title: Developer Friendly
     details: Open source under MIT, written in TypeScript, and ready for contributions.
+  - title: Manual Connection Sync
+    details: Explicitly upload and pull connection profiles through VS Code account sync, encrypting passwords with the user sync key before upload.
 ---
 
 ## What is PPZ Plus

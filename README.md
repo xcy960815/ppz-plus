@@ -31,6 +31,7 @@ MSSQL remains `planned` in the capability matrix until it is verified against a 
 - Stores connection profiles in VS Code extension state.
 - Shows progress and user-friendly errors during connection tests.
 - MSSQL, CockroachDB, and MariaDB profile storage is staged; only the implemented capability slices should be treated as available.
+- Explicitly upload and pull connection profiles through VS Code account sync. Connection passwords are encrypted with the user-provided sync key before being written to the Settings Sync payload; the sync key itself is never uploaded.
 
 ### Database Explorer
 
@@ -85,6 +86,7 @@ MSSQL remains `planned` in the capability matrix until it is verified against a 
 4. Expand the saved connection to browse databases, schemas, tables, or views.
 5. Use context menus to open data, launch SQL terminals, import files where supported, or export SQL.
 6. Use the engine-specific SQL terminal command to run custom SQL.
+7. Use `PPZ Plus: 上传连接配置到 VS Code 账号` and `PPZ Plus: 从 VS Code 账号拉取连接配置` to sync connection profiles through VS Code account sync, using the same sync key on each machine.
 
 ## Development
 
@@ -159,6 +161,7 @@ PPZ Plus is a free and open-source project. If it saves you time, you can suppor
 - The extension is still in early `0.0.1` development.
 - MySQL import workflows are currently richer than PostgreSQL and SQLite3 import support.
 - MSSQL connection testing still needs validation against a real SQL Server instance before the capability can be marked supported.
+- Account-based connection sync depends on VS Code Settings Sync. Passwords are stored in the synced payload only as ciphertext, and pulling profiles requires the same sync key that was used during upload.
 - Packaging and marketplace release workflows should be verified in a clean environment before publishing.
 
 ## License

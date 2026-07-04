@@ -50,10 +50,12 @@ import { PrepareMySqlJsonImportMappingUseCase } from "../../application/useCases
 import { PreviewMySqlCsvFileImportUseCase } from "../../application/useCases/PreviewMySqlCsvFileImportUseCase";
 import { PreviewMySqlJsonFileImportUseCase } from "../../application/useCases/PreviewMySqlJsonFileImportUseCase";
 import { PreviewMySqlSqlFileImportUseCase } from "../../application/useCases/PreviewMySqlSqlFileImportUseCase";
+import { PullConnectionConfigSyncUseCase } from "../../application/useCases/PullConnectionConfigSyncUseCase";
 import { RecordSqlExportTaskLogUseCase } from "../../application/useCases/RecordSqlExportTaskLogUseCase";
 import { SaveConnectionConfigUseCase } from "../../application/useCases/SaveConnectionConfigUseCase";
 import { SaveSqlExportDocumentUseCase } from "../../application/useCases/SaveSqlExportDocumentUseCase";
 import { TestConnectionUseCase } from "../../application/useCases/TestConnectionUseCase";
+import { UploadConnectionConfigSyncUseCase } from "../../application/useCases/UploadConnectionConfigSyncUseCase";
 import { UpdateMySqlTableRowUseCase } from "../../application/useCases/UpdateMySqlTableRowUseCase";
 import { UpdateSqlite3TableRowUseCase } from "../../application/useCases/UpdateSqlite3TableRowUseCase";
 import {
@@ -98,6 +100,8 @@ import { Sqlite3SqlExecutor } from "../../infrastructure/sqlite3/Sqlite3SqlExecu
 import { Sqlite3TableDataProvider } from "../../infrastructure/sqlite3/Sqlite3TableDataProvider";
 import { GlobalStateConnectionRepository } from "../../infrastructure/storage/GlobalStateConnectionRepository";
 import { GlobalStateSqlExportTaskLogRepository } from "../../infrastructure/storage/GlobalStateSqlExportTaskLogRepository";
+import { GlobalStateConnectionSyncStore } from "../../infrastructure/sync/GlobalStateConnectionSyncStore";
+import { NodeConnectionSecretCipher } from "../../infrastructure/sync/NodeConnectionSecretCipher";
 
 /**
  * 汇总扩展启动阶段会复用的服务与用例。
@@ -153,6 +157,8 @@ export interface BootstrapServices {
   readonly importMySqlJsonFileUseCase: ImportMySqlJsonFileUseCase;
   readonly prepareMySqlJsonImportMappingUseCase: PrepareMySqlJsonImportMappingUseCase;
   readonly previewMySqlJsonFileImportUseCase: PreviewMySqlJsonFileImportUseCase;
+  readonly uploadConnectionConfigSyncUseCase: UploadConnectionConfigSyncUseCase;
+  readonly pullConnectionConfigSyncUseCase: PullConnectionConfigSyncUseCase;
 }
 
 /**
@@ -183,6 +189,7 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
     list: () => globalStateConnectionRepository.list(),
     find: (id) => globalStateConnectionRepository.find(id),
     save: (config) => globalStateConnectionRepository.save(config),
+    saveSynced: (config) => globalStateConnectionRepository.saveSynced(config),
     delete: (id) => globalStateConnectionRepository.delete(id),
     clear: () => globalStateConnectionRepository.clear(),
   };
@@ -270,6 +277,8 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
   const sqlExportFileWriter = new NodeSqlExportFileWriter();
   const csvFileReader = new NodeCsvFileReader();
   const jsonFileReader = new NodeJsonFileReader();
+  const connectionSyncStore = new GlobalStateConnectionSyncStore(context.globalState);
+  const connectionSecretCipher = new NodeConnectionSecretCipher();
   const csvDocumentParser = new CsvDocumentParser();
   const jsonDocumentParser = new JsonDocumentParser();
   const importColumnMapper = new ImportColumnMapper();
@@ -343,6 +352,7 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
   const clearPpzStateUseCase = new ClearPpzStateUseCase(
     connectionRepository,
     sqlExportTaskLogRepository,
+    connectionSyncStore,
   );
   const importMySqlSqlFileUseCase = new ImportMySqlSqlFileUseCase(
     sqlFileReader,
@@ -386,6 +396,16 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
     jsonDocumentParser,
     importColumnMapper,
     mySqlTableDataProvider,
+  );
+  const uploadConnectionConfigSyncUseCase = new UploadConnectionConfigSyncUseCase(
+    connectionRepository,
+    connectionSyncStore,
+    connectionSecretCipher,
+  );
+  const pullConnectionConfigSyncUseCase = new PullConnectionConfigSyncUseCase(
+    connectionRepository,
+    connectionSyncStore,
+    connectionSecretCipher,
   );
 
   return {
@@ -439,5 +459,7 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
     importMySqlJsonFileUseCase,
     prepareMySqlJsonImportMappingUseCase,
     previewMySqlJsonFileImportUseCase,
+    uploadConnectionConfigSyncUseCase,
+    pullConnectionConfigSyncUseCase,
   };
 }

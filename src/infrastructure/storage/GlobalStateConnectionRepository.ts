@@ -68,7 +68,7 @@ export class GlobalStateConnectionRepository implements ConnectionRepository {
     await this.ensureStorageMigrated();
     const connections = this.readConnections();
     const existingIndex = connections.findIndex((connection) => connection.id === config.id);
-    const sanitizedConfig = this.stripSensitiveFields(config);
+    const sanitizedConfig = this.stripSensitiveFields(config, false);
 
     /**
      * 构建 upsert 操作后的下一份连接列表。
@@ -81,6 +81,35 @@ export class GlobalStateConnectionRepository implements ConnectionRepository {
           );
 
     await this.saveConnectionPassword(config);
+    await this.globalState.update(GlobalStateConnectionRepository.storageKey, nextConnections);
+  }
+
+  /**
+   * 保存同步拉取到的非敏感连接配置，并保留本机已有密码。
+   *
+   * @param {ConnectionConfig} config 需要合并到本机的同步连接配置。
+   */
+  public async saveSynced(config: ConnectionConfig): Promise<void> {
+    await this.ensureStorageMigrated();
+    const connections = this.readConnections();
+    const existingIndex = connections.findIndex((connection) => connection.id === config.id);
+    const sanitizedConfig = this.stripSensitiveFields(config, true);
+
+    /**
+     * 构建同步 upsert 操作后的下一份连接列表。
+     */
+    const nextConnections =
+      existingIndex === -1
+        ? [...connections, sanitizedConfig]
+        : connections.map((connection, index) =>
+            index === existingIndex ? sanitizedConfig : connection,
+          );
+
+    const password = this.extractPassword(config);
+    if (password) {
+      await this.secretStorage.store(this.createPasswordSecretKey(config.id), password);
+    }
+
     await this.globalState.update(GlobalStateConnectionRepository.storageKey, nextConnections);
   }
 
@@ -153,7 +182,10 @@ export class GlobalStateConnectionRepository implements ConnectionRepository {
    * @param {ConnectionConfig} connection 待持久化的连接配置。
    * @returns {ConnectionConfig} 去敏后的连接配置。
    */
-  private stripSensitiveFields(connection: ConnectionConfig): ConnectionConfig {
+  private stripSensitiveFields(
+    connection: ConnectionConfig,
+    preservePasswordMarker: boolean,
+  ): ConnectionConfig {
     if (connection.mode === "file") {
       return connection;
     }
@@ -162,7 +194,8 @@ export class GlobalStateConnectionRepository implements ConnectionRepository {
       const { password, ...restConnection } = connection;
       return {
         ...restConnection,
-        hasPassword: Boolean(password),
+        hasPassword:
+          Boolean(password) || (preservePasswordMarker && connection.hasPassword === true),
       };
     }
 
@@ -173,7 +206,8 @@ export class GlobalStateConnectionRepository implements ConnectionRepository {
     return {
       ...connection,
       url: parsedUrl.toString(),
-      hasPassword: password.length > 0,
+      hasPassword:
+        password.length > 0 || (preservePasswordMarker && connection.hasPassword === true),
     };
   }
 
@@ -301,7 +335,7 @@ export class GlobalStateConnectionRepository implements ConnectionRepository {
 
           hasMigrationChanges = hasMigrationChanges || Boolean(connection.password);
           await this.saveConnectionPassword(connection);
-          return this.stripSensitiveFields(connection);
+          return this.stripSensitiveFields(connection, false);
         }
 
         const parsedUrl = new URL(connection.url);
@@ -312,7 +346,7 @@ export class GlobalStateConnectionRepository implements ConnectionRepository {
 
         hasMigrationChanges = hasMigrationChanges || containsUrlPassword;
         await this.saveConnectionPassword(connection);
-        return this.stripSensitiveFields(connection);
+        return this.stripSensitiveFields(connection, false);
       }),
     );
 

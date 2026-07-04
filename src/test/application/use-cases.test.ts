@@ -6,6 +6,7 @@ import {
   POSTGRESQL_TREE_CAPABILITY_DECLARATION,
 } from "../../domain/capabilities/DatabaseCapabilityDeclaration";
 import type { ConnectionRepository } from "../../application/connections/ConnectionRepository";
+import type { ConnectionSyncStore } from "../../application/connections/ConnectionSyncStore";
 import type { ConnectionTester } from "../../application/connections/ConnectionTester";
 import type {
   ConnectionConfig,
@@ -110,6 +111,15 @@ function createMockConnectionRepository(saved: ConnectionConfig[] = []) {
       return state.find((c) => c.id === id);
     },
     async save(config) {
+      saveCalls.push(config);
+      const idx = state.findIndex((c) => c.id === config.id);
+      if (idx === -1) {
+        state.push(config);
+      } else {
+        state[idx] = config;
+      }
+    },
+    async saveSynced(config) {
       saveCalls.push(config);
       const idx = state.findIndex((c) => c.id === config.id);
       if (idx === -1) {
@@ -266,12 +276,25 @@ suite("Application — ClearPpzStateUseCase", () => {
         logs.splice(0, logs.length);
       },
     };
-    const useCase = new ClearPpzStateUseCase(repo, logRepository);
+    let syncStoreCleared = false;
+    const connectionSyncStore: ConnectionSyncStore = {
+      async read() {
+        return undefined;
+      },
+      async write() {
+        // 清空用例无需写入同步载荷。
+      },
+      async clear() {
+        syncStoreCleared = true;
+      },
+    };
+    const useCase = new ClearPpzStateUseCase(repo, logRepository, connectionSyncStore);
 
     await useCase.execute();
 
     assert.strictEqual(saved.length, 0);
     assert.strictEqual(logs.length, 0);
+    assert.strictEqual(syncStoreCleared, true);
   });
 });
 

@@ -180,4 +180,66 @@ suite("Infrastructure — 计划中引擎密码去敏", () => {
     const hydratedUrl = hydrated?.mode === "url" ? hydrated.url : "";
     assert.ok(hydratedUrl.includes("topsecret"), "读取时应回填密码到 URL");
   });
+
+  test("同步拉取保存不会清除本机已有密码", async () => {
+    const { repository, secrets } = makeRepository();
+    await repository.save({
+      id: "mssql-sync",
+      name: "MSSQL 本机连接",
+      engine: "mssql",
+      mode: "parameters",
+      host: "127.0.0.1",
+      port: 1433,
+      username: "sa",
+      password: "local-secret",
+      encrypt: true,
+      trustServerCertificate: false,
+    });
+
+    await repository.saveSynced({
+      id: "mssql-sync",
+      name: "MSSQL 远端连接",
+      engine: "mssql",
+      mode: "parameters",
+      host: "10.0.0.2",
+      port: 1433,
+      username: "sa",
+      encrypt: true,
+      trustServerCertificate: false,
+      hasPassword: true,
+    });
+
+    assert.strictEqual(
+      await secrets.get("ppz-plus.connection-password.mssql-sync"),
+      "local-secret",
+    );
+    const hydrated = await repository.find("mssql-sync");
+    assert.strictEqual(hydrated?.name, "MSSQL 远端连接");
+    assert.strictEqual(
+      hydrated?.mode === "parameters" ? hydrated.password : undefined,
+      "local-secret",
+    );
+  });
+
+  test("同步拉取新连接时保留缺失密码标记", async () => {
+    const { repository, memento } = makeRepository();
+    await repository.saveSynced({
+      id: "crdb-sync",
+      name: "CockroachDB 远端连接",
+      engine: "cockroachdb",
+      mode: "url",
+      url: "postgresql://root@127.0.0.1:26257/defaultdb",
+      hasPassword: true,
+    });
+
+    const stored = memento.get<readonly CockroachDbConnectionConfig[]>(
+      GlobalStateConnectionRepository.storageKey,
+      [],
+    );
+    assert.strictEqual(stored[0]?.hasPassword, true);
+    assert.strictEqual(
+      stored[0]?.mode === "url" ? new URL(stored[0].url).password : "unexpected",
+      "",
+    );
+  });
 });

@@ -26,6 +26,8 @@ features:
     details: 基于 presentation / application / domain / infrastructure 分层从零重写，告别旧 PPZ 的历史耦合。
   - title: 开发者友好
     details: MIT 开源协议，TypeScript 编写，欢迎贡献。
+  - title: 手动连接同步
+    details: 通过 VS Code 账号同步显式上传和拉取连接配置，密码先用用户同步密钥加密，同步密钥不会上传。
 ---
 
 ## 什么是 PPZ Plus

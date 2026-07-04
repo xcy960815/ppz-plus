@@ -27,6 +27,13 @@ export interface ConnectionRepository {
   save(config: ConnectionConfig): Promise<void>;
 
   /**
+   * 保存从同步载荷拉取的非敏感连接配置，并保留本机已有密码。
+   *
+   * @param {ConnectionConfig} config 需要合并到本机的同步连接配置。
+   */
+  saveSynced(config: ConnectionConfig): Promise<void>;
+
+  /**
    * 删除已保存连接配置。
    *
    * @param {string} id 需要删除的连接标识。

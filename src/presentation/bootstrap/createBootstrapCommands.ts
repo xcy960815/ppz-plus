@@ -18,12 +18,14 @@ import { OpenMySqlSqlTerminalCommand } from "../commands/OpenMySqlSqlTerminalCom
 import { OpenMySqlTableDataCommand } from "../commands/OpenMySqlTableDataCommand";
 import { OpenPostgreSqlSqlTerminalCommand } from "../commands/OpenPostgreSqlSqlTerminalCommand";
 import { OpenSqlite3SqlTerminalCommand } from "../commands/OpenSqlite3SqlTerminalCommand";
+import { PullConnectionConfigSyncCommand } from "../commands/PullConnectionConfigSyncCommand";
 import { RefreshMySqlConnectionsTreeCommand } from "../commands/RefreshMySqlConnectionsTreeCommand";
 import { RefreshSqlite3ConnectionsTreeCommand } from "../commands/RefreshSqlite3ConnectionsTreeCommand";
 import { ShowProjectStatusCommand } from "../commands/ShowProjectStatusCommand";
 import { ShowSqlExportTaskLogsCommand } from "../commands/ShowSqlExportTaskLogsCommand";
 import { TestStoredMySqlConnectionCommand } from "../commands/TestStoredMySqlConnectionCommand";
 import { TestStoredSqlite3ConnectionCommand } from "../commands/TestStoredSqlite3ConnectionCommand";
+import { UploadConnectionConfigSyncCommand } from "../commands/UploadConnectionConfigSyncCommand";
 import type { BootstrapPresentation } from "./createBootstrapPresentation";
 import type { BootstrapServices } from "./createBootstrapServices";
 
@@ -73,6 +75,12 @@ export function createBootstrapCommands(
     new TestStoredSqlite3ConnectionCommand(),
     new ClearPpzStateCommand(
       services.clearPpzStateUseCase,
+      presentation.databaseConnectionsTreeDataProvider,
+      presentation.sqlite3ConnectionsTreeDataProvider,
+    ),
+    new UploadConnectionConfigSyncCommand(services.uploadConnectionConfigSyncUseCase),
+    new PullConnectionConfigSyncCommand(
+      services.pullConnectionConfigSyncUseCase,
       presentation.databaseConnectionsTreeDataProvider,
       presentation.sqlite3ConnectionsTreeDataProvider,
     ),
