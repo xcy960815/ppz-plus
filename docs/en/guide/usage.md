@@ -12,6 +12,9 @@
 - **MySQL**: host, port, user, password, database
 - **PostgreSQL**: host, port, user, password, database
 - **SQLite3**: file path
+- **MSSQL**: host, port, user, password, database, encrypt, trustServerCertificate (staged rollout; connection testing still needs real SQL Server validation)
+- **CockroachDB**: host, port, user, password, database, ssl (profile storage only for now)
+- **MariaDB**: host, port, user, password, database (profile storage only for now)
 
 ## Browse the Database
 
@@ -20,6 +23,8 @@ Expand a saved connection to browse its structure:
 - **MySQL**: schemas → tables
 - **PostgreSQL**: databases → schemas → tables
 - **SQLite3**: tables / views
+
+MSSQL, CockroachDB, and MariaDB browsing is not open yet. Saved profiles for those engines do not expand into database structures.
 
 ## Open Table Data
 

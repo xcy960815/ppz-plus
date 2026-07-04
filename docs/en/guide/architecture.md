@@ -55,4 +55,6 @@ To add support for a new database engine (e.g., MSSQL):
 3. Wire up application use cases
 4. Expose commands in `presentation`
 
+Capabilities must be opened one at a time: connection testing, explorer browsing, table data, SQL execution, import, and export should move from `planned` to `supported` only after the corresponding implementation and validation are complete. MSSQL, CockroachDB, and MariaDB are being added with that staged process.
+
 The architecture is designed so that adding an engine does not require changing any existing engine's code.

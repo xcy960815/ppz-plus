@@ -12,6 +12,9 @@
 - **MySQL**：host、port、user、password、database
 - **PostgreSQL**：host、port、user、password、database
 - **SQLite3**：文件路径
+- **MSSQL**：host、port、user、password、database、encrypt、trustServerCertificate（分批接入中，连接测试需真实 SQL Server 验证）
+- **CockroachDB**：host、port、user、password、database、ssl（当前仅保存配置）
+- **MariaDB**：host、port、user、password、database（当前仅保存配置）
 
 ## 浏览数据库
 
@@ -20,6 +23,8 @@
 - **MySQL**：数据库 → 表
 - **PostgreSQL**：数据库 → 模式 → 表
 - **SQLite3**：表 / 视图
+
+MSSQL、CockroachDB、MariaDB 的浏览能力尚未开放，保存的连接不会展开为数据库结构。
 
 ## 打开表数据
 

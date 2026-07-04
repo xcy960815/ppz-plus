@@ -55,4 +55,6 @@ VS Code 相关部分：命令、Tree View、Webview 和用户提示。
 3. 接入 application 用例
 4. 在 `presentation` 中暴露命令
 
+能力必须逐项开放：连接测试、资源树、表数据、SQL 执行、导入、导出只有在对应实现和验证完成后，才能从 `planned` 改为 `supported`。MSSQL、CockroachDB、MariaDB 当前按这个节奏分批接入。
+
 架构设计确保新增引擎不需要修改任何已有引擎的代码。

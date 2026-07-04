@@ -15,7 +15,7 @@ hero:
 
 features:
   - title: Multi-Engine Support
-    details: Connect to MySQL, PostgreSQL, and SQLite3 databases with a unified explorer tree and engine-specific hierarchy.
+    details: Fully supports MySQL, PostgreSQL, and SQLite3 while bringing MSSQL, CockroachDB, and MariaDB online one capability at a time.
   - title: SQL Terminal
     details: Execute queries and non-query SQL, view elapsed time, and restore terminal state after VS Code reloads.
   - title: Import & Export
@@ -30,16 +30,20 @@ features:
 
 ## What is PPZ Plus
 
-PPZ Plus is a VS Code extension for working with MySQL, PostgreSQL, and SQLite3 databases from the editor. It is a capability-migration rewrite of the legacy PPZ extension: the product workflows are preserved, while the implementation is rebuilt around clear `presentation / application / domain / infrastructure` boundaries.
+PPZ Plus is a VS Code extension for working with MySQL, PostgreSQL, and SQLite3 databases from the editor. It is a capability-migration rewrite of the legacy PPZ extension: the product workflows are preserved, while the implementation is rebuilt around clear `presentation / application / domain / infrastructure` boundaries. MSSQL, CockroachDB, and MariaDB are being added in capability-sized batches, and unfinished capabilities are not marked as supported early.
 
 ## Supported Engines
 
-| Engine     | Connection | Browse | Table Data | SQL Terminal | Import | Export |
-| ---------- | ---------- | ------ | ---------- | ------------ | ------ | ------ |
-| MySQL      | Yes        | Yes    | Yes        | Yes          | Yes    | Yes    |
-| PostgreSQL | Yes        | Yes    | Yes (read) | Yes          | —      | Yes    |
-| SQLite3    | Yes        | Yes    | Yes        | Yes          | —      | Yes    |
-| MSSQL      | Planned    | —      | —          | —            | —      | —      |
+| Engine      | Connection                                      | Browse | Table Data | SQL Terminal | Import | Export |
+| ----------- | ----------------------------------------------- | ------ | ---------- | ------------ | ------ | ------ |
+| MySQL       | Yes                                             | Yes    | Yes        | Yes          | Yes    | Yes    |
+| PostgreSQL  | Yes                                             | Yes    | Yes (read) | Yes          | —      | Yes    |
+| SQLite3     | Yes                                             | Yes    | Yes        | Yes          | —      | Yes    |
+| MSSQL       | Profiles saved; test pending real DB validation | —      | —          | —            | —      | —      |
+| CockroachDB | Profiles saved                                  | —      | —          | —            | —      | —      |
+| MariaDB     | Profiles saved                                  | —      | —          | —            | —      | —      |
+
+> MSSQL connection testing is wired through the `mssql` driver, but it remains a planned capability until it is validated against a real SQL Server instance.
 
 ## Next Steps
 

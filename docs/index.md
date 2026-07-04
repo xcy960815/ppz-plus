@@ -15,7 +15,7 @@ hero:
 
 features:
   - title: 多引擎支持
-    details: 连接 MySQL、PostgreSQL 和 SQLite3 数据库，提供统一的资源树和引擎特定的层级结构。
+    details: 完整支持 MySQL、PostgreSQL 和 SQLite3，并按能力逐项接入 MSSQL、CockroachDB、MariaDB。
   - title: SQL 终端
     details: 执行查询和非查询 SQL，查看执行耗时，VS Code 重新加载后可恢复终端状态。
   - title: 导入与导出
@@ -30,16 +30,20 @@ features:
 
 ## 什么是 PPZ Plus
 
-PPZ Plus 是一个用于在 VS Code 中操作 MySQL、PostgreSQL 和 SQLite3 数据库的扩展。它不是旧 PPZ 的原地续写，而是一次"能力迁移式重写"：保留旧产品里有价值的工作流，同时用清晰的 `presentation / application / domain / infrastructure` 分层重新实现。
+PPZ Plus 是一个用于在 VS Code 中操作 MySQL、PostgreSQL 和 SQLite3 数据库的扩展。它不是旧 PPZ 的原地续写，而是一次"能力迁移式重写"：保留旧产品里有价值的工作流，同时用清晰的 `presentation / application / domain / infrastructure` 分层重新实现。MSSQL、CockroachDB、MariaDB 正在按能力分批接入，未完成的能力不会提前标记为支持。
 
 ## 数据库支持情况
 
-| 引擎       | 连接   | 浏览 | 表数据       | SQL 终端 | 导入 | 导出 |
-| ---------- | ------ | ---- | ------------ | -------- | ---- | ---- |
-| MySQL      | 支持   | 支持 | 支持         | 支持     | 支持 | 支持 |
-| PostgreSQL | 支持   | 支持 | 支持（只读） | 支持     | —    | 支持 |
-| SQLite3    | 支持   | 支持 | 支持         | 支持     | —    | 支持 |
-| MSSQL      | 计划中 | —    | —            | —        | —    | —    |
+| 引擎        | 连接                       | 浏览 | 表数据       | SQL 终端 | 导入 | 导出 |
+| ----------- | -------------------------- | ---- | ------------ | -------- | ---- | ---- |
+| MySQL       | 支持                       | 支持 | 支持         | 支持     | 支持 | 支持 |
+| PostgreSQL  | 支持                       | 支持 | 支持（只读） | 支持     | —    | 支持 |
+| SQLite3     | 支持                       | 支持 | 支持         | 支持     | —    | 支持 |
+| MSSQL       | 配置可保存；测试待真库验证 | —    | —            | —        | —    | —    |
+| CockroachDB | 配置可保存                 | —    | —            | —        | —    | —    |
+| MariaDB     | 配置可保存                 | —    | —            | —        | —    | —    |
+
+> MSSQL 连接测试链路已接入 `mssql` 驱动，但在真实 SQL Server 验证前仍保持计划中能力，不对外宣称完整支持。
 
 ## 下一步
 

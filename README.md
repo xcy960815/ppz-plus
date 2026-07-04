@@ -8,18 +8,19 @@ PPZ Plus is a VS Code extension for working with MySQL, PostgreSQL, and SQLite3 
 
 PPZ Plus currently provides a database explorer, table data view, SQL terminal, import, and export workflows across the supported engines.
 
-Supported now:
+Fully supported now:
 
 - MySQL connection management, schema/table browsing, table data editing, SQL terminal execution, SQL/CSV/JSON import, and DDL/DML export workflows.
 - PostgreSQL connection management, database/schema/table browsing, table data reading, SQL terminal execution, and DDL/DML export workflows.
 - SQLite3 file connection management, table/view browsing, table data reading and editing, SQL terminal execution, and DDL/DML export workflows.
 
-Planned later:
+Staged engine rollout:
 
-- MSSQL.
-- Other compatible databases.
+- MSSQL, CockroachDB, and MariaDB connection profiles can be created and stored.
+- MSSQL connection-test plumbing is wired through the `mssql` driver for manual validation.
+- MSSQL, CockroachDB, and MariaDB are not yet listed as fully supported engines for browsing, table data, SQL terminals, import, or export.
 
-MSSQL and other compatible databases remain part of the longer-term roadmap.
+MSSQL remains `planned` in the capability matrix until it is verified against a real SQL Server instance. CockroachDB and MariaDB remain planned for later implementation batches.
 
 ## Features
 
@@ -29,6 +30,7 @@ MSSQL and other compatible databases remain part of the longer-term roadmap.
 - Supports parameter fields, connection URL input, and SQLite3 database file selection.
 - Stores connection profiles in VS Code extension state.
 - Shows progress and user-friendly errors during connection tests.
+- MSSQL, CockroachDB, and MariaDB profile storage is staged; only the implemented capability slices should be treated as available.
 
 ### Database Explorer
 
@@ -92,6 +94,7 @@ MSSQL and other compatible databases remain part of the longer-term roadmap.
 - Node.js compatible with the project toolchain.
 - `pnpm` `11.7.0`.
 - A reachable MySQL/PostgreSQL server or SQLite3 database file for manual extension testing.
+- An optional SQL Server instance is required to manually validate the staged MSSQL connection-test path.
 
 This project intentionally enforces `pnpm`. Do not use `npm` or `yarn` for installs or scripts.
 
@@ -140,7 +143,7 @@ Important boundaries:
 
 Progress is tracked in [`.agents/todolist.md`](./.agents/todolist.md).
 
-Near-term work remains focused on stabilizing the existing MySQL, PostgreSQL, and SQLite3 workflows while keeping the architecture ready for additional engines. MSSQL and compatible databases remain future work.
+Near-term work remains focused on stabilizing the existing MySQL, PostgreSQL, and SQLite3 workflows while bringing additional engines online one capability at a time. MSSQL connection testing is the first staged slice; browsing, table data, SQL execution, import, and export remain future work for MSSQL, CockroachDB, and MariaDB.
 
 ## Support
 
@@ -155,6 +158,7 @@ PPZ Plus is a free and open-source project. If it saves you time, you can suppor
 
 - The extension is still in early `0.0.1` development.
 - MySQL import workflows are currently richer than PostgreSQL and SQLite3 import support.
+- MSSQL connection testing still needs validation against a real SQL Server instance before the capability can be marked supported.
 - Packaging and marketplace release workflows should be verified in a clean environment before publishing.
 
 ## License

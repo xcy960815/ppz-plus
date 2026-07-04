@@ -6,6 +6,7 @@
 - Node.js compatible with the project toolchain
 - `pnpm` `11.7.0`
 - A reachable MySQL/PostgreSQL server or SQLite3 database file for manual testing
+- A real SQL Server instance is required when validating the staged MSSQL connection-test path
 
 This project enforces `pnpm`. Do not use `npm` or `yarn`.
 

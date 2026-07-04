@@ -39,6 +39,9 @@ export function createBootstrapPresentation(services: BootstrapServices): Bootst
     services.listPostgreSqlDatabasesUseCase,
     services.listPostgreSqlSchemasUseCase,
     services.listPostgreSqlTablesUseCase,
+    services.listMssqlDatabasesUseCase,
+    services.listMssqlSchemasUseCase,
+    services.listMssqlTablesUseCase,
     services.listSqlite3TablesUseCase,
     storedConnectionPasswordPrompt,
   );

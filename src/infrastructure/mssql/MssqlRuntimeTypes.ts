@@ -19,10 +19,17 @@ export interface MssqlDriverOptions {
 }
 
 /**
+ * 描述 mssql 查询返回的结果集结构。
+ */
+export interface MssqlRuntimeQueryResult {
+  readonly recordset?: ReadonlyArray<Record<string, unknown>>;
+}
+
+/**
  * 描述 mssql 请求对象的最小查询能力。
  */
 export interface MssqlRuntimeRequest {
-  query(sql: string): Promise<unknown>;
+  query(sql: string): Promise<MssqlRuntimeQueryResult>;
 }
 
 /**

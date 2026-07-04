@@ -6,6 +6,7 @@
 - 与当前工具链兼容的 Node.js
 - `pnpm` `11.7.0`
 - 用于手动调试的可访问 MySQL/PostgreSQL 服务或 SQLite3 数据库文件
+- 如需验证 MSSQL 连接测试，需要准备真实 SQL Server 实例
 
 项目强制使用 `pnpm`。不要使用 `npm` 或 `yarn`。
 

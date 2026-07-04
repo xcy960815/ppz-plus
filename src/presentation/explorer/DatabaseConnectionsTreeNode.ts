@@ -1,5 +1,6 @@
 import type {
   ConnectionConfig,
+  MssqlConnectionConfig,
   MysqlConnectionConfig,
   PostgreSqlConnectionConfig,
   Sqlite3ConnectionConfig,
@@ -64,6 +65,37 @@ export interface PostgreSqlTableTreeNode {
 }
 
 /**
+ * 表示 MSSQL 连接下渲染的 database 节点。
+ */
+export interface MssqlDatabaseTreeNode {
+  readonly kind: "mssqlDatabase";
+  readonly connection: MssqlConnectionConfig;
+  readonly databaseName: string;
+  readonly isDefault: boolean;
+}
+
+/**
+ * 表示 MSSQL database 下渲染的 schema 节点。
+ */
+export interface MssqlSchemaTreeNode {
+  readonly kind: "mssqlSchema";
+  readonly connection: MssqlConnectionConfig;
+  readonly databaseName: string;
+  readonly schemaName: string;
+}
+
+/**
+ * 表示 MSSQL schema 下渲染的表节点。
+ */
+export interface MssqlTableTreeNode {
+  readonly kind: "mssqlTable";
+  readonly connection: MssqlConnectionConfig;
+  readonly databaseName: string;
+  readonly schemaName: string;
+  readonly tableName: string;
+}
+
+/**
  * 表示 SQLite3 连接下渲染的表节点。
  */
 export interface Sqlite3TableTreeNode {
@@ -84,4 +116,7 @@ export type DatabaseConnectionsTreeNode =
   | PostgreSqlDatabaseTreeNode
   | PostgreSqlSchemaTreeNode
   | PostgreSqlTableTreeNode
+  | MssqlDatabaseTreeNode
+  | MssqlSchemaTreeNode
+  | MssqlTableTreeNode
   | Sqlite3TableTreeNode;

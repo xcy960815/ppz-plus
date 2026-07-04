@@ -8,6 +8,7 @@ import type {
   MssqlRuntimeConnectionPool,
   MssqlRuntimeConnectionPoolConstructor,
   MssqlRuntimeModule,
+  MssqlRuntimeQueryResult,
   MssqlRuntimeRequest,
 } from "../../infrastructure/mssql/MssqlRuntimeTypes";
 
@@ -207,7 +208,7 @@ class FakeRuntimeLoader {
           state.calls.push("request");
 
           return {
-            async query(sql: string): Promise<unknown> {
+            async query(sql: string): Promise<MssqlRuntimeQueryResult> {
               state.calls.push("query");
               state.querySql = sql;
 

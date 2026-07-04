@@ -6,6 +6,9 @@ import type { ListMySqlTablesUseCase } from "../../application/useCases/ListMySq
 import type { ListPostgreSqlDatabasesUseCase } from "../../application/useCases/ListPostgreSqlDatabasesUseCase";
 import type { ListPostgreSqlSchemasUseCase } from "../../application/useCases/ListPostgreSqlSchemasUseCase";
 import type { ListPostgreSqlTablesUseCase } from "../../application/useCases/ListPostgreSqlTablesUseCase";
+import type { ListMssqlDatabasesUseCase } from "../../application/useCases/ListMssqlDatabasesUseCase";
+import type { ListMssqlSchemasUseCase } from "../../application/useCases/ListMssqlSchemasUseCase";
+import type { ListMssqlTablesUseCase } from "../../application/useCases/ListMssqlTablesUseCase";
 import type { ListSqlite3TablesUseCase } from "../../application/useCases/ListSqlite3TablesUseCase";
 import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
 import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
@@ -17,6 +20,9 @@ import type {
   PostgreSqlDatabaseTreeNode,
   PostgreSqlSchemaTreeNode,
   PostgreSqlTableTreeNode,
+  MssqlDatabaseTreeNode,
+  MssqlSchemaTreeNode,
+  MssqlTableTreeNode,
   Sqlite3TableTreeNode,
 } from "./DatabaseConnectionsTreeNode";
 import { showUserErrorMessage } from "../commands/UserErrorPresenter";
@@ -78,6 +84,26 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
   public static readonly sqlite3TableContextValue = "ppzPlus.sqlite3Table";
 
   /**
+   * 保存 Tree 菜单使用的 MSSQL 连接节点上下文值。
+   */
+  public static readonly mssqlConnectionContextValue = "ppzPlus.mssqlConnection";
+
+  /**
+   * 保存 Tree 菜单使用的 MSSQL database 节点上下文值。
+   */
+  public static readonly mssqlDatabaseContextValue = "ppzPlus.mssqlDatabase";
+
+  /**
+   * 保存 Tree 菜单使用的 MSSQL schema 节点上下文值。
+   */
+  public static readonly mssqlSchemaContextValue = "ppzPlus.mssqlSchema";
+
+  /**
+   * 保存 Tree 菜单使用的 MSSQL 表节点上下文值。
+   */
+  public static readonly mssqlTableContextValue = "ppzPlus.mssqlTable";
+
+  /**
    * 保存 Tree 菜单使用的计划中连接节点上下文值。
    */
   public static readonly plannedConnectionContextValue = "ppzPlus.plannedConnection";
@@ -103,6 +129,9 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
    * @param listPostgreSqlDatabasesUseCase 用于加载 PostgreSQL database 的用例。
    * @param listPostgreSqlSchemasUseCase 用于加载 PostgreSQL schema 的用例。
    * @param listPostgreSqlTablesUseCase 用于加载 PostgreSQL 表的用例。
+   * @param listMssqlDatabasesUseCase 用于加载 MSSQL database 的用例。
+   * @param listMssqlSchemasUseCase 用于加载 MSSQL schema 的用例。
+   * @param listMssqlTablesUseCase 用于加载 MSSQL 表的用例。
    * @param listSqlite3TablesUseCase 用于加载 SQLite3 表的用例。
    * @param storedConnectionPasswordPrompt 用于补录已保存连接缺失的本机密码。
    */
@@ -113,6 +142,9 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
     private readonly listPostgreSqlDatabasesUseCase: ListPostgreSqlDatabasesUseCase,
     private readonly listPostgreSqlSchemasUseCase: ListPostgreSqlSchemasUseCase,
     private readonly listPostgreSqlTablesUseCase: ListPostgreSqlTablesUseCase,
+    private readonly listMssqlDatabasesUseCase: ListMssqlDatabasesUseCase,
+    private readonly listMssqlSchemasUseCase: ListMssqlSchemasUseCase,
+    private readonly listMssqlTablesUseCase: ListMssqlTablesUseCase,
     private readonly listSqlite3TablesUseCase: ListSqlite3TablesUseCase,
     private readonly storedConnectionPasswordPrompt: StoredConnectionPasswordPrompt,
   ) {}
@@ -153,6 +185,18 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
 
     if (element.kind === "postgresqlTable") {
       return this.createPostgreSqlTableTreeItem(element);
+    }
+
+    if (element.kind === "mssqlDatabase") {
+      return this.createMssqlDatabaseTreeItem(element);
+    }
+
+    if (element.kind === "mssqlSchema") {
+      return this.createMssqlSchemaTreeItem(element);
+    }
+
+    if (element.kind === "mssqlTable") {
+      return this.createMssqlTableTreeItem(element);
     }
 
     return this.createSqlite3TableTreeItem(element);
@@ -213,6 +257,16 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
           }));
         }
 
+        if (connection.engine === "mssql") {
+          const databases = await this.listMssqlDatabasesUseCase.execute(connection);
+          return databases.map((database) => ({
+            kind: "mssqlDatabase",
+            connection,
+            databaseName: database.name,
+            isDefault: connection.mode === "parameters" && connection.database === database.name,
+          }));
+        }
+
         return [];
       }
 
@@ -250,6 +304,34 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
         );
         return tables.map((table) => ({
           kind: "postgresqlTable",
+          connection: element.connection,
+          databaseName: element.databaseName,
+          schemaName: element.schemaName,
+          tableName: table.name,
+        }));
+      }
+
+      if (element.kind === "mssqlDatabase") {
+        const schemas = await this.listMssqlSchemasUseCase.execute(
+          element.connection,
+          element.databaseName,
+        );
+        return schemas.map((schema) => ({
+          kind: "mssqlSchema",
+          connection: element.connection,
+          databaseName: element.databaseName,
+          schemaName: schema.name,
+        }));
+      }
+
+      if (element.kind === "mssqlSchema") {
+        const tables = await this.listMssqlTablesUseCase.execute(
+          element.connection,
+          element.databaseName,
+          element.schemaName,
+        );
+        return tables.map((table) => ({
+          kind: "mssqlTable",
           connection: element.connection,
           databaseName: element.databaseName,
           schemaName: element.schemaName,
@@ -367,6 +449,57 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
       title: "打开表数据",
       arguments: [element],
     };
+    return treeItem;
+  }
+
+  /**
+   * 创建 MSSQL database 节点的可视化表示。
+   *
+   * @param {MssqlDatabaseTreeNode} element MSSQL database Tree 节点。
+   * @returns {vscode.TreeItem} MSSQL database 节点对应的 TreeItem。
+   */
+  private createMssqlDatabaseTreeItem(element: MssqlDatabaseTreeNode): vscode.TreeItem {
+    const treeItem = new vscode.TreeItem(
+      element.databaseName,
+      vscode.TreeItemCollapsibleState.Collapsed,
+    );
+    treeItem.contextValue = DatabaseConnectionsTreeDataProvider.mssqlDatabaseContextValue;
+    treeItem.id = `${element.connection.id}.${element.databaseName}`;
+    treeItem.description = element.isDefault ? "默认" : undefined;
+    treeItem.iconPath = new vscode.ThemeIcon("database");
+    return treeItem;
+  }
+
+  /**
+   * 创建 MSSQL schema 节点的可视化表示。
+   *
+   * @param {MssqlSchemaTreeNode} element MSSQL schema Tree 节点。
+   * @returns {vscode.TreeItem} MSSQL schema 节点对应的 TreeItem。
+   */
+  private createMssqlSchemaTreeItem(element: MssqlSchemaTreeNode): vscode.TreeItem {
+    const treeItem = new vscode.TreeItem(
+      element.schemaName,
+      vscode.TreeItemCollapsibleState.Collapsed,
+    );
+    treeItem.contextValue = DatabaseConnectionsTreeDataProvider.mssqlSchemaContextValue;
+    treeItem.id = `${element.connection.id}.${element.databaseName}.${element.schemaName}`;
+    treeItem.description = element.databaseName;
+    treeItem.iconPath = new vscode.ThemeIcon("folder-library");
+    return treeItem;
+  }
+
+  /**
+   * 创建 MSSQL 表节点的可视化表示。
+   *
+   * @param {MssqlTableTreeNode} element MSSQL 表 Tree 节点。
+   * @returns {vscode.TreeItem} MSSQL 表节点对应的 TreeItem。
+   */
+  private createMssqlTableTreeItem(element: MssqlTableTreeNode): vscode.TreeItem {
+    const treeItem = new vscode.TreeItem(element.tableName, vscode.TreeItemCollapsibleState.None);
+    treeItem.contextValue = DatabaseConnectionsTreeDataProvider.mssqlTableContextValue;
+    treeItem.id = `${element.connection.id}.${element.databaseName}.${element.schemaName}.${element.tableName}`;
+    treeItem.description = element.schemaName;
+    treeItem.iconPath = new vscode.ThemeIcon("table");
     return treeItem;
   }
 
