@@ -49,7 +49,7 @@ export class OpenPostgreSqlSqlTerminalCommand implements ExtensionCommand {
    * 从 Tree 节点解析 SQL 终端初始目标。
    *
    * @param {DatabaseConnectionsTreeNode} node 可选的数据库 Tree 节点。
-   * @returns {|} 初始选中的 PostgreSQL 连接和 database。
+   * @returns {{ connection: PostgreSqlConnectionConfig; databaseName?: string } | undefined} 初始选中的 PostgreSQL 连接和 database；无法解析时为空。
    */
   private resolveInitialTarget(node?: DatabaseConnectionsTreeNode):
     | {

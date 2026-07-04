@@ -35,6 +35,12 @@ import type {
   PostgreSqlTableTreeNode,
   Sqlite3TableTreeNode,
 } from "../explorer/DatabaseConnectionsTreeNode";
+import {
+  buildWebviewCspMeta,
+  createWebviewNonce,
+  escapeHtml,
+  serializeScriptValue as serializeScriptValueShared,
+} from "../shared/WebviewHtml";
 import type { MySqlTableDataWebviewMessage } from "./MySqlTableDataWebviewMessage";
 
 /**
@@ -164,7 +170,10 @@ export class DatabaseTableDataPanel
     const restoredState = this.parseSerializedState(serializedState);
 
     if (!restoredState) {
-      panel.webview.html = this.renderRestoreErrorHtml("表数据页状态无效。");
+      panel.webview.html = this.renderRestoreErrorHtml(
+        "表数据页状态无效。",
+        panel.webview.cspSource,
+      );
       return;
     }
 
@@ -174,7 +183,10 @@ export class DatabaseTableDataPanel
     );
 
     if (!connection) {
-      panel.webview.html = this.renderRestoreErrorHtml("未找到此表数据页对应的数据库连接。");
+      panel.webview.html = this.renderRestoreErrorHtml(
+        "未找到此表数据页对应的数据库连接。",
+        panel.webview.cspSource,
+      );
       return;
     }
 
@@ -195,7 +207,7 @@ export class DatabaseTableDataPanel
 
     this.panelStatesByKey.set(this.createPanelKey(tableNode), state);
     this.registerPanelHandlers(state);
-    panel.webview.html = this.renderLoadingHtml(tableNode);
+    panel.webview.html = this.renderLoadingHtml(tableNode, panel.webview.cspSource);
     await this.renderTableData(state);
   }
 
@@ -240,7 +252,7 @@ export class DatabaseTableDataPanel
     this.panelStatesByKey.set(panelKey, state);
     this.registerPanelHandlers(state);
 
-    panel.webview.html = this.renderLoadingHtml(tableNode);
+    panel.webview.html = this.renderLoadingHtml(tableNode, panel.webview.cspSource);
     await this.renderTableData(state);
   }
 
@@ -1141,7 +1153,10 @@ export class DatabaseTableDataPanel
    */
   private async renderTableData(state: DatabaseTablePanelState): Promise<void> {
     state.panel.title = `${state.tableNode.tableName} 表数据`;
-    state.panel.webview.html = this.renderLoadingHtml(state.tableNode);
+    state.panel.webview.html = this.renderLoadingHtml(
+      state.tableNode,
+      state.panel.webview.cspSource,
+    );
 
     try {
       const [columns, rowPage] = await this.loadTableData(state);
@@ -1149,10 +1164,19 @@ export class DatabaseTableDataPanel
       state.latestColumns = columns;
       state.latestRows = rowPage.rows;
 
-      state.panel.webview.html = this.renderTableHtml(state, columns, rowPage);
+      state.panel.webview.html = this.renderTableHtml(
+        state,
+        columns,
+        rowPage,
+        state.panel.webview.cspSource,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      state.panel.webview.html = this.renderErrorHtml(state.tableNode, message);
+      state.panel.webview.html = this.renderErrorHtml(
+        state.tableNode,
+        message,
+        state.panel.webview.cspSource,
+      );
       await showUserErrorMessage({
         operation: "加载表数据",
         error,
@@ -1301,7 +1325,7 @@ export class DatabaseTableDataPanel
    * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
    * @returns {string} 加载状态的 HTML 文档。
    */
-  private renderLoadingHtml(tableNode: TableDataTreeNode): string {
+  private renderLoadingHtml(tableNode: TableDataTreeNode, cspSource: string): string {
     const qualifiedName =
       tableNode.kind === "postgresqlTable"
         ? `${tableNode.databaseName}.${tableNode.schemaName}.${tableNode.tableName}`
@@ -1309,9 +1333,10 @@ export class DatabaseTableDataPanel
           ? `${tableNode.connection.name}.${tableNode.tableName}`
           : `${tableNode.schemaName}.${tableNode.tableName}`;
     return `<!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 	<meta charset="UTF-8" />
+	${buildWebviewCspMeta(cspSource, createWebviewNonce())}
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>${this.escapeHtml(tableNode.tableName)} 表数据</title>
 	<style>
@@ -1336,11 +1361,17 @@ export class DatabaseTableDataPanel
    * @param {string} message 需要展示的错误消息。
    * @returns {string} 错误状态的 HTML 文档。
    */
-  private renderErrorHtml(tableNode: TableDataTreeNode, message: string): string {
+  private renderErrorHtml(
+    tableNode: TableDataTreeNode,
+    message: string,
+    cspSource: string,
+  ): string {
+    const nonce = createWebviewNonce();
     return `<!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 	<meta charset="UTF-8" />
+	${buildWebviewCspMeta(cspSource, nonce)}
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>${this.escapeHtml(tableNode.tableName)} 表数据</title>
 	<style>
@@ -1362,7 +1393,12 @@ export class DatabaseTableDataPanel
 <body>
 	<h2>${this.escapeHtml(tableNode.schemaName)}.${this.escapeHtml(tableNode.tableName)}</h2>
 	<p class="error">${this.escapeHtml(message)}</p>
-		<button onclick="acquireVsCodeApi().postMessage({ type: 'refresh' })">重试</button>
+		<button id="retryButton">重试</button>
+	<script nonce="${nonce}">
+		document.getElementById('retryButton')?.addEventListener('click', () => {
+			acquireVsCodeApi().postMessage({ type: 'refresh' });
+		});
+	</script>
 </body>
 </html>`;
   }
@@ -1373,11 +1409,12 @@ export class DatabaseTableDataPanel
    * @param {string} message 需要展示的恢复错误。
    * @returns {string} 错误状态的 HTML 文档。
    */
-  private renderRestoreErrorHtml(message: string): string {
+  private renderRestoreErrorHtml(message: string, cspSource: string): string {
     return `<!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 	<meta charset="UTF-8" />
+	${buildWebviewCspMeta(cspSource, createWebviewNonce())}
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>MySQL 表数据</title>
 	<style>
@@ -1411,6 +1448,7 @@ export class DatabaseTableDataPanel
     state: DatabaseTablePanelState,
     columns: readonly MySqlTableColumnMetadata[],
     rowPage: MySqlTableRowPage,
+    cspSource: string,
   ): string {
     const tableNode = state.tableNode;
     const isReadOnly = this.isReadOnlyTableNode(tableNode);
@@ -1491,11 +1529,14 @@ export class DatabaseTableDataPanel
     const filterConditions = this.serializeScriptValue(state.filterConditions);
     const filterColumnNames = this.serializeScriptValue(columns.map((column) => column.name));
     const iconSprite = this.renderIconSprite();
+    const nonce = createWebviewNonce();
+    const cspMeta = buildWebviewCspMeta(cspSource, nonce);
 
     return `<!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 	<meta charset="UTF-8" />
+	${cspMeta}
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>${this.escapeHtml(tableNode.tableName)} 表数据</title>
 	<style>
@@ -1969,30 +2010,30 @@ export class DatabaseTableDataPanel
 			</nav>
 		<div class="operations">
 			<div class="btns">
-				<button type="button" class="icon-btn" title="刷新" onclick="postAction('refresh')">${this.renderIcon("light")}</button>
-				<button type="button" class="icon-btn" title="搜索" onclick="showDialog('search')">${this.renderIcon("search")}</button>
-				<button type="button" class="icon-btn" title="字段选择" onclick="showDialog('fields')">${this.renderIcon("filter")}</button>
-				<button type="button" class="icon-btn" title="${isReadOnly ? this.escapeHtml(readOnlyTitle) : "插入"}" onclick="postAction('insertRow')"${readOnlyDisabled}>${this.renderIcon("add")}</button>
-				<button type="button" class="icon-btn" title="拷贝" id="copyButton" onclick="copyFocusedRow()" disabled>${this.renderIcon("copy")}</button>
-				<button type="button" class="icon-btn" title="保存" id="saveButton" onclick="saveEditedRows()" disabled>${this.renderIcon("save")}</button>
-				<button type="button" class="icon-btn" title="撤销全部" id="undoButton" onclick="undoEditedRows()" disabled>${this.renderIcon("undo")}</button>
-				<button type="button" class="icon-btn" title="删除" id="deleteButton" onclick="deleteFocusedRow()" disabled>${this.renderIcon("delete")}</button>
-				<button type="button" class="icon-btn" title="查看当前 sql" onclick="showDialog('sql')">${this.renderIcon("sql")}</button>
-				<button type="button" class="icon-btn" title="${isReadOnly ? "PostgreSQL SQL 终端尚未支持" : "打开终端"}" onclick="postAction('openSqlTerminal')"${readOnlyDisabled}>${this.renderIcon("terminal")}</button>
+				<button type="button" class="icon-btn" title="刷新" data-action="refresh">${this.renderIcon("light")}</button>
+				<button type="button" class="icon-btn" title="搜索" data-action="showSearchDialog">${this.renderIcon("search")}</button>
+				<button type="button" class="icon-btn" title="字段选择" data-action="showFieldsDialog">${this.renderIcon("filter")}</button>
+				<button type="button" class="icon-btn" title="${isReadOnly ? this.escapeHtml(readOnlyTitle) : "插入"}" data-action="insertRow"${readOnlyDisabled}>${this.renderIcon("add")}</button>
+				<button type="button" class="icon-btn" title="拷贝" id="copyButton" data-action="copyFocusedRow" disabled>${this.renderIcon("copy")}</button>
+				<button type="button" class="icon-btn" title="保存" id="saveButton" data-action="saveEditedRows" disabled>${this.renderIcon("save")}</button>
+				<button type="button" class="icon-btn" title="撤销全部" id="undoButton" data-action="undoEditedRows" disabled>${this.renderIcon("undo")}</button>
+				<button type="button" class="icon-btn" title="删除" id="deleteButton" data-action="deleteFocusedRow" disabled>${this.renderIcon("delete")}</button>
+				<button type="button" class="icon-btn" title="查看当前 sql" data-action="showSqlDialog">${this.renderIcon("sql")}</button>
+				<button type="button" class="icon-btn" title="${isReadOnly ? "PostgreSQL SQL 终端尚未支持" : "打开终端"}" data-action="openSqlTerminal"${readOnlyDisabled}>${this.renderIcon("terminal")}</button>
 			</div>
 			<div class="pagination">
-				<button type="button" class="icon-btn" title="刷新" onclick="applyPagination()">${this.renderIcon("refresh")}</button>
+				<button type="button" class="icon-btn" title="刷新" data-action="applyPagination">${this.renderIcon("refresh")}</button>
 				<span class="txt">每页</span>
 				<input id="pageSizeInput" class="page-input page-size" value="${rowPage.pageSize}" inputmode="numeric" />
 				<span class="txt">条记录，共 </span>
 				<span>${rowPage.totalRowCount}</span>
 				<span class="txt"> 条、</span>
 				<span>${pageCount}</span><span class="txt"> 页</span>
-				<button type="button" class="icon-btn big" title="第一页" onclick="goToPage(1)" ${pageNumber <= 1 ? "disabled" : ""}>${this.renderIcon("arrow-left2")}</button>
-				<button type="button" class="icon-btn big" title="上一页" onclick="goToPage(${Math.max(1, pageNumber - 1)})" ${pageNumber <= 1 ? "disabled" : ""}>${this.renderIcon("arrow-left")}</button>
+				<button type="button" class="icon-btn big" title="第一页" data-action="goToPage" data-arg="1" ${pageNumber <= 1 ? "disabled" : ""}>${this.renderIcon("arrow-left2")}</button>
+				<button type="button" class="icon-btn big" title="上一页" data-action="goToPage" data-arg="${Math.max(1, pageNumber - 1)}" ${pageNumber <= 1 ? "disabled" : ""}>${this.renderIcon("arrow-left")}</button>
 				<input id="pageIndexInput" class="page-input" value="${pageNumber}" inputmode="numeric" />
-				<button type="button" class="icon-btn big" title="下一页" onclick="goToPage(${Math.min(pageCount, pageNumber + 1)})" ${pageNumber >= pageCount ? "disabled" : ""}>${this.renderIcon("arrow-right")}</button>
-				<button type="button" class="icon-btn big" title="最后一页" onclick="goToPage(${pageCount})" ${pageNumber >= pageCount ? "disabled" : ""}>${this.renderIcon("arrow-right2")}</button>
+				<button type="button" class="icon-btn big" title="下一页" data-action="goToPage" data-arg="${Math.min(pageCount, pageNumber + 1)}" ${pageNumber >= pageCount ? "disabled" : ""}>${this.renderIcon("arrow-right")}</button>
+				<button type="button" class="icon-btn big" title="最后一页" data-action="goToPage" data-arg="${pageCount}" ${pageNumber >= pageCount ? "disabled" : ""}>${this.renderIcon("arrow-right2")}</button>
 			</div>
 		</div>
 	</header>
@@ -2011,7 +2052,7 @@ export class DatabaseTableDataPanel
 			<div class="dialog-title">搜索数据</div>
 			<div class="dialog-body">
 				<div id="filterConditions" class="search-condition-list"></div>
-				<button type="button" class="add-condition-button" onclick="addFilterCondition()">+</button>
+				<button type="button" class="add-condition-button" data-action="addFilterCondition">+</button>
 				<div class="search-keyword">
 					<label>
 						<span>关键字</span>
@@ -2020,9 +2061,9 @@ export class DatabaseTableDataPanel
 				</div>
 			</div>
 			<div class="dialog-actions">
-				<button type="button" onclick="applyQueryOptions()">搜索</button>
-				<button type="button" onclick="emptySearch()">清空</button>
-				<button type="button" onclick="closeDialog()">关闭</button>
+				<button type="button" data-action="applyQueryOptions">搜索</button>
+				<button type="button" data-action="emptySearch">清空</button>
+				<button type="button" data-action="closeDialog">关闭</button>
 			</div>
 		</div>
 	</div>
@@ -2035,10 +2076,10 @@ export class DatabaseTableDataPanel
 				</div>
 			</div>
 			<div class="dialog-actions">
-				<button type="button" onclick="setAllColumns(true)">全选</button>
-				<button type="button" onclick="invertColumns()">反选</button>
-				<button type="button" onclick="setAllColumns(false)">全不选</button>
-				<button type="button" onclick="closeDialog()">关闭</button>
+				<button type="button" data-action="setAllColumns">全选</button>
+				<button type="button" data-action="invertColumns">反选</button>
+				<button type="button" data-action="clearAllColumns">全不选</button>
+				<button type="button" data-action="closeDialog">关闭</button>
 			</div>
 		</div>
 	</div>
@@ -2049,24 +2090,24 @@ export class DatabaseTableDataPanel
 				<pre class="sql-view"><code id="sqlViewerContent">${this.escapeHtml(rowPage.sqlWithoutPagination)}</code></pre>
 				<div class="sql-pagination-options">
 					<label>
-						<input type="radio" name="sqlPaginationMode" value="with" onchange="updateSqlViewer()" />
+						<input type="radio" name="sqlPaginationMode" value="with" />
 						<span>带分页</span>
 					</label>
 					<label>
-						<input type="radio" name="sqlPaginationMode" value="without" onchange="updateSqlViewer()" checked />
+						<input type="radio" name="sqlPaginationMode" value="without" checked />
 						<span>不带</span>
 					</label>
 				</div>
 			</div>
 			<div class="dialog-actions">
-				<button type="button" onclick="openCurrentSqlDocument()">在新文件中打开</button>
-				<button type="button" onclick="copyCurrentSql()">复制到剪切板</button>
-				<button type="button" onclick="openCurrentSqlInTerminal()">在终端中打开</button>
-				<button type="button" class="secondary" onclick="closeDialog()">关闭</button>
+				<button type="button" data-action="openCurrentSqlDocument">在新文件中打开</button>
+				<button type="button" data-action="copyCurrentSql">复制到剪切板</button>
+				<button type="button" data-action="openCurrentSqlInTerminal">在终端中打开</button>
+				<button type="button" class="secondary" data-action="closeDialog">关闭</button>
 			</div>
 		</div>
 	</div>
-	<script>
+	<script nonce="${nonce}">
 		const vscode = acquireVsCodeApi();
 		const initialState = ${serializedState};
 		let currentState = { ...initialState };
@@ -2563,6 +2604,41 @@ export class DatabaseTableDataPanel
 		for (const checkbox of document.querySelectorAll('#fieldsDialog [data-column-name]')) {
 			checkbox.addEventListener('change', () => applyColumnVisibility());
 		}
+		const dataActionHandlers = {
+				refresh: () => postAction('refresh'),
+				retry: () => postAction('refresh'),
+				insertRow: () => postAction('insertRow'),
+				openSqlTerminal: () => postAction('openSqlTerminal'),
+				showSearchDialog: () => showDialog('search'),
+				showFieldsDialog: () => showDialog('fields'),
+				showSqlDialog: () => showDialog('sql'),
+				closeDialog: () => closeDialog(),
+				applyPagination: () => applyPagination(),
+				applyQueryOptions: () => applyQueryOptions(),
+				emptySearch: () => emptySearch(),
+				addFilterCondition: () => addFilterCondition(),
+				setAllColumns: () => setAllColumns(true),
+				clearAllColumns: () => setAllColumns(false),
+				invertColumns: () => invertColumns(),
+				copyFocusedRow: () => copyFocusedRow(),
+				saveEditedRows: () => saveEditedRows(),
+				undoEditedRows: () => undoEditedRows(),
+				deleteFocusedRow: () => deleteFocusedRow(),
+				openCurrentSqlDocument: () => openCurrentSqlDocument(),
+				copyCurrentSql: () => copyCurrentSql(),
+				openCurrentSqlInTerminal: () => openCurrentSqlInTerminal(),
+				goToPage: (element) => goToPage(Number(element.getAttribute('data-arg'))),
+			};
+			for (const element of document.querySelectorAll('[data-action]')) {
+				const action = element.getAttribute('data-action');
+				const handler = dataActionHandlers[action];
+				if (handler) {
+					element.addEventListener('click', () => handler(element));
+				}
+			}
+			for (const input of document.querySelectorAll('input[name="sqlPaginationMode"]')) {
+				input.addEventListener('change', () => updateSqlViewer());
+			}
 		updateToolbarState();
 	</script>
 </body>
@@ -2642,12 +2718,7 @@ export class DatabaseTableDataPanel
    * @returns {string} 转义后的 HTML 字符串。
    */
   private escapeHtml(value: string): string {
-    return value
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+    return escapeHtml(value);
   }
 
   /**
@@ -2657,11 +2728,6 @@ export class DatabaseTableDataPanel
    * @returns {string} 经过转义的 JSON 字符串。
    */
   private serializeScriptValue(value: unknown): string {
-    return JSON.stringify(value)
-      .replaceAll("<", "\\u003c")
-      .replaceAll(">", "\\u003e")
-      .replaceAll("&", "\\u0026")
-      .replaceAll("\u2028", "\\u2028")
-      .replaceAll("\u2029", "\\u2029");
+    return serializeScriptValueShared(value);
   }
 }

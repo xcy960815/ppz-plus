@@ -106,7 +106,7 @@ export class AddSqlite3ConnectionCommand implements ExtensionCommand {
       canSelectMany: false,
       defaultUri: existingConfig ? vscode.Uri.file(existingConfig.dbPath) : undefined,
       filters: {
-        SQLite: ["db", "sqlite", "sqlite3"],
+        SQLite3: ["db", "sqlite", "sqlite3"],
         All: ["*"],
       },
     });

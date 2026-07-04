@@ -641,7 +641,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    *
    * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
    * @param {MySqlTableFilterCondition} condition Webview 提交的字段过滤条件。
-   * @returns {|} 可拼接到 WHERE 中的条件片段；字段无效时为空。
+   * @returns {{ sql: string; displaySql: string; values: readonly unknown[] } | undefined} 可拼接到 WHERE 中的条件片段；字段无效时为空。
    */
   private createFilterConditionClause(
     columns: readonly MySqlTableColumnMetadata[],
@@ -729,7 +729,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * @param {string} columnSql 已转义的字段名。
    * @param {'in' | 'not in'} operator 集合过滤操作符。
    * @param {MySqlTableFilterCondition['value']} value 字段过滤值。
-   * @returns {|} 可拼接到 WHERE 中的条件片段；集合为空时为空。
+   * @returns {{ sql: string; displaySql: string; values: readonly unknown[] } | undefined} 可拼接到 WHERE 中的条件片段；集合为空时为空。
    */
   private createSetFilterConditionClause(
     columnSql: string,

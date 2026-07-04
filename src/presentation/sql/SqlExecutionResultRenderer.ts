@@ -5,6 +5,7 @@ import type {
   SqlExecutionResultMetadataEntry,
   SqlExecutionResultSet,
 } from "../../domain/query/SqlExecutionResult";
+import { escapeHtml } from "../shared/WebviewHtml";
 
 /**
  * 渲染统一 SQL 执行结果，供不同数据库 SQL 终端复用。
@@ -196,11 +197,6 @@ export class SqlExecutionResultRenderer {
    * @returns {string} 转义后的 HTML 字符串。
    */
   private escapeHtml(value: string): string {
-    return value
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+    return escapeHtml(value);
   }
 }

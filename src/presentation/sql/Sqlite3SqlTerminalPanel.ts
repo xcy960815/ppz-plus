@@ -8,6 +8,13 @@ import type {
 } from "../../domain/connections/ConnectionConfig";
 import type { SqlExecutionResult } from "../../domain/query/SqlExecutionResult";
 import type { ExtensionActivationParticipant } from "../bootstrap/ExtensionActivationParticipant";
+import {
+  buildWebviewCspMeta,
+  createWebviewNonce,
+  escapeHtml,
+  escapeHtmlAttribute,
+  serializeScriptValue,
+} from "../shared/WebviewHtml";
 import { SqlExecutionResultRenderer } from "./SqlExecutionResultRenderer";
 import type { MySqlSqlTerminalWebviewMessage } from "./MySqlSqlTerminalWebviewMessage";
 
@@ -240,10 +247,14 @@ export class Sqlite3SqlTerminalPanel
       sql: state.sql,
     } satisfies Sqlite3SqlTerminalSerializedState);
 
+    const nonce = createWebviewNonce();
+    const cspMeta = buildWebviewCspMeta(state.panel.webview.cspSource, nonce);
+
     return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 	<meta charset="UTF-8" />
+	${cspMeta}
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>SQLite3 SQL 终端</title>
 	<style>
@@ -305,7 +316,7 @@ export class Sqlite3SqlTerminalPanel
 		<textarea id="sql-input" spellcheck="false"${disabled}>${this.escapeHtml(state.sql)}</textarea>
 	</form>
 	<div class="result">${resultMarkup}</div>
-	<script>
+	<script nonce="${nonce}">
 		const vscode = acquireVsCodeApi();
 		const initialState = ${serializedState};
 		vscode.setState(initialState);
@@ -369,7 +380,7 @@ export class Sqlite3SqlTerminalPanel
    * @returns {string} JSON 字符串。
    */
   private serializeScriptValue(value: unknown): string {
-    return JSON.stringify(value).replaceAll("</script", "<\\/script");
+    return serializeScriptValue(value);
   }
 
   /**
@@ -379,12 +390,7 @@ export class Sqlite3SqlTerminalPanel
    * @returns {string} HTML 安全文本。
    */
   private escapeHtml(value: string): string {
-    return value
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+    return escapeHtml(value);
   }
 
   /**
@@ -394,6 +400,6 @@ export class Sqlite3SqlTerminalPanel
    * @returns {string} HTML 安全属性值。
    */
   private escapeHtmlAttribute(value: string): string {
-    return this.escapeHtml(value);
+    return escapeHtmlAttribute(value);
   }
 }

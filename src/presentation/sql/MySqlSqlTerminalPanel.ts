@@ -10,6 +10,13 @@ import type { SqlExecutionResult } from "../../domain/query/SqlExecutionResult";
 import type { ExtensionActivationParticipant } from "../bootstrap/ExtensionActivationParticipant";
 import { maskConnectionUrl } from "../commands/ConnectionDisplayFormatter";
 import type { StoredConnectionPasswordPrompt } from "../commands/StoredConnectionPasswordPrompt";
+import {
+  buildWebviewCspMeta,
+  createWebviewNonce,
+  escapeHtml,
+  escapeHtmlAttribute,
+  serializeScriptValue,
+} from "../shared/WebviewHtml";
 import { SqlExecutionResultRenderer } from "./SqlExecutionResultRenderer";
 import type { MySqlSqlTerminalWebviewMessage } from "./MySqlSqlTerminalWebviewMessage";
 
@@ -261,10 +268,14 @@ export class MySqlSqlTerminalPanel
       sql: state.sql,
     } satisfies MySqlSqlTerminalSerializedState);
 
+    const nonce = createWebviewNonce();
+    const cspMeta = buildWebviewCspMeta(state.panel.webview.cspSource, nonce);
+
     return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 	<meta charset="UTF-8" />
+	${cspMeta}
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>MySQL SQL 终端</title>
 	<style>
@@ -453,7 +464,7 @@ export class MySqlSqlTerminalPanel
 			<div class="options">
 				<div class="tttips">* CTRL + Enter 直接运行 sql</div>
 				<span>
-					<button id="execute" onclick="executeSql()"${disabled}>执行</button>
+					<button id="execute"${disabled}>执行</button>
 				</span>
 			</div>
 		</div>
@@ -462,7 +473,7 @@ export class MySqlSqlTerminalPanel
 			${resultMarkup}
 		</section>
 	</div>
-	<script>
+	<script nonce="${nonce}">
 		const vscode = acquireVsCodeApi();
 		const initialState = ${serializedState};
 		vscode.setState(initialState);
@@ -496,6 +507,7 @@ export class MySqlSqlTerminalPanel
 				executeSql();
 			}
 		});
+		document.getElementById('execute')?.addEventListener('click', () => executeSql());
 	</script>
 </body>
 </html>`;
@@ -587,12 +599,7 @@ export class MySqlSqlTerminalPanel
    * @returns {string} 转义后的 HTML 字符串。
    */
   private escapeHtml(value: string): string {
-    return value
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+    return escapeHtml(value);
   }
 
   /**
@@ -602,7 +609,7 @@ export class MySqlSqlTerminalPanel
    * @returns {string} 转义后的属性字符串。
    */
   private escapeHtmlAttribute(value: string): string {
-    return this.escapeHtml(value);
+    return escapeHtmlAttribute(value);
   }
 
   /**
@@ -612,11 +619,6 @@ export class MySqlSqlTerminalPanel
    * @returns {string} 经过转义的 JSON 字符串。
    */
   private serializeScriptValue(value: unknown): string {
-    return JSON.stringify(value)
-      .replaceAll("<", "\\u003c")
-      .replaceAll(">", "\\u003e")
-      .replaceAll("&", "\\u0026")
-      .replaceAll("\u2028", "\\u2028")
-      .replaceAll("\u2029", "\\u2029");
+    return serializeScriptValue(value);
   }
 }

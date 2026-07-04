@@ -27,6 +27,7 @@ import {
 } from "./MySqlConnectionProgressPresenter";
 import { extractUserErrorMessage, showUserErrorMessage } from "./UserErrorPresenter";
 import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
+import { buildWebviewCspMeta, createWebviewNonce } from "../shared/WebviewHtml";
 
 /**
  * 描述连接表单 Webview 发回的保存动作。
@@ -119,7 +120,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       },
     );
 
-    panel.webview.html = this.renderConnectionFormHtml();
+    panel.webview.html = this.renderConnectionFormHtml(panel.webview.cspSource);
     panel.webview.onDidReceiveMessage(async (message: MySqlConnectionFormMessage) => {
       await this.handleConnectionFormMessage(panel, message);
     });
@@ -193,7 +194,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       canSelectFolders: false,
       canSelectMany: false,
       filters: {
-        SQLite: ["db", "sqlite", "sqlite3"],
+        SQLite3: ["db", "sqlite", "sqlite3"],
         All: ["*"],
       },
     });
@@ -670,13 +671,18 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
   /**
    * 创建连接表单 Webview HTML。
    *
+   * @param {string} cspSource Webview 资源来源，用于构建 CSP。
    * @returns {string} 可渲染到 Webview 的 HTML 文档。
    */
-  private renderConnectionFormHtml(): string {
+  private renderConnectionFormHtml(cspSource: string): string {
+    const nonce = createWebviewNonce();
+    const cspMeta = buildWebviewCspMeta(cspSource, nonce);
+
     return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 	<meta charset="UTF-8" />
+	${cspMeta}
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>创建连接</title>
 	<style>
@@ -894,12 +900,12 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 					<div class="label">
 						<span>连接类型</span>
 						<div class="ppz-radio-group">
-							<label><input name="engine" type="radio" value="mysql" checked onchange="syncEngine()" /> MySQL</label>
-							<label><input name="engine" type="radio" value="mssql" onchange="syncEngine()" /> SQL Server</label>
-							<label><input name="engine" type="radio" value="postgresql" onchange="syncEngine()" /> PostgreSQL</label>
-							<label><input name="engine" type="radio" value="sqlite3" onchange="syncEngine()" /> SQLite3</label>
-							<label><input name="engine" type="radio" value="cockroachdb" onchange="syncEngine()" /> CockroachDB</label>
-							<label><input name="engine" type="radio" value="mariadb" onchange="syncEngine()" /> MariaDB</label>
+							<label><input name="engine" type="radio" value="mysql" checked /> MySQL</label>
+							<label><input name="engine" type="radio" value="mssql" /> SQL Server</label>
+							<label><input name="engine" type="radio" value="postgresql" /> PostgreSQL</label>
+							<label><input name="engine" type="radio" value="sqlite3" /> SQLite3</label>
+							<label><input name="engine" type="radio" value="cockroachdb" /> CockroachDB</label>
+							<label><input name="engine" type="radio" value="mariadb" /> MariaDB</label>
 						</div>
 					</div>
 					<br>
@@ -907,17 +913,17 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 						<span>连接方式</span>
 						<div class="ppz-radio-group">
 							<label>
-								<input name="mode" type="radio" value="parameters" checked onchange="syncMode()" />
+								<input name="mode" type="radio" value="parameters" checked />
 								字段
 							</label>
 							<label>
-								<input name="mode" type="radio" value="url" onchange="syncMode()" />
+								<input name="mode" type="radio" value="url" />
 								URL
 							</label>
 						</div>
 						<span class="url-mode-hint">
 							<span>如果下面没有你需要的字段，可以尝试</span>
-							<a onclick="selectUrlMode()">使用 URL 连接方式</a>
+							<a id="selectUrlModeLink" class="link-button">使用 URL 连接方式</a>
 						</span>
 					</div>
 				</div>
@@ -961,15 +967,15 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 					<label id="sqlite3FileField" class="long-txt sqlite3-file-field">
 						<span>database file</span>
 						<input id="dbPath" type="text" readonly autocomplete="off" />
-						<button type="button" onclick="selectSqlite3File()">选择文件</button>
+						<button type="button" id="selectSqlite3FileButton">选择文件</button>
 					</label>
 				</div>
 			</div>
 		</div>
 		<div id="error" class="error"></div>
 		<div class="form-btns">
-			<button onclick="submitForm('saveAndTest')">保存并连接</button>
-			<button onclick="submitForm('save')">保存</button>
+			<button id="saveAndTestButton" data-submit="saveAndTest">保存并连接</button>
+			<button id="saveButton" data-submit="save">保存</button>
 		</div>
 	</div>
 
@@ -977,7 +983,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 		* 新增的 SQL Server、CockroachDB、MariaDB 当前先保存连接配置，驱动能力按路线图继续接入
 	</div>
 
-	<script>
+	<script nonce="${nonce}">
 		const vscode = acquireVsCodeApi();
 
 		function selectedEngine() {
@@ -1180,6 +1186,18 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 				nameInput.value = message.suggestedName;
 			}
 			document.getElementById('error').textContent = '';
+		});
+
+		document.querySelectorAll('input[name="engine"]').forEach((input) => {
+			input.addEventListener('change', () => syncEngine());
+		});
+		document.querySelectorAll('input[name="mode"]').forEach((input) => {
+			input.addEventListener('change', () => syncMode());
+		});
+		document.getElementById('selectUrlModeLink')?.addEventListener('click', () => selectUrlMode());
+		document.getElementById('selectSqlite3FileButton')?.addEventListener('click', () => selectSqlite3File());
+		document.querySelectorAll('button[data-submit]').forEach((button) => {
+			button.addEventListener('click', () => submitForm(button.getAttribute('data-submit')));
 		});
 
 		syncEngine();
