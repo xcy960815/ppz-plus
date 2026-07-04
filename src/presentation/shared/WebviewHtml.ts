@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 /**
  * 汇集 Webview HTML 生成过程中共享的转义与安全工具。
  *
@@ -40,12 +42,14 @@ export function escapeHtmlAttribute(value: string): string {
  * @returns {string} 经过转义的 JSON 字符串。
  */
 export function serializeScriptValue(value: unknown): string {
-  return JSON.stringify(value)
+  const serializedValue = JSON.stringify(value) ?? "null";
+
+  return serializedValue
     .replaceAll("<", "\\u003c")
     .replaceAll(">", "\\u003e")
     .replaceAll("&", "\\u0026")
-    .replaceAll(" ", "\\u2028")
-    .replaceAll(" ", "\\u2029");
+    .replaceAll(String.fromCharCode(0x2028), "\\u2028")
+    .replaceAll(String.fromCharCode(0x2029), "\\u2029");
 }
 
 /**
@@ -54,13 +58,7 @@ export function serializeScriptValue(value: unknown): string {
  * @returns {string} 32 位十六进制随机串。
  */
 export function createWebviewNonce(): string {
-  const bytes = new Uint8Array(16);
-
-  for (let index = 0; index < bytes.length; index += 1) {
-    bytes[index] = Math.floor(Math.random() * 256);
-  }
-
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return randomBytes(16).toString("hex");
 }
 
 /**

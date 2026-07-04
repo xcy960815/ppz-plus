@@ -1323,6 +1323,7 @@ export class DatabaseTableDataPanel
    * 在表数据加载期间渲染临时加载视图。
    *
    * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
+   * @param {string} cspSource Webview 资源来源，用于构建 CSP。
    * @returns {string} 加载状态的 HTML 文档。
    */
   private renderLoadingHtml(tableNode: TableDataTreeNode, cspSource: string): string {
@@ -1359,6 +1360,7 @@ export class DatabaseTableDataPanel
    *
    * @param {TableDataTreeNode} tableNode 当前选中的表 Tree 节点。
    * @param {string} message 需要展示的错误消息。
+   * @param {string} cspSource Webview 资源来源，用于构建 CSP。
    * @returns {string} 错误状态的 HTML 文档。
    */
   private renderErrorHtml(
@@ -1407,6 +1409,7 @@ export class DatabaseTableDataPanel
    * 渲染 Webview 状态无法恢复时的错误页。
    *
    * @param {string} message 需要展示的恢复错误。
+   * @param {string} cspSource Webview 资源来源，用于构建 CSP。
    * @returns {string} 错误状态的 HTML 文档。
    */
   private renderRestoreErrorHtml(message: string, cspSource: string): string {
@@ -1442,6 +1445,7 @@ export class DatabaseTableDataPanel
    * @param {DatabaseTablePanelState} state 当前面板状态。
    * @param {readonly MySqlTableColumnMetadata[]} columns 当前选中表的字段元数据。
    * @param {MySqlTableRowPage} rowPage 当前选中表的分页行数据。
+   * @param {string} cspSource Webview 资源来源，用于构建 CSP。
    * @returns {string} 渲染到 Webview 内的 HTML 文档。
    */
   private renderTableHtml(
@@ -1653,6 +1657,12 @@ export class DatabaseTableDataPanel
 			height: 1em;
 			vertical-align: -0.15em;
 			fill: currentColor;
+			overflow: hidden;
+		}
+		.icon-sprite {
+			position: absolute;
+			width: 0;
+			height: 0;
 			overflow: hidden;
 		}
 		.table-wrapper {
@@ -2682,7 +2692,7 @@ export class DatabaseTableDataPanel
    * @returns {string} 当前表数据页工具栏所需的隐藏 SVG 符号。
    */
   private renderIconSprite(): string {
-    return `<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    return `<svg class="icon-sprite" aria-hidden="true">
 			<symbol id="icon-search" viewBox="0 0 1024 1024"><path d="M956.29141 864.626199 806.130436 705.068204c46.465265-72.432683 71.080895-160.022577 65.098647-252.750491-14.762215-229.339292-211.081463-403.244041-438.438611-388.447033C205.400578 78.668711 33.067628 276.605805 47.83189 505.930771c14.797008 229.405807 211.054857 403.307486 438.47238 388.512525 94.259804-6.135744 179.073468-43.763736 245.01532-102.06149l145.643078 154.744363c25.171286 20.206204 63.346747 18.111496 85.221964-4.709255C984.122269 919.6637 981.461673 884.818077 956.29141 864.626199zM477.945905 760.445442c-157.312862 10.117428-293.166993-109.276822-303.415404-266.750343-10.282181-157.375284 108.952434-293.200762 266.266319-303.31819 157.313885-10.123568 293.235554 109.304452 303.484989 266.663362C754.55785 614.530165 635.25979 750.322897 477.945905 760.445442z"></path></symbol>
 			<symbol id="icon-terminal" viewBox="0 0 1024 1024"><path d="M128 128h768a42.666667 42.666667 0 0 1 42.666667 42.666667v682.666666a42.666667 42.666667 0 0 1-42.666667 42.666667H128a42.666667 42.666667 0 0 1-42.666667-42.666667V170.666667a42.666667 42.666667 0 0 1 42.666667-42.666667z m384 512v85.333333h256v-85.333333h-256z m-153.002667-128l-120.661333 120.661333L298.666667 693.034667 479.701333 512 298.666667 330.965333 238.336 391.338667 358.997333 512z"></path></symbol>
 			<symbol id="icon-undo" viewBox="0 0 1024 1024"><path d="M884.451 455.595c-18.251-42.96-44.333-81.57-77.521-114.758s-71.797-59.269-114.758-77.521c-44.598-18.947-91.854-28.553-140.456-28.553H373.73c-0.93 0-1.852 0.031-2.772 0.07V86.666c0-17.787-21.505-26.695-34.083-14.117L116.843 292.581c-7.797 7.797-7.797 20.438 0 28.235l220.032 220.032c12.577 12.577 34.083 3.67 34.083-14.117V362.693c0.92 0.039 1.842 0.07 2.772 0.07h177.986c128.636 0 233.288 104.652 233.288 233.288 0 128.636-104.652 233.288-233.288 233.288H373.73c-35.346 0-64 28.653-64 64s28.654 64 64 64h177.986c48.603 0 95.858-9.606 140.456-28.554 42.961-18.251 81.57-44.333 114.758-77.521s59.27-71.797 77.521-114.758c18.947-44.598 28.554-91.854 28.554-140.456s-9.607-95.857-28.554-140.455z"></path></symbol>
