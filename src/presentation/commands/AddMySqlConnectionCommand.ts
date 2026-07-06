@@ -27,7 +27,12 @@ import {
 } from "./MySqlConnectionProgressPresenter";
 import { extractUserErrorMessage, showUserErrorMessage } from "./UserErrorPresenter";
 import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
-import { buildWebviewCspMeta, createWebviewNonce } from "../shared/WebviewHtml";
+import {
+  buildWebviewCspMeta,
+  createWebviewNonce,
+  serializeScriptValue,
+} from "../shared/WebviewHtml";
+import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3ConnectionsTreeDataProvider";
 
 /**
  * 描述连接表单 Webview 发回的保存动作。
@@ -70,6 +75,19 @@ type MySqlConnectionFormMessage =
   MySqlConnectionFormSaveMessage | MySqlConnectionFormSelectSqlite3FileMessage;
 
 /**
+ * 描述连接表单的打开模式。
+ */
+type MySqlConnectionFormMode = "create" | "edit" | "details";
+
+/**
+ * 描述连接表单打开时的上下文。
+ */
+interface MySqlConnectionFormContext {
+  readonly mode: MySqlConnectionFormMode;
+  readonly initialConnection?: ConnectionConfig;
+}
+
+/**
  * 通过 VS Code Webview 表单创建新的 MySQL 连接配置。
  */
 export class AddMySqlConnectionCommand implements ExtensionCommand {
@@ -88,12 +106,14 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
    *
    * @param saveConnectionConfigUseCase 用于持久化新连接的用例。
    * @param testConnectionUseCase 用于测试新连接可达性的用例。
-   * @param treeDataProvider 用于刷新 MySQL 连接树。
+   * @param treeDataProvider 用于刷新混合数据库连接树。
+   * @param sqlite3TreeDataProvider 用于刷新 SQLite3 连接树。
    */
   public constructor(
     private readonly saveConnectionConfigUseCase: SaveConnectionConfigUseCase,
     private readonly testConnectionUseCase: TestConnectionUseCase,
     private readonly treeDataProvider: DatabaseConnectionsTreeDataProvider,
+    private readonly sqlite3TreeDataProvider: Sqlite3ConnectionsTreeDataProvider,
   ) {}
 
   /**
@@ -102,27 +122,43 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
    * @returns {vscode.Disposable} 命令注册的可释放句柄。
    */
   public register(): vscode.Disposable {
-    return vscode.commands.registerCommand(this.id, () => {
-      this.openConnectionForm();
-    });
+    return vscode.commands.registerCommand(
+      this.id,
+      (initialConnection?: ConnectionConfig, formMode?: MySqlConnectionFormMode) => {
+        const mode: MySqlConnectionFormMode = initialConnection ? (formMode ?? "edit") : "create";
+
+        this.openConnectionForm({
+          mode,
+          initialConnection,
+        });
+      },
+    );
   }
 
   /**
-   * 打开 MySQL 新增连接表单。
+   * 打开数据库连接表单。
+   *
+   * @param {MySqlConnectionFormContext} context 连接表单打开时的上下文。
    */
-  private openConnectionForm(): void {
+  private openConnectionForm(context: MySqlConnectionFormContext): void {
+    const panelTitle =
+      context.mode === "details"
+        ? `连接详情：${context.initialConnection?.name ?? ""}`
+        : context.mode === "edit"
+          ? `编辑连接：${context.initialConnection?.name ?? ""}`
+          : "创建连接";
     const panel = vscode.window.createWebviewPanel(
       "ppzPlus.addMySqlConnection",
-      "创建连接",
+      panelTitle,
       vscode.ViewColumn.Active,
       {
         enableScripts: true,
       },
     );
 
-    panel.webview.html = this.renderConnectionFormHtml(panel.webview.cspSource);
+    panel.webview.html = this.renderConnectionFormHtml(panel.webview.cspSource, context);
     panel.webview.onDidReceiveMessage(async (message: MySqlConnectionFormMessage) => {
-      await this.handleConnectionFormMessage(panel, message);
+      await this.handleConnectionFormMessage(panel, message, context);
     });
   }
 
@@ -131,17 +167,23 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
    *
    * @param {vscode.WebviewPanel} panel 当前连接表单面板。
    * @param {MySqlConnectionFormMessage} message Webview 发回的表单消息。
+   * @param {MySqlConnectionFormContext} context 连接表单打开时的上下文。
    */
   private async handleConnectionFormMessage(
     panel: vscode.WebviewPanel,
     message: MySqlConnectionFormMessage,
+    context: MySqlConnectionFormContext,
   ): Promise<void> {
+    if (context.mode === "details") {
+      return;
+    }
+
     if (message.type === "selectSqlite3File") {
       await this.handleSqlite3FileSelection(panel);
       return;
     }
 
-    const config = this.createConfigFromFormPayload(message.payload);
+    const config = this.createConfigFromFormPayload(message.payload, context.initialConnection);
     if (!config.success) {
       await vscode.window.showErrorMessage(config.errorMessage);
       return;
@@ -158,6 +200,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
     }
 
     this.treeDataProvider.refresh();
+    this.sqlite3TreeDataProvider.refresh();
 
     if (message.type === "saveAndTest") {
       try {
@@ -165,19 +208,25 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
           this.testConnectionUseCase.execute(config.value),
         );
         await vscode.window.showInformationMessage(
-          `已保存并连接到 ${describeConnectionEngine(config.value)} 连接“${config.value.name}”。`,
+          context.mode === "edit"
+            ? `已更新并连接到 ${describeConnectionEngine(config.value)} 连接“${config.value.name}”。`
+            : `已保存并连接到 ${describeConnectionEngine(config.value)} 连接“${config.value.name}”。`,
         );
         panel.dispose();
       } catch (error) {
         await vscode.window.showWarningMessage(
-          `已保存“${config.value.name}”，但连接测试失败：${extractUserErrorMessage(error)}`,
+          context.mode === "edit"
+            ? `已更新“${config.value.name}”，但连接测试失败：${extractUserErrorMessage(error)}`
+            : `已保存“${config.value.name}”，但连接测试失败：${extractUserErrorMessage(error)}`,
         );
       }
       return;
     }
 
     await vscode.window.showInformationMessage(
-      `已保存 ${describeConnectionEngine(config.value)} 连接“${config.value.name}”。`,
+      context.mode === "edit"
+        ? `已更新 ${describeConnectionEngine(config.value)} 连接“${config.value.name}”。`
+        : `已保存 ${describeConnectionEngine(config.value)} 连接“${config.value.name}”。`,
     );
     panel.dispose();
   }
@@ -216,9 +265,13 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
    * 将 Webview 表单字段转换为连接配置。
    *
    * @param {MySqlConnectionFormPayload} payload Webview 发回的原始字段。
+   * @param {ConnectionConfig} existingConnection 编辑时已有的连接配置。
    * @returns 转换成功时返回连接配置，否则返回错误信息。
    */
-  private createConfigFromFormPayload(payload: MySqlConnectionFormPayload):
+  private createConfigFromFormPayload(
+    payload: MySqlConnectionFormPayload,
+    existingConnection?: ConnectionConfig,
+  ):
     | {
         readonly success: true;
         readonly value: ConnectionConfig;
@@ -235,6 +288,8 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       };
     }
 
+    const connectionId = existingConnection?.id ?? randomUUID();
+
     if (payload.engine === "sqlite3") {
       const dbPath = payload.dbPath.trim();
       if (dbPath.length === 0) {
@@ -247,7 +302,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       return {
         success: true,
         value: {
-          id: randomUUID(),
+          id: connectionId,
           engine: "sqlite3",
           mode: "file",
           name,
@@ -269,7 +324,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
         return {
           success: true,
           value: {
-            id: randomUUID(),
+            id: connectionId,
             engine: "postgresql",
             mode: "url",
             name,
@@ -282,7 +337,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
         return {
           success: true,
           value: {
-            id: randomUUID(),
+            id: connectionId,
             engine: "mssql",
             mode: "url",
             name,
@@ -295,7 +350,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
         return {
           success: true,
           value: {
-            id: randomUUID(),
+            id: connectionId,
             engine: "cockroachdb",
             mode: "url",
             name,
@@ -308,7 +363,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
         return {
           success: true,
           value: {
-            id: randomUUID(),
+            id: connectionId,
             engine: "mariadb",
             mode: "url",
             name,
@@ -320,7 +375,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       return {
         success: true,
         value: {
-          id: randomUUID(),
+          id: connectionId,
           engine: "mysql",
           mode: "url",
           name,
@@ -357,7 +412,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       return {
         success: true,
         value: {
-          id: randomUUID(),
+          id: connectionId,
           engine: "postgresql",
           mode: "parameters",
           name,
@@ -374,7 +429,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       return {
         success: true,
         value: {
-          id: randomUUID(),
+          id: connectionId,
           engine: "mssql",
           mode: "parameters",
           name,
@@ -393,7 +448,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       return {
         success: true,
         value: {
-          id: randomUUID(),
+          id: connectionId,
           engine: "cockroachdb",
           mode: "parameters",
           name,
@@ -411,7 +466,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       return {
         success: true,
         value: {
-          id: randomUUID(),
+          id: connectionId,
           engine: "mariadb",
           mode: "parameters",
           name,
@@ -427,7 +482,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
     return {
       success: true,
       value: {
-        id: randomUUID(),
+        id: connectionId,
         engine: "mysql",
         mode: "parameters",
         name,
@@ -672,11 +727,18 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
    * 创建连接表单 Webview HTML。
    *
    * @param {string} cspSource Webview 资源来源，用于构建 CSP。
+   * @param {MySqlConnectionFormContext} context 连接表单打开时的上下文。
    * @returns {string} 可渲染到 Webview 的 HTML 文档。
    */
-  private renderConnectionFormHtml(cspSource: string): string {
+  private renderConnectionFormHtml(cspSource: string, context: MySqlConnectionFormContext): string {
     const nonce = createWebviewNonce();
     const cspMeta = buildWebviewCspMeta(cspSource, nonce);
+    const isEditing = context.mode === "edit";
+    const isReadOnly = context.mode === "details";
+    const pageTitle = isReadOnly ? "连接详情" : isEditing ? "编辑连接" : "创建连接";
+    const formButtonsStyle = isReadOnly ? ' style="display: none;"' : "";
+    const initialConnection = serializeScriptValue(context.initialConnection ?? null);
+    const readOnlyForm = serializeScriptValue(isReadOnly);
 
     return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -684,7 +746,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 	<meta charset="UTF-8" />
 	${cspMeta}
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>创建连接</title>
+	<title>${pageTitle}</title>
 	<style>
 		:root {
 			color-scheme: light dark;
@@ -973,9 +1035,9 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			</div>
 		</div>
 		<div id="error" class="error"></div>
-		<div class="form-btns">
-			<button id="saveAndTestButton" data-submit="saveAndTest">保存并连接</button>
-			<button id="saveButton" data-submit="save">保存</button>
+		<div class="form-btns"${formButtonsStyle}>
+			<button id="saveAndTestButton" data-submit="saveAndTest">${isEditing ? "更新并连接" : "保存并连接"}</button>
+			<button id="saveButton" data-submit="save">${isEditing ? "更新" : "保存"}</button>
 		</div>
 	</div>
 
@@ -985,6 +1047,8 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 
 	<script nonce="${nonce}">
 		const vscode = acquireVsCodeApi();
+		const initialConnection = ${initialConnection};
+		const readOnlyForm = ${readOnlyForm};
 
 		function selectedEngine() {
 			return document.querySelector('input[name="engine"]:checked').value;
@@ -1031,6 +1095,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			const mode = selectedMode();
 			const engine = selectedEngine();
 			const isSqlite3 = engine === 'sqlite3';
+			document.getElementById('modeRow').style.display = isSqlite3 ? 'none' : 'inline-flex';
 			document.querySelectorAll('.parameter-field').forEach((field) => {
 				field.style.display = !isSqlite3 && mode === 'parameters' ? 'inline-flex' : 'none';
 			});
@@ -1109,6 +1174,72 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 
 		function selectSqlite3File() {
 			vscode.postMessage({ type: 'selectSqlite3File' });
+		}
+
+		function setRadioValue(name, value) {
+			const input = document.querySelector('input[name="' + name + '"][value="' + value + '"]');
+			if (input) {
+				input.checked = true;
+			}
+		}
+
+		function setValue(id, value) {
+			document.getElementById(id).value = value ?? '';
+		}
+
+		function setChecked(id, value) {
+			document.getElementById(id).checked = Boolean(value);
+		}
+
+		function hydrateInitialConnection() {
+			if (!initialConnection) {
+				syncEngine();
+				syncMode();
+				syncReadOnlyState();
+				return;
+			}
+
+			setValue('name', initialConnection.name);
+			setRadioValue('engine', initialConnection.engine);
+			syncEngine();
+
+			if (initialConnection.mode === 'file') {
+				setValue('dbPath', initialConnection.dbPath);
+				syncMode();
+				syncReadOnlyState();
+				return;
+			}
+
+			setRadioValue('mode', initialConnection.mode);
+			if (initialConnection.mode === 'url') {
+				setValue('url', initialConnection.url);
+				syncMode();
+				syncReadOnlyState();
+				return;
+			}
+
+			setValue('host', initialConnection.host);
+			setValue('port', String(initialConnection.port ?? ''));
+			setValue('username', initialConnection.username);
+			setValue('password', initialConnection.password);
+			setValue('database', initialConnection.database);
+			setChecked('encrypt', initialConnection.encrypt ?? true);
+			setChecked('trustServerCertificate', initialConnection.trustServerCertificate);
+			setChecked('ssl', initialConnection.ssl ?? true);
+			syncMode();
+			syncReadOnlyState();
+		}
+
+		function syncReadOnlyState() {
+			if (!readOnlyForm) {
+				return;
+			}
+
+			document.querySelectorAll('input, button').forEach((control) => {
+				control.disabled = true;
+			});
+			document.getElementById('selectUrlModeLink')?.removeAttribute('href');
+			document.getElementById('selectUrlModeLink')?.style.setProperty('pointer-events', 'none');
 		}
 
 		function readValue(id) {
@@ -1200,8 +1331,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
 			button.addEventListener('click', () => submitForm(button.getAttribute('data-submit')));
 		});
 
-		syncEngine();
-		syncMode();
+		hydrateInitialConnection();
 	</script>
 </body>
 </html>`;

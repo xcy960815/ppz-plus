@@ -45,6 +45,7 @@ export function createBootstrapCommands(
       services.saveConnectionConfigUseCase,
       services.testConnectionUseCase,
       presentation.databaseConnectionsTreeDataProvider,
+      presentation.sqlite3ConnectionsTreeDataProvider,
     ),
     new AddSqlite3ConnectionCommand(
       services.saveConnectionConfigUseCase,
@@ -54,12 +55,9 @@ export function createBootstrapCommands(
     ),
     new ManageMySqlConnectionsCommand(
       services.listStoredConnectionsUseCase,
-      services.saveConnectionConfigUseCase,
       services.deleteStoredConnectionUseCase,
-      services.testConnectionUseCase,
       presentation.databaseConnectionsTreeDataProvider,
       presentation.sqlite3ConnectionsTreeDataProvider,
-      presentation.storedConnectionPasswordPrompt,
     ),
     new ManageSqlite3ConnectionsCommand(),
     new RefreshMySqlConnectionsTreeCommand(presentation.databaseConnectionsTreeDataProvider),
