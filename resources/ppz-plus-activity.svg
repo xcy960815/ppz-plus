@@ -4,9 +4,9 @@
     fill="currentColor"
   />
   <path
-    d="M104 45V63M95 54H113"
+    d="M100 80V108M86 94H114"
     stroke="currentColor"
-    stroke-width="6"
+    stroke-width="12"
     stroke-linecap="round"
   />
 </svg>
