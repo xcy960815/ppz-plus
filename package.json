@@ -311,22 +311,22 @@
         {
           "command": "ppz-plus.manageMySqlConnections",
           "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection || viewItem == ppzPlus.sqlite3Connection || viewItem == ppzPlus.mssqlConnection || viewItem == ppzPlus.plannedConnection)",
-          "group": "inline@1"
+          "group": "1_manage@1"
         },
         {
           "command": "ppz-plus.testStoredMySqlConnection",
           "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection || viewItem == ppzPlus.sqlite3Connection || viewItem == ppzPlus.mssqlConnection)",
-          "group": "inline@2"
+          "group": "1_manage@2"
         },
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && (viewItem == ppzPlus.mysqlConnection || viewItem == ppzPlus.postgresqlConnection || viewItem == ppzPlus.sqlite3Connection || viewItem == ppzPlus.mssqlConnection || viewItem == ppzPlus.plannedConnection)",
-          "group": "inline@3"
+          "group": "2_action@1"
         },
         {
           "command": "ppz-plus.openSqlite3SqlTerminal",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.sqlite3Connection",
-          "group": "inline@4"
+          "group": "inline@1"
         },
         {
           "command": "ppz-plus.openMySqlTableData",
@@ -356,12 +356,12 @@
         {
           "command": "ppz-plus.openPostgreSqlSqlTerminal",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlConnection",
-          "group": "inline@4"
+          "group": "inline@1"
         },
         {
           "command": "ppz-plus.openMySqlSqlTerminal",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlConnection",
-          "group": "inline@4"
+          "group": "inline@1"
         },
         {
           "command": "ppz-plus.importMySqlSqlFile",
@@ -381,12 +381,12 @@
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlDatabase",
-          "group": "inline@1"
+          "group": "2_action@1"
         },
         {
           "command": "ppz-plus.openPostgreSqlSqlTerminal",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlDatabase",
-          "group": "inline@2"
+          "group": "inline@1"
         },
         {
           "command": "ppz-plus.exportPostgreSqlDatabaseDdl",
@@ -406,12 +406,12 @@
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlSchema",
-          "group": "inline@1"
+          "group": "2_action@1"
         },
         {
           "command": "ppz-plus.openPostgreSqlSqlTerminal",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlSchema",
-          "group": "inline@2"
+          "group": "inline@1"
         },
         {
           "command": "ppz-plus.exportPostgreSqlSchemaDdl",
@@ -431,17 +431,17 @@
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlTable",
-          "group": "inline@1"
+          "group": "2_action@1"
         },
         {
           "command": "ppz-plus.openMySqlTableData",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlTable",
-          "group": "inline@2"
+          "group": "inline@1"
         },
         {
           "command": "ppz-plus.openPostgreSqlSqlTerminal",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.postgresqlTable",
-          "group": "inline@3"
+          "group": "inline@2"
         },
         {
           "command": "ppz-plus.exportPostgreSqlTableDdl",
@@ -461,7 +461,7 @@
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlSchema",
-          "group": "inline@1"
+          "group": "2_action@1"
         },
         {
           "command": "ppz-plus.exportMySqlSchemaDdl",
@@ -501,7 +501,7 @@
         {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
-          "group": "inline@2"
+          "group": "2_action@1"
         },
         {
           "command": "ppz-plus.importMySqlCsvFile",
