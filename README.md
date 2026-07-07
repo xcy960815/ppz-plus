@@ -1,4 +1,7 @@
-# PPZ Plus
+<div align="center">
+  <img src="./resources/ppz-plus.png" width="160" alt="PPZ Plus Logo" />
+  <h1>PPZ Plus</h1>
+</div>
 
 PPZ Plus is a VS Code extension for working with MySQL, PostgreSQL, and SQLite3 databases from the editor. It is a capability-migration rewrite of the legacy PPZ extension: the product workflows are being preserved, while the implementation is rebuilt around clear `presentation / application / domain / infrastructure` boundaries.
 
