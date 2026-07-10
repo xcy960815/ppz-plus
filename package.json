@@ -74,197 +74,197 @@
     "commands": [
       {
         "command": "ppz-plus.addMySqlConnection",
-        "title": "PPZ Plus: 新增数据库连接",
+        "title": "新增数据库连接",
         "icon": "$(add)"
       },
       {
         "command": "ppz-plus.manageMySqlConnections",
-        "title": "PPZ Plus: 管理数据库连接",
+        "title": "管理数据库连接",
         "icon": "$(settings-gear)"
       },
       {
         "command": "ppz-plus.refreshMySqlConnectionsTree",
-        "title": "PPZ Plus: 刷新数据库连接",
+        "title": "刷新数据库连接",
         "icon": "$(refresh)"
       },
       {
         "command": "ppz-plus.testStoredMySqlConnection",
-        "title": "PPZ Plus: 测试已保存的数据库连接",
+        "title": "测试已保存的数据库连接",
         "icon": "$(beaker)"
       },
       {
         "command": "ppz-plus.uploadConnectionConfig",
-        "title": "PPZ Plus: 上传连接配置到 VS Code 账号",
+        "title": "上传连接配置到 VS Code 账号",
         "icon": "$(cloud-upload)"
       },
       {
         "command": "ppz-plus.pullConnectionConfig",
-        "title": "PPZ Plus: 从 VS Code 账号拉取连接配置",
+        "title": "从 VS Code 账号拉取连接配置",
         "icon": "$(cloud-download)"
       },
       {
         "command": "ppz-plus.openMySqlTableData",
-        "title": "PPZ Plus: 打开 MySQL 表数据",
+        "title": "打开 MySQL 表数据",
         "icon": "$(table)"
       },
       {
         "command": "ppz-plus.openMySqlSqlTerminal",
-        "title": "PPZ Plus: 打开 MySQL SQL 终端",
+        "title": "打开 MySQL SQL 终端",
         "icon": "$(terminal)"
       },
       {
         "command": "ppz-plus.openPostgreSqlSqlTerminal",
-        "title": "PPZ Plus: 打开 PostgreSQL SQL 终端",
+        "title": "打开 PostgreSQL SQL 终端",
         "icon": "$(terminal)"
       },
       {
         "command": "ppz-plus.addSqlite3Connection",
-        "title": "PPZ Plus: 新增 SQLite3 连接",
+        "title": "新增 SQLite3 连接",
         "icon": "$(add)"
       },
       {
         "command": "ppz-plus.manageSqlite3Connections",
-        "title": "PPZ Plus: 管理 SQLite3 连接",
+        "title": "管理 SQLite3 连接",
         "icon": "$(settings-gear)"
       },
       {
         "command": "ppz-plus.refreshSqlite3ConnectionsTree",
-        "title": "PPZ Plus: 刷新 SQLite3 连接",
+        "title": "刷新 SQLite3 连接",
         "icon": "$(refresh)"
       },
       {
         "command": "ppz-plus.testStoredSqlite3Connection",
-        "title": "PPZ Plus: 测试已保存的 SQLite3 连接",
+        "title": "测试已保存的 SQLite3 连接",
         "icon": "$(beaker)"
       },
       {
         "command": "ppz-plus.openSqlite3SqlTerminal",
-        "title": "PPZ Plus: 打开 SQLite3 SQL 终端",
+        "title": "打开 SQLite3 SQL 终端",
         "icon": "$(terminal)"
       },
       {
         "command": "ppz-plus.exportSqlite3TableDdl",
-        "title": "PPZ Plus: 导出 SQLite3 表 DDL",
+        "title": "导出 SQLite3 表 DDL",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportSqlite3TableDml",
-        "title": "PPZ Plus: 导出 SQLite3 表 DML",
+        "title": "导出 SQLite3 表 DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportSqlite3TableBoth",
-        "title": "PPZ Plus: 导出 SQLite3 表 DDL + DML",
+        "title": "导出 SQLite3 表 DDL + DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.importMySqlSqlFile",
-        "title": "PPZ Plus: 导入 MySQL SQL 文件",
+        "title": "导入 MySQL SQL 文件",
         "icon": "$(file-code)"
       },
       {
         "command": "ppz-plus.importMySqlCsvFile",
-        "title": "PPZ Plus: 导入 MySQL CSV 文件",
+        "title": "导入 MySQL CSV 文件",
         "icon": "$(file-code)"
       },
       {
         "command": "ppz-plus.importMySqlJsonFile",
-        "title": "PPZ Plus: 导入 MySQL JSON 文件",
+        "title": "导入 MySQL JSON 文件",
         "icon": "$(file-code)"
       },
       {
         "command": "ppz-plus.exportMySqlTableDdl",
-        "title": "PPZ Plus: 导出 MySQL 表 DDL",
+        "title": "导出 MySQL 表 DDL",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlTableDml",
-        "title": "PPZ Plus: 导出 MySQL 表 DML",
+        "title": "导出 MySQL 表 DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlTableBoth",
-        "title": "PPZ Plus: 导出 MySQL 表 DDL + DML",
+        "title": "导出 MySQL 表 DDL + DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlSchemaDdl",
-        "title": "PPZ Plus: 导出 MySQL Schema DDL",
+        "title": "导出 MySQL Schema DDL",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlSchemaDml",
-        "title": "PPZ Plus: 导出 MySQL Schema DML",
+        "title": "导出 MySQL Schema DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlSchemaBoth",
-        "title": "PPZ Plus: 导出 MySQL Schema DDL + DML",
+        "title": "导出 MySQL Schema DDL + DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportMySqlTablesBatch",
-        "title": "PPZ Plus: 批量导出 MySQL 表",
+        "title": "批量导出 MySQL 表",
         "icon": "$(save-all)"
       },
       {
         "command": "ppz-plus.exportPostgreSqlDatabaseDdl",
-        "title": "PPZ Plus: 导出 PostgreSQL Database DDL",
+        "title": "导出 PostgreSQL Database DDL",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportPostgreSqlDatabaseDml",
-        "title": "PPZ Plus: 导出 PostgreSQL Database DML",
+        "title": "导出 PostgreSQL Database DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportPostgreSqlDatabaseBoth",
-        "title": "PPZ Plus: 导出 PostgreSQL Database DDL + DML",
+        "title": "导出 PostgreSQL Database DDL + DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportPostgreSqlSchemaDdl",
-        "title": "PPZ Plus: 导出 PostgreSQL Schema DDL",
+        "title": "导出 PostgreSQL Schema DDL",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportPostgreSqlSchemaDml",
-        "title": "PPZ Plus: 导出 PostgreSQL Schema DML",
+        "title": "导出 PostgreSQL Schema DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportPostgreSqlSchemaBoth",
-        "title": "PPZ Plus: 导出 PostgreSQL Schema DDL + DML",
+        "title": "导出 PostgreSQL Schema DDL + DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportPostgreSqlTableDdl",
-        "title": "PPZ Plus: 导出 PostgreSQL 表 DDL",
+        "title": "导出 PostgreSQL 表 DDL",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportPostgreSqlTableDml",
-        "title": "PPZ Plus: 导出 PostgreSQL 表 DML",
+        "title": "导出 PostgreSQL 表 DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.exportPostgreSqlTableBoth",
-        "title": "PPZ Plus: 导出 PostgreSQL 表 DDL + DML",
+        "title": "导出 PostgreSQL 表 DDL + DML",
         "icon": "$(save)"
       },
       {
         "command": "ppz-plus.showSqlExportTaskLogs",
-        "title": "PPZ Plus: 查看 SQL 导出日志",
+        "title": "查看 SQL 导出日志",
         "icon": "$(history)"
       },
       {
         "command": "ppz-plus.showProjectStatus",
-        "title": "PPZ Plus: 查看项目状态",
+        "title": "查看项目状态",
         "icon": "$(info)"
       },
       {
         "command": "ppz-plus.clearPpzState",
-        "title": "PPZ Plus: 清空 PPZ Plus",
+        "title": "清空 PPZ Plus",
         "icon": "$(trash)"
       }
     ],

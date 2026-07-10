@@ -3,7 +3,7 @@
 ## Connect to a Database
 
 1. Open the `PPZ Plus` activity bar view.
-2. Click the `+` icon or run `PPZ Plus: Add MySQL Connection`.
+2. Click the `+` icon or run `新增数据库连接`.
 3. Enter connection details using parameter fields or a connection URL.
 4. For SQLite3, select the database file from disk.
 
@@ -28,9 +28,9 @@ MSSQL, CockroachDB, and MariaDB browsing is not open yet. Saved profiles for tho
 
 ## Sync Connection Profiles
 
-Run `PPZ Plus: 上传连接配置到 VS Code 账号` to write the current connection list to VS Code Settings Sync. Connection profiles are synced through the VS Code account, and connection passwords are encrypted with the sync key you enter before they are written remotely. The sync key is never uploaded.
+Run `上传连接配置到 VS Code 账号` to write the current connection list to VS Code Settings Sync. Connection profiles are synced through the VS Code account, and connection passwords are encrypted with the sync key you enter before they are written remotely. The sync key is never uploaded.
 
-Run `PPZ Plus: 从 VS Code 账号拉取连接配置` to merge profiles from VS Code account sync by connection ID. Pulling requires the same sync key used during upload; successfully decrypted passwords are stored in local SecretStorage, and profiles without encrypted passwords keep any existing local password.
+Run `从 VS Code 账号拉取连接配置` to merge profiles from VS Code account sync by connection ID. Pulling requires the same sync key used during upload; successfully decrypted passwords are stored in local SecretStorage, and profiles without encrypted passwords keep any existing local password.
 
 ## Open Table Data
 

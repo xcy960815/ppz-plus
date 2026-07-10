@@ -103,7 +103,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
     const connections = await this.listStoredConnectionsUseCase.execute();
     if (connections.length === 0) {
       await vscode.window.showInformationMessage(
-        "暂无已保存的数据库连接，请先使用“PPZ Plus: 新增数据库连接”创建连接。",
+        "暂无已保存的数据库连接，请先使用“新增数据库连接”创建连接。",
       );
       return undefined;
     }

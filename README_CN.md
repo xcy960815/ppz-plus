@@ -84,12 +84,12 @@ MSSQL 在真实 SQL Server 验证前，能力矩阵仍保持 `planned`。Cockroa
 ## 基本使用
 
 1. 打开 Activity Bar 中的 `PPZ Plus` 视图。
-2. 执行 `PPZ Plus: Add MySQL Connection` 或 `PPZ Plus: Add SQLite3 Connection`。
+2. 执行 `新增数据库连接` 或 `新增 SQLite3 连接`。
 3. 使用参数字段、连接 URL 或 SQLite3 数据库文件填写连接信息。
 4. 展开连接，浏览 database、schema、table 或 view。
 5. 在右键菜单中打开数据、SQL 终端、支持范围内的导入文件或导出 SQL。
 6. 使用对应数据库的 SQL 终端命令执行自定义 SQL。
-7. 需要同步连接配置时，执行 `PPZ Plus: 上传连接配置到 VS Code 账号` 和 `PPZ Plus: 从 VS Code 账号拉取连接配置`，并在两台设备输入同一同步密钥。
+7. 需要同步连接配置时，执行 `上传连接配置到 VS Code 账号` 和 `从 VS Code 账号拉取连接配置`，并在两台设备输入同一同步密钥。
 
 ## 开发
 

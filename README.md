@@ -84,12 +84,12 @@ MSSQL remains `planned` in the capability matrix until it is verified against a 
 ## Basic Usage
 
 1. Open the `PPZ Plus` activity bar view.
-2. Choose `PPZ Plus: Add MySQL Connection` or `PPZ Plus: Add SQLite3 Connection`.
+2. Choose `新增数据库连接` or `新增 SQLite3 连接`.
 3. Enter connection details using parameter fields, a connection URL, or a SQLite3 database file.
 4. Expand the saved connection to browse databases, schemas, tables, or views.
 5. Use context menus to open data, launch SQL terminals, import files where supported, or export SQL.
 6. Use the engine-specific SQL terminal command to run custom SQL.
-7. Use `PPZ Plus: 上传连接配置到 VS Code 账号` and `PPZ Plus: 从 VS Code 账号拉取连接配置` to sync connection profiles through VS Code account sync, using the same sync key on each machine.
+7. Use `上传连接配置到 VS Code 账号` and `从 VS Code 账号拉取连接配置` to sync connection profiles through VS Code account sync, using the same sync key on each machine.
 
 ## Development
 
