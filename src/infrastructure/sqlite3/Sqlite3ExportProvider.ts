@@ -5,6 +5,7 @@ import type {
   SqlExportKind,
   SqlExportTableTarget,
 } from "../../domain/export/SqlExportDocument";
+import { formatSqlExportFileName } from "../../domain/export/SqlExportFileName";
 import { stringifyObjectValue } from "../shared/stringifyObjectValue";
 import { Sqlite3ConnectionAdapter } from "./Sqlite3ConnectionAdapter";
 import { Sqlite3RuntimeLoader } from "./Sqlite3RuntimeLoader";
@@ -52,7 +53,7 @@ export class Sqlite3ExportProvider implements ApplicationSqlite3ExportProvider {
       }
 
       return {
-        title: `${target.tableName}.${kind}.sql`,
+        title: formatSqlExportFileName([target.tableName], kind),
         format: "sql",
         kind,
         target,

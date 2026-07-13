@@ -374,7 +374,7 @@ suite("Application — ExportSqlite3TableUseCase", () => {
 
   test("kind 为 both 时导出 DDL+DML", async () => {
     const mockDoc: SqlExportDocument = {
-      title: "users.both.sql",
+      title: "users.sql",
       format: "sql",
       kind: "both",
       target: { schemaName: "main", tableName: "users" },

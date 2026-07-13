@@ -6,6 +6,7 @@ import type {
   SqlExportSchemaTarget,
   SqlExportTableTarget,
 } from "../../domain/export/SqlExportDocument";
+import { formatSqlExportFileName } from "../../domain/export/SqlExportFileName";
 import { SQL_EXPORT_FORMAT } from "../../domain/export/SqlExportFormat";
 import { stringifyObjectValue } from "../shared/stringifyObjectValue";
 import { MySqlConnectionAdapter } from "./MySqlConnectionAdapter";
@@ -67,7 +68,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
       blocks.push(this.renderFooter());
 
       return {
-        title: `${target.schemaName}.${target.tableName}.${kind}.sql`,
+        title: formatSqlExportFileName([target.schemaName, target.tableName], kind),
         format: SQL_EXPORT_FORMAT.id,
         kind,
         target,
@@ -129,7 +130,7 @@ export class Mysql2ExportProvider implements MySqlExportProvider {
       blocks.push(this.renderFooter());
 
       return {
-        title: `${target.schemaName}.${kind}.sql`,
+        title: formatSqlExportFileName([target.schemaName], kind),
         format: SQL_EXPORT_FORMAT.id,
         kind,
         target,

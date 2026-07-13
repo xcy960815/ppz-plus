@@ -109,7 +109,7 @@
       },
       {
         "command": "ppz-plus.openMySqlSqlTerminal",
-        "title": "打开 MySQL SQL 终端",
+        "title": "执行 MySQL SQL 语句",
         "icon": "$(terminal)"
       },
       {
@@ -464,6 +464,11 @@
           "group": "2_action@1"
         },
         {
+          "command": "ppz-plus.openMySqlSqlTerminal",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlSchema",
+          "group": "inline@1"
+        },
+        {
           "command": "ppz-plus.exportMySqlSchemaDdl",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlSchema",
           "group": "export@1"
@@ -484,14 +489,19 @@
           "group": "export@4"
         },
         {
-          "command": "ppz-plus.importMySqlCsvFile",
+          "command": "ppz-plus.importMySqlSqlFile",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlSchema",
           "group": "import@1"
         },
         {
-          "command": "ppz-plus.importMySqlJsonFile",
+          "command": "ppz-plus.importMySqlCsvFile",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlSchema",
           "group": "import@2"
+        },
+        {
+          "command": "ppz-plus.importMySqlJsonFile",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlSchema",
+          "group": "import@3"
         },
         {
           "command": "ppz-plus.openMySqlTableData",
@@ -499,19 +509,29 @@
           "group": "inline@1"
         },
         {
+          "command": "ppz-plus.openMySqlSqlTerminal",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
+          "group": "inline@2"
+        },
+        {
           "command": "ppz-plus.refreshMySqlConnectionsTree",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
           "group": "2_action@1"
         },
         {
-          "command": "ppz-plus.importMySqlCsvFile",
+          "command": "ppz-plus.importMySqlSqlFile",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
           "group": "import@1"
         },
         {
-          "command": "ppz-plus.importMySqlJsonFile",
+          "command": "ppz-plus.importMySqlCsvFile",
           "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
           "group": "import@2"
+        },
+        {
+          "command": "ppz-plus.importMySqlJsonFile",
+          "when": "view == ppzPlus.mysqlConnections && viewItem == ppzPlus.mysqlTable",
+          "group": "import@3"
         },
         {
           "command": "ppz-plus.exportMySqlTableDdl",

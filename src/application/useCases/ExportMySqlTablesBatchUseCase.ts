@@ -7,6 +7,7 @@ import type {
   SqlExportBatchSuccessItem,
   SqlExportBatchTableTarget,
 } from "../../domain/export/SqlExportBatchResult";
+import { formatSqlExportFileName } from "../../domain/export/SqlExportFileName";
 import type { SqlExportKind } from "../../domain/export/SqlExportDocument";
 import type { SqlExportFormatId } from "../../domain/export/SqlExportFormat";
 import { getSqlExportFormat, SQL_EXPORT_FORMAT } from "../../domain/export/SqlExportFormat";
@@ -231,7 +232,7 @@ export class ExportMySqlTablesBatchUseCase {
     const format = getSqlExportFormat(formatId);
     const schemaName = this.sanitizeFileNameSegment(table.schemaName);
     const tableName = this.sanitizeFileNameSegment(table.tableName);
-    const fileName = `${schemaName}.${tableName}.${kind}.${format.fileExtension}`;
+    const fileName = formatSqlExportFileName([schemaName, tableName], kind, format.fileExtension);
 
     return path.join(targetDirectory, fileName);
   }

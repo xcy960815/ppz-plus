@@ -1,6 +1,7 @@
 import * as assert from "assert";
 
 import type { SqlExportDocument } from "../../domain/export/SqlExportDocument";
+import { formatSqlExportFileName } from "../../domain/export/SqlExportFileName";
 import type {
   SqlExportBatchResult,
   SqlExportBatchSuccessItem,
@@ -83,7 +84,7 @@ suite("Domain — SqlExportDocument", () => {
 
   test("kind 为 both 的导出文档", () => {
     const doc: SqlExportDocument = {
-      title: "users.both.sql",
+      title: "users.sql",
       format: "sql",
       kind: "both",
       target: { schemaName: "public", tableName: "users" },
@@ -91,6 +92,13 @@ suite("Domain — SqlExportDocument", () => {
     };
 
     assert.strictEqual(doc.kind, "both");
+  });
+
+  test("SQL 导出文件名在 both 模式下省略类型后缀", () => {
+    assert.strictEqual(formatSqlExportFileName(["abc"], "both"), "abc.sql");
+    assert.strictEqual(formatSqlExportFileName(["abc"], "ddl"), "abc.ddl.sql");
+    assert.strictEqual(formatSqlExportFileName(["abc"], "dml"), "abc.dml.sql");
+    assert.strictEqual(formatSqlExportFileName(["abc", "users"], "both"), "abc.users.sql");
   });
 });
 

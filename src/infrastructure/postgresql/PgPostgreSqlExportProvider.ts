@@ -11,6 +11,7 @@ import type {
   SqlExportSchemaTarget,
   SqlExportTableTarget,
 } from "../../domain/export/SqlExportDocument";
+import { formatSqlExportFileName } from "../../domain/export/SqlExportFileName";
 import { SQL_EXPORT_FORMAT } from "../../domain/export/SqlExportFormat";
 import { stringifyObjectValue } from "../shared/stringifyObjectValue";
 import { PostgreSqlConnectionAdapter } from "./PostgreSqlConnectionAdapter";
@@ -118,7 +119,10 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
       blocks.push(this.renderFooter());
 
       return {
-        title: `${target.databaseName}.${target.schemaName}.${target.tableName}.${kind}.sql`,
+        title: formatSqlExportFileName(
+          [target.databaseName, target.schemaName, target.tableName],
+          kind,
+        ),
         format: SQL_EXPORT_FORMAT.id,
         kind,
         target,
@@ -181,7 +185,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
       blocks.push(this.renderFooter());
 
       return {
-        title: `${target.databaseName}.${target.schemaName}.${kind}.sql`,
+        title: formatSqlExportFileName([target.databaseName, target.schemaName], kind),
         format: SQL_EXPORT_FORMAT.id,
         kind,
         target,
@@ -250,7 +254,7 @@ export class PgPostgreSqlExportProvider implements PostgreSqlExportProvider {
       blocks.push(this.renderFooter());
 
       return {
-        title: `${target.databaseName}.${kind}.sql`,
+        title: formatSqlExportFileName([target.databaseName], kind),
         format: SQL_EXPORT_FORMAT.id,
         kind,
         target,

@@ -392,6 +392,22 @@ suite("Application — ExportMySqlTablesBatchUseCase", () => {
     assert.ok(result.successes[0].filePath.endsWith(".sql"));
   });
 
+  test("kind 为 both 时批量导出文件名省略类型后缀", async () => {
+    const useCase = new ExportMySqlTablesBatchUseCase(
+      new ExportMySqlTableUseCase(makeExportProvider()),
+      new SaveSqlExportDocumentUseCase(makeFileWriter()),
+    );
+
+    const result = await useCase.execute(makeMysqlConfig(), {
+      tables: [{ schemaName: "test_db", tableName: "users" }],
+      kind: "both",
+      targetDirectory: "/tmp/exports",
+    });
+
+    assert.ok(result.successes[0].filePath.endsWith("test_db.users.sql"));
+    assert.ok(!result.successes[0].filePath.includes(".both."));
+  });
+
   test("多表批量导出进度回调被调用", async () => {
     const progressCalls: { completedItems?: number; totalItems?: number }[] = [];
     const reporter: SqlExportTaskProgressReporter = (progress) => {
