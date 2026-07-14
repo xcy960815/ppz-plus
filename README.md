@@ -3,6 +3,15 @@
   <h1>PPZ Plus</h1>
 </div>
 
+[![VS Code Marketplace version](https://img.shields.io/visual-studio-marketplace/v/xcy960815.ppz-plus.svg?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=xcy960815.ppz-plus)
+[![VS Code Marketplace installs](https://img.shields.io/visual-studio-marketplace/i/xcy960815.ppz-plus.svg?label=installs)](https://marketplace.visualstudio.com/items?itemName=xcy960815.ppz-plus)
+[![VS Code Marketplace rating](https://img.shields.io/visual-studio-marketplace/r/xcy960815.ppz-plus.svg?label=rating)](https://marketplace.visualstudio.com/items?itemName=xcy960815.ppz-plus)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen.svg)](https://github.com/xcy960815/ppz-plus/actions)
+[![license](https://img.shields.io/github/license/xcy960815/ppz-plus.svg)](LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/xcy960815/ppz-plus.svg)](https://github.com/xcy960815/ppz-plus/issues)
+[![GitHub stars](https://img.shields.io/github/stars/xcy960815/ppz-plus.svg?style=social&label=Stars)](https://github.com/xcy960815/ppz-plus)
+[![GitHub forks](https://img.shields.io/github/forks/xcy960815/ppz-plus.svg?style=social&label=Fork)](https://github.com/xcy960815/ppz-plus)
+
 PPZ Plus is a VS Code extension for working with MySQL, PostgreSQL, and SQLite3 databases from the editor. It is a capability-migration rewrite of the legacy PPZ extension: the product workflows are being preserved, while the implementation is rebuilt around clear `presentation / application / domain / infrastructure` boundaries.
 
 [Project Documentation](https://xcy960815.github.io/ppz-plus/en/) · [中文说明](./README_CN.md)
