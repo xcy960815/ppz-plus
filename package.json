@@ -711,7 +711,8 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "package:vsix": "pnpm compile && node scripts/prepare-vsix-stage.cjs"
   },
   "lint-staged": {
     "*.{ts,js,mjs,cjs,json,md}": [
