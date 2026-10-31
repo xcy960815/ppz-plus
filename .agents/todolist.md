@@ -194,8 +194,8 @@ Webview 复用与安全（非破坏性，已完成）：
 命名与结构收敛（破坏性，需专门评估后再动）：
 
 - 「去 MySql 化」重命名：`MySql*` 前缀但实为多引擎的命令 / 类 / 类型（需同步 package.json 贡献点、菜单 when 子句、Webview viewType 与已持久化面板恢复）
-- 拆分超大文件 `DatabaseTableDataPanel.ts`（模板渲染 / 行编辑编排 / 状态序列化 / 过滤解析）
-- `application/useCases` 平铺目录按引擎或用途再分层
+- 拆分超大文件 `DatabaseTableDataPanel.ts`（模板渲染 / 行编辑编排 / 状态序列化 / 过滤解析） `✅`
+- `application/useCases` 平铺目录按引擎或用途再分层 `✅`
 - infrastructure 层驱动实现命名规则统一（`Mysql2*` / `Pg*` / `Sqlite3*` 三套逻辑）
 
 ## 6. 明确延后或谨慎处理的事项
