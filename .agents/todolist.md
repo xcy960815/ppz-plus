@@ -121,8 +121,10 @@ SQL 功能：
 
 文档与发布：
 
-- 参考 `/Users/opera/Documents/my-repositories/web-message` 的 VitePress 双语文档骨架建设 `ppz-plus` 文档站 ✅
+- 参考 `/Users/opera/Documents/my-repositories/web-message` 的 VitePress 双语文档骨架建设 `ppz-plus` 文档站 `✅`
 - MSSQL / CockroachDB / MariaDB 技术方案沉淀 `✅`
+- 扩展 vsix 运行时依赖分发方案（`mysql2` / `pg` / `mssql` / `@vscode/sqlite3` 目前不进入安装包，已安装 vsix 无法连接数据库；涉及原生模块多平台预编译，需专门设计）
+- CI 首次运行观察（`xvfb-run pnpm test` 在 ubuntu-latest 的稳定性）
 
 ## 4. 数据库支持路线
 
