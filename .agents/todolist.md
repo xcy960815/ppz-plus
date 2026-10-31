@@ -1,6 +1,6 @@
 # ppz-plus Todo List
 
-更新时间：2026-07-04
+更新时间：2026-10-31
 
 说明：
 
@@ -165,6 +165,8 @@ SQL 功能：
 - MSSQL DML 导出
 - MSSQL DDL 导出补齐
 
+> MSSQL 代码侧进度（2026-10-31）：连接测试、连接适配器、database / schema / table 元数据 provider 及对应单测已落地（`src/infrastructure/mssql/`、`src/application/mssql/`），均未做真实数据库验证，按收尾规则暂不点亮上方条目。
+
 第五优先级：
 
 - CockroachDB 支持
@@ -184,9 +186,9 @@ SQL 功能：
 Webview 复用与安全（非破坏性，待办）：
 
 - 抽取 SQL 终端面板基类与共享样式常量，消除三个终端面板的重复
-- 抽取公共 `escapeHtml` 工具，收敛 5 处重复实现
-- 统一三个 SQL 终端面板的内联脚本转义强度到最严版本
-- 为所有 Webview 面板补充 Content-Security-Policy 与 nonce，移除内联 `onclick`
+- 抽取公共 `escapeHtml` 工具，收敛 5 处重复实现 `✅`
+- 统一三个 SQL 终端面板的内联脚本转义强度到最严版本 `✅`
+- 为所有 Webview 面板补充 Content-Security-Policy 与 nonce，移除内联 `onclick` `✅`
 - 动态生成的搜索条件控件补充 label / aria-label
 
 命名与结构收敛（破坏性，需专门评估后再动）：
