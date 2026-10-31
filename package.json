@@ -259,6 +259,51 @@
         "icon": "$(save)"
       },
       {
+        "command": "ppz-plus.exportMssqlTableDdl",
+        "title": "导出 MSSQL 表 DDL",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportMssqlTableDml",
+        "title": "导出 MSSQL 表 DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportMssqlTableBoth",
+        "title": "导出 MSSQL 表 DDL + DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportMssqlSchemaDdl",
+        "title": "导出 MSSQL Schema DDL",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportMssqlSchemaDml",
+        "title": "导出 MSSQL Schema DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportMssqlSchemaBoth",
+        "title": "导出 MSSQL Schema DDL + DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportMssqlDatabaseDdl",
+        "title": "导出 MSSQL Database DDL",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportMssqlDatabaseDml",
+        "title": "导出 MSSQL Database DML",
+        "icon": "$(save)"
+      },
+      {
+        "command": "ppz-plus.exportMssqlDatabaseBoth",
+        "title": "导出 MSSQL Database DDL + DML",
+        "icon": "$(save)"
+      },
+      {
         "command": "ppz-plus.showSqlExportTaskLogs",
         "title": "查看 SQL 导出日志",
         "icon": "$(history)"
@@ -485,6 +530,21 @@
           "group": "inline@1"
         },
         {
+          "command": "ppz-plus.exportMssqlDatabaseDdl",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlDatabase",
+          "group": "export@1"
+        },
+        {
+          "command": "ppz-plus.exportMssqlDatabaseDml",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlDatabase",
+          "group": "export@2"
+        },
+        {
+          "command": "ppz-plus.exportMssqlDatabaseBoth",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlDatabase",
+          "group": "export@3"
+        },
+        {
           "command": "ppz-plus.refreshConnectionsTree",
           "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlSchema",
           "group": "2_action@1"
@@ -493,6 +553,21 @@
           "command": "ppz-plus.openMssqlSqlTerminal",
           "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlSchema",
           "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.exportMssqlSchemaDdl",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlSchema",
+          "group": "export@1"
+        },
+        {
+          "command": "ppz-plus.exportMssqlSchemaDml",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlSchema",
+          "group": "export@2"
+        },
+        {
+          "command": "ppz-plus.exportMssqlSchemaBoth",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlSchema",
+          "group": "export@3"
         },
         {
           "command": "ppz-plus.refreshConnectionsTree",
@@ -508,6 +583,21 @@
           "command": "ppz-plus.openMssqlSqlTerminal",
           "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlTable",
           "group": "inline@2"
+        },
+        {
+          "command": "ppz-plus.exportMssqlTableDdl",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlTable",
+          "group": "export@1"
+        },
+        {
+          "command": "ppz-plus.exportMssqlTableDml",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlTable",
+          "group": "export@2"
+        },
+        {
+          "command": "ppz-plus.exportMssqlTableBoth",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlTable",
+          "group": "export@3"
         },
         {
           "command": "ppz-plus.refreshConnectionsTree",

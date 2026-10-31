@@ -33,6 +33,9 @@ import { ListMssqlSchemasUseCase } from "../../application/useCases/mssql/ListMs
 import { ListMssqlTablesUseCase } from "../../application/useCases/mssql/ListMssqlTablesUseCase";
 import { ListMssqlTableColumnsUseCase } from "../../application/useCases/mssql/ListMssqlTableColumnsUseCase";
 import { ExecuteMssqlSqlUseCase } from "../../application/useCases/mssql/ExecuteMssqlSqlUseCase";
+import { ExportMssqlTableUseCase } from "../../application/useCases/mssql/ExportMssqlTableUseCase";
+import { ExportMssqlSchemaUseCase } from "../../application/useCases/mssql/ExportMssqlSchemaUseCase";
+import { ExportMssqlDatabaseUseCase } from "../../application/useCases/mssql/ExportMssqlDatabaseUseCase";
 import { ListMssqlTableRowPageUseCase } from "../../application/useCases/mssql/ListMssqlTableRowPageUseCase";
 import { ListMySqlSchemasUseCase } from "../../application/useCases/mysql/ListMySqlSchemasUseCase";
 import { ListMySqlTableColumnsUseCase } from "../../application/useCases/mysql/ListMySqlTableColumnsUseCase";
@@ -81,6 +84,7 @@ import { MssqlConnectionTester } from "../../infrastructure/mssql/MssqlConnectio
 import { MssqlMetadataProvider } from "../../infrastructure/mssql/MssqlMetadataProvider";
 import { MssqlTableDataProvider } from "../../infrastructure/mssql/MssqlTableDataProvider";
 import { MssqlSqlExecutor } from "../../infrastructure/mssql/MssqlSqlExecutor";
+import { MssqlExportProvider } from "../../infrastructure/mssql/MssqlExportProvider";
 import { MssqlRuntimeLoader } from "../../infrastructure/mssql/MssqlRuntimeLoader";
 import { MySqlConnectionAdapter } from "../../infrastructure/mysql/MySqlConnectionAdapter";
 import { MySqlRuntimeLoader } from "../../infrastructure/mysql/MySqlRuntimeLoader";
@@ -127,6 +131,9 @@ export interface BootstrapServices {
   readonly listMssqlTablesUseCase: ListMssqlTablesUseCase;
   readonly listMssqlTableColumnsUseCase: ListMssqlTableColumnsUseCase;
   readonly executeMssqlSqlUseCase: ExecuteMssqlSqlUseCase;
+  readonly exportMssqlTableUseCase: ExportMssqlTableUseCase;
+  readonly exportMssqlSchemaUseCase: ExportMssqlSchemaUseCase;
+  readonly exportMssqlDatabaseUseCase: ExportMssqlDatabaseUseCase;
   readonly listMssqlTableRowPageUseCase: ListMssqlTableRowPageUseCase;
   readonly listSqlite3TablesUseCase: ListSqlite3TablesUseCase;
   readonly listPostgreSqlTableColumnsUseCase: ListPostgreSqlTableColumnsUseCase;
@@ -321,6 +328,10 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
   const listMssqlTableColumnsUseCase = new ListMssqlTableColumnsUseCase(mssqlTableDataProvider);
   const mssqlSqlExecutor = new MssqlSqlExecutor(mssqlConnectionAdapter, mssqlRuntimeLoader);
   const executeMssqlSqlUseCase = new ExecuteMssqlSqlUseCase(mssqlSqlExecutor);
+  const mssqlExportProvider = new MssqlExportProvider(mssqlConnectionAdapter, mssqlRuntimeLoader);
+  const exportMssqlTableUseCase = new ExportMssqlTableUseCase(mssqlExportProvider);
+  const exportMssqlSchemaUseCase = new ExportMssqlSchemaUseCase(mssqlExportProvider);
+  const exportMssqlDatabaseUseCase = new ExportMssqlDatabaseUseCase(mssqlExportProvider);
   const listMssqlTableRowPageUseCase = new ListMssqlTableRowPageUseCase(mssqlTableDataProvider);
   const listSqlite3TablesUseCase = new ListSqlite3TablesUseCase(sqlite3MetadataProvider);
   const listPostgreSqlTableColumnsUseCase = new ListPostgreSqlTableColumnsUseCase(
@@ -441,6 +452,9 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
     listMssqlTableColumnsUseCase,
     listMssqlTableRowPageUseCase,
     executeMssqlSqlUseCase,
+    exportMssqlTableUseCase,
+    exportMssqlSchemaUseCase,
+    exportMssqlDatabaseUseCase,
     listSqlite3TablesUseCase,
     listPostgreSqlTableColumnsUseCase,
     listPostgreSqlTableRowPageUseCase,

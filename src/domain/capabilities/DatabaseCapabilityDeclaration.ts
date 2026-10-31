@@ -103,8 +103,8 @@ export const MSSQL_MVP_CAPABILITY_DECLARATION = {
     tableSort: "supported",
     tableFilter: "supported",
     sqlExecute: "supported",
-    exportDdl: "planned",
-    exportDml: "planned",
+    exportDdl: "supported",
+    exportDml: "supported",
   },
 } satisfies DatabaseCapabilityDeclaration;
 

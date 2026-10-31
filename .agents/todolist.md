@@ -162,10 +162,10 @@ SQL 功能：
 - MSSQL database / schema 结构 `✅`
 - MSSQL 表数据读取 `✅`
 - MSSQL SQL 执行 `✅`
-- MSSQL DML 导出
-- MSSQL DDL 导出补齐
+- MSSQL DML 导出 `✅`
+- MSSQL DDL 导出补齐 `✅`
 
-> MSSQL 进度（2026-10-31）：连接测试、Tree 浏览（database / schema / table）、表数据只读（分页 / 排序 / 过滤 / 主键识别 / identity 识别）、SQL 终端执行（查询 / 非查询 / 多结果集 / database 作用域）均已落地，并通过本地 Docker 的真实 SQL Server 2022 自动化验证；导出能力（DML / DDL）与 VS Code 界面手工验收仍待进行。
+> MSSQL 进度（2026-10-31）：连接测试、Tree 浏览（database / schema / table）、表数据只读（分页 / 排序 / 过滤 / 主键识别 / identity 识别）、SQL 终端执行（查询 / 非查询 / 多结果集 / database 作用域）、DDL / DML 导出（表 / schema / database 三级，含 identity 包裹、索引与外键重建）均已落地，并通过本地 Docker 的真实 SQL Server 2022 自动化验证（导出能力完成「导出 → 灌入全新库 → 逐项对比」往返验证）。仅剩 VS Code 界面手工验收。
 
 第五优先级：
 

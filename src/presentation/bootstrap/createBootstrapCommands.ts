@@ -17,6 +17,9 @@ import { ManageSqlite3ConnectionsCommand } from "../commands/ManageSqlite3Connec
 import { OpenMySqlSqlTerminalCommand } from "../commands/OpenMySqlSqlTerminalCommand";
 import { OpenTableDataCommand } from "../commands/OpenTableDataCommand";
 import { OpenMssqlSqlTerminalCommand } from "../commands/OpenMssqlSqlTerminalCommand";
+import { ExportMssqlDatabaseSqlCommand } from "../commands/ExportMssqlDatabaseSqlCommand";
+import { ExportMssqlSchemaSqlCommand } from "../commands/ExportMssqlSchemaSqlCommand";
+import { ExportMssqlTableSqlCommand } from "../commands/ExportMssqlTableSqlCommand";
 import { OpenPostgreSqlSqlTerminalCommand } from "../commands/OpenPostgreSqlSqlTerminalCommand";
 import { OpenSqlite3SqlTerminalCommand } from "../commands/OpenSqlite3SqlTerminalCommand";
 import { PullConnectionConfigSyncCommand } from "../commands/PullConnectionConfigSyncCommand";
@@ -126,6 +129,9 @@ export function createBootstrapCommands(
     ...createPostgreSqlDatabaseExportCommands(services),
     ...createPostgreSqlTableExportCommands(services),
     ...createPostgreSqlSchemaExportCommands(services),
+    ...createMssqlDatabaseExportCommands(services),
+    ...createMssqlTableExportCommands(services),
+    ...createMssqlSchemaExportCommands(services),
     ...createSqlite3TableExportCommands(services),
     new ShowSqlExportTaskLogsCommand(services.listSqlExportTaskLogsUseCase),
     new ShowProjectStatusCommand(services.getBootstrapStatusUseCase),
@@ -337,6 +343,131 @@ function createPostgreSqlSchemaExportCommands(
       },
       services.checkSqlExportCapabilityUseCase,
       services.exportPostgreSqlSchemaUseCase,
+      services.saveSqlExportDocumentUseCase,
+      services.recordSqlExportTaskLogUseCase,
+    ),
+  ];
+}
+
+/**
+ * 创建 MSSQL database 导出命令集合。
+ *
+ * @param {BootstrapServices} services 启动期服务集合。
+ * @returns {readonly ExtensionCommand[]} MSSQL database 导出命令。
+ */
+function createMssqlDatabaseExportCommands(
+  services: BootstrapServices,
+): readonly ExtensionCommand[] {
+  return [
+    new ExportMssqlDatabaseSqlCommand(
+      {
+        id: ExportMssqlDatabaseSqlCommand.exportDdlId,
+        kind: "ddl",
+      },
+      services.checkSqlExportCapabilityUseCase,
+      services.exportMssqlDatabaseUseCase,
+      services.saveSqlExportDocumentUseCase,
+      services.recordSqlExportTaskLogUseCase,
+    ),
+    new ExportMssqlDatabaseSqlCommand(
+      {
+        id: ExportMssqlDatabaseSqlCommand.exportDmlId,
+        kind: "dml",
+      },
+      services.checkSqlExportCapabilityUseCase,
+      services.exportMssqlDatabaseUseCase,
+      services.saveSqlExportDocumentUseCase,
+      services.recordSqlExportTaskLogUseCase,
+    ),
+    new ExportMssqlDatabaseSqlCommand(
+      {
+        id: ExportMssqlDatabaseSqlCommand.exportBothId,
+        kind: "both",
+      },
+      services.checkSqlExportCapabilityUseCase,
+      services.exportMssqlDatabaseUseCase,
+      services.saveSqlExportDocumentUseCase,
+      services.recordSqlExportTaskLogUseCase,
+    ),
+  ];
+}
+
+/**
+ * 创建 MSSQL 表导出命令集合。
+ *
+ * @param {BootstrapServices} services 启动期服务集合。
+ * @returns {readonly ExtensionCommand[]} MSSQL 表导出命令。
+ */
+function createMssqlTableExportCommands(services: BootstrapServices): readonly ExtensionCommand[] {
+  return [
+    new ExportMssqlTableSqlCommand(
+      {
+        id: ExportMssqlTableSqlCommand.exportDdlId,
+        kind: "ddl",
+      },
+      services.checkSqlExportCapabilityUseCase,
+      services.exportMssqlTableUseCase,
+      services.saveSqlExportDocumentUseCase,
+      services.recordSqlExportTaskLogUseCase,
+    ),
+    new ExportMssqlTableSqlCommand(
+      {
+        id: ExportMssqlTableSqlCommand.exportDmlId,
+        kind: "dml",
+      },
+      services.checkSqlExportCapabilityUseCase,
+      services.exportMssqlTableUseCase,
+      services.saveSqlExportDocumentUseCase,
+      services.recordSqlExportTaskLogUseCase,
+    ),
+    new ExportMssqlTableSqlCommand(
+      {
+        id: ExportMssqlTableSqlCommand.exportBothId,
+        kind: "both",
+      },
+      services.checkSqlExportCapabilityUseCase,
+      services.exportMssqlTableUseCase,
+      services.saveSqlExportDocumentUseCase,
+      services.recordSqlExportTaskLogUseCase,
+    ),
+  ];
+}
+
+/**
+ * 创建 MSSQL schema 导出命令集合。
+ *
+ * @param {BootstrapServices} services 启动期服务集合。
+ * @returns {readonly ExtensionCommand[]} MSSQL schema 导出命令。
+ */
+function createMssqlSchemaExportCommands(services: BootstrapServices): readonly ExtensionCommand[] {
+  return [
+    new ExportMssqlSchemaSqlCommand(
+      {
+        id: ExportMssqlSchemaSqlCommand.exportDdlId,
+        kind: "ddl",
+      },
+      services.checkSqlExportCapabilityUseCase,
+      services.exportMssqlSchemaUseCase,
+      services.saveSqlExportDocumentUseCase,
+      services.recordSqlExportTaskLogUseCase,
+    ),
+    new ExportMssqlSchemaSqlCommand(
+      {
+        id: ExportMssqlSchemaSqlCommand.exportDmlId,
+        kind: "dml",
+      },
+      services.checkSqlExportCapabilityUseCase,
+      services.exportMssqlSchemaUseCase,
+      services.saveSqlExportDocumentUseCase,
+      services.recordSqlExportTaskLogUseCase,
+    ),
+    new ExportMssqlSchemaSqlCommand(
+      {
+        id: ExportMssqlSchemaSqlCommand.exportBothId,
+        kind: "both",
+      },
+      services.checkSqlExportCapabilityUseCase,
+      services.exportMssqlSchemaUseCase,
       services.saveSqlExportDocumentUseCase,
       services.recordSqlExportTaskLogUseCase,
     ),
