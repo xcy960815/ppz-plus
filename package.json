@@ -2,7 +2,7 @@
   "name": "ppz-plus",
   "displayName": "PPZ Plus",
   "description": "VS Code 数据库管理、导入导出工具",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "xcy960815",
   "icon": "resources/ppz-plus.png",
   "license": "MIT",
