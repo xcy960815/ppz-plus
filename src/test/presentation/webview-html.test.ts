@@ -91,7 +91,7 @@ suite("Presentation — Webview HTML 静态安全检查", () => {
       "src",
       "presentation",
       "tableData",
-      "DatabaseTableDataPanel.ts",
+      "TableDataWebviewMarkup.ts",
     );
     const content = readFileSync(filePath, "utf8");
     const actionNames = Array.from(content.matchAll(/data-action="([^"]+)"/g), (match) => match[1]);
