@@ -208,6 +208,15 @@ class FakeRuntimeLoader {
           state.calls.push("request");
 
           return {
+            input(name: string, value: unknown): MssqlRuntimeRequest {
+              /**
+               * fake 运行时不消费参数值，仅记录占位。
+               */
+              void name;
+              void value;
+              return this;
+            },
+
             async query(sql: string): Promise<MssqlRuntimeQueryResult> {
               state.calls.push("query");
               state.querySql = sql;

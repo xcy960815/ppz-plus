@@ -9,6 +9,7 @@ import type {
 } from "../../application/shared/TableDataTypes";
 import type {
   MySqlTableTreeNode,
+  MssqlTableTreeNode,
   PostgreSqlTableTreeNode,
   Sqlite3TableTreeNode,
 } from "../explorer/DatabaseConnectionsTreeNode";
@@ -16,7 +17,8 @@ import type {
 /**
  * 表示当前表数据页可打开的表节点。
  */
-export type TableDataTreeNode = MySqlTableTreeNode | PostgreSqlTableTreeNode | Sqlite3TableTreeNode;
+export type TableDataTreeNode =
+  MySqlTableTreeNode | PostgreSqlTableTreeNode | MssqlTableTreeNode | Sqlite3TableTreeNode;
 
 /**
  * 表示当前表数据页已经支持恢复的连接配置。
@@ -50,7 +52,7 @@ export interface DatabaseTablePanelState {
  * 保存表数据页可由 VS Code 恢复的轻量状态。
  */
 export interface DatabaseTablePanelSerializedState {
-  readonly engine: "mysql" | "postgresql" | "sqlite3";
+  readonly engine: "mysql" | "postgresql" | "mssql" | "sqlite3";
   readonly connectionId: string;
   readonly databaseName?: string;
   readonly schemaName: string;
@@ -71,14 +73,14 @@ export interface DatabaseTablePanelSerializedState {
  * @returns {boolean} 是否只开放只读能力。
  */
 export function isReadOnlyTableNode(tableNode: TableDataTreeNode): boolean {
-  return tableNode.kind === "postgresqlTable";
+  return tableNode.kind === "postgresqlTable" || tableNode.kind === "mssqlTable";
 }
 
 /**
  * 展示只读表页提示。
  */
 export async function showReadOnlyTableMessage(): Promise<void> {
-  await vscode.window.showInformationMessage("当前 PostgreSQL 表数据页暂时只支持读取。");
+  await vscode.window.showInformationMessage("当前表数据页暂时只支持读取。");
 }
 
 /**
@@ -138,12 +140,16 @@ export function createSerializedState(
     engine:
       state.tableNode.kind === "postgresqlTable"
         ? "postgresql"
-        : state.tableNode.kind === "sqlite3Table"
-          ? "sqlite3"
-          : "mysql",
+        : state.tableNode.kind === "mssqlTable"
+          ? "mssql"
+          : state.tableNode.kind === "sqlite3Table"
+            ? "sqlite3"
+            : "mysql",
     connectionId: state.tableNode.connection.id,
     databaseName:
-      state.tableNode.kind === "postgresqlTable" ? state.tableNode.databaseName : undefined,
+      state.tableNode.kind === "postgresqlTable" || state.tableNode.kind === "mssqlTable"
+        ? state.tableNode.databaseName
+        : undefined,
     schemaName: state.tableNode.schemaName,
     tableName: state.tableNode.tableName,
     pageIndex: state.pageIndex,
@@ -176,6 +182,16 @@ export function createRestoredTableNode(
       kind: "postgresqlTable",
       connection,
       databaseName: databaseName ?? "",
+      schemaName: restoredState.schemaName,
+      tableName: restoredState.tableName,
+    };
+  }
+
+  if (connection.engine === "mssql") {
+    return {
+      kind: "mssqlTable",
+      connection,
+      databaseName: restoredState.databaseName ?? "",
       schemaName: restoredState.schemaName,
       tableName: restoredState.tableName,
     };
@@ -243,9 +259,11 @@ export function parseSerializedState(
     engine:
       serializedState.engine === "postgresql"
         ? "postgresql"
-        : serializedState.engine === "sqlite3"
-          ? "sqlite3"
-          : "mysql",
+        : serializedState.engine === "mssql"
+          ? "mssql"
+          : serializedState.engine === "sqlite3"
+            ? "sqlite3"
+            : "mysql",
     connectionId,
     databaseName: typeof databaseName === "string" ? databaseName : undefined,
     schemaName,

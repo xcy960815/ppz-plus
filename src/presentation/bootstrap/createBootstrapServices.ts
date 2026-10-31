@@ -31,6 +31,8 @@ import { InsertSqlite3TableRowUseCase } from "../../application/useCases/sqlite3
 import { ListMssqlDatabasesUseCase } from "../../application/useCases/mssql/ListMssqlDatabasesUseCase";
 import { ListMssqlSchemasUseCase } from "../../application/useCases/mssql/ListMssqlSchemasUseCase";
 import { ListMssqlTablesUseCase } from "../../application/useCases/mssql/ListMssqlTablesUseCase";
+import { ListMssqlTableColumnsUseCase } from "../../application/useCases/mssql/ListMssqlTableColumnsUseCase";
+import { ListMssqlTableRowPageUseCase } from "../../application/useCases/mssql/ListMssqlTableRowPageUseCase";
 import { ListMySqlSchemasUseCase } from "../../application/useCases/mysql/ListMySqlSchemasUseCase";
 import { ListMySqlTableColumnsUseCase } from "../../application/useCases/mysql/ListMySqlTableColumnsUseCase";
 import { ListMySqlTableRowPageUseCase } from "../../application/useCases/mysql/ListMySqlTableRowPageUseCase";
@@ -62,7 +64,7 @@ import {
   COCKROACHDB_PLANNED_CAPABILITY_DECLARATION,
   MARIADB_PLANNED_CAPABILITY_DECLARATION,
   MYSQL_MVP_CAPABILITY_DECLARATION,
-  MSSQL_PLANNED_CAPABILITY_DECLARATION,
+  MSSQL_MVP_CAPABILITY_DECLARATION,
   POSTGRESQL_TREE_CAPABILITY_DECLARATION,
   SQLITE3_MVP_CAPABILITY_DECLARATION,
 } from "../../domain/capabilities/DatabaseCapabilityDeclaration";
@@ -76,6 +78,7 @@ import { NodeSqlFileReader } from "../../infrastructure/files/NodeSqlFileReader"
 import { MssqlConnectionAdapter } from "../../infrastructure/mssql/MssqlConnectionAdapter";
 import { MssqlConnectionTester } from "../../infrastructure/mssql/MssqlConnectionTester";
 import { MssqlMetadataProvider } from "../../infrastructure/mssql/MssqlMetadataProvider";
+import { MssqlTableDataProvider } from "../../infrastructure/mssql/MssqlTableDataProvider";
 import { MssqlRuntimeLoader } from "../../infrastructure/mssql/MssqlRuntimeLoader";
 import { MySqlConnectionAdapter } from "../../infrastructure/mysql/MySqlConnectionAdapter";
 import { MySqlRuntimeLoader } from "../../infrastructure/mysql/MySqlRuntimeLoader";
@@ -120,6 +123,8 @@ export interface BootstrapServices {
   readonly listMssqlDatabasesUseCase: ListMssqlDatabasesUseCase;
   readonly listMssqlSchemasUseCase: ListMssqlSchemasUseCase;
   readonly listMssqlTablesUseCase: ListMssqlTablesUseCase;
+  readonly listMssqlTableColumnsUseCase: ListMssqlTableColumnsUseCase;
+  readonly listMssqlTableRowPageUseCase: ListMssqlTableRowPageUseCase;
   readonly listSqlite3TablesUseCase: ListSqlite3TablesUseCase;
   readonly listPostgreSqlTableColumnsUseCase: ListPostgreSqlTableColumnsUseCase;
   readonly listPostgreSqlTableRowPageUseCase: ListPostgreSqlTableRowPageUseCase;
@@ -172,7 +177,7 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
     MYSQL_MVP_CAPABILITY_DECLARATION,
     POSTGRESQL_TREE_CAPABILITY_DECLARATION,
     SQLITE3_MVP_CAPABILITY_DECLARATION,
-    MSSQL_PLANNED_CAPABILITY_DECLARATION,
+    MSSQL_MVP_CAPABILITY_DECLARATION,
     COCKROACHDB_PLANNED_CAPABILITY_DECLARATION,
     MARIADB_PLANNED_CAPABILITY_DECLARATION,
   ]);
@@ -246,6 +251,10 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
     mssqlConnectionAdapter,
     mssqlRuntimeLoader,
   );
+  const mssqlTableDataProvider = new MssqlTableDataProvider(
+    mssqlConnectionAdapter,
+    mssqlRuntimeLoader,
+  );
   const sqlite3MetadataProvider = new Sqlite3MetadataProvider(
     sqlite3ConnectionAdapter,
     sqlite3RuntimeLoader,
@@ -306,6 +315,8 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
   const listMssqlDatabasesUseCase = new ListMssqlDatabasesUseCase(mssqlMetadataProvider);
   const listMssqlSchemasUseCase = new ListMssqlSchemasUseCase(mssqlMetadataProvider);
   const listMssqlTablesUseCase = new ListMssqlTablesUseCase(mssqlMetadataProvider);
+  const listMssqlTableColumnsUseCase = new ListMssqlTableColumnsUseCase(mssqlTableDataProvider);
+  const listMssqlTableRowPageUseCase = new ListMssqlTableRowPageUseCase(mssqlTableDataProvider);
   const listSqlite3TablesUseCase = new ListSqlite3TablesUseCase(sqlite3MetadataProvider);
   const listPostgreSqlTableColumnsUseCase = new ListPostgreSqlTableColumnsUseCase(
     postgreSqlTableDataProvider,
@@ -422,6 +433,8 @@ export function createBootstrapServices(context: vscode.ExtensionContext): Boots
     listMssqlDatabasesUseCase,
     listMssqlSchemasUseCase,
     listMssqlTablesUseCase,
+    listMssqlTableColumnsUseCase,
+    listMssqlTableRowPageUseCase,
     listSqlite3TablesUseCase,
     listPostgreSqlTableColumnsUseCase,
     listPostgreSqlTableRowPageUseCase,

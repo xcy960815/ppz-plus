@@ -371,9 +371,11 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
         ? DatabaseConnectionsTreeDataProvider.sqlite3ConnectionContextValue
         : element.connection.engine === "postgresql"
           ? DatabaseConnectionsTreeDataProvider.postgreSqlConnectionContextValue
-          : element.connection.engine === "mysql"
-            ? DatabaseConnectionsTreeDataProvider.connectionContextValue
-            : DatabaseConnectionsTreeDataProvider.plannedConnectionContextValue;
+          : element.connection.engine === "mssql"
+            ? DatabaseConnectionsTreeDataProvider.mssqlConnectionContextValue
+            : element.connection.engine === "mysql"
+              ? DatabaseConnectionsTreeDataProvider.connectionContextValue
+              : DatabaseConnectionsTreeDataProvider.plannedConnectionContextValue;
     treeItem.description = description;
     treeItem.iconPath = new vscode.ThemeIcon("database");
     return treeItem;
@@ -500,6 +502,11 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
     treeItem.id = `${element.connection.id}.${element.databaseName}.${element.schemaName}.${element.tableName}`;
     treeItem.description = element.schemaName;
     treeItem.iconPath = new vscode.ThemeIcon("table");
+    treeItem.command = {
+      command: OpenTableDataCommand.id,
+      title: "打开表数据",
+      arguments: [element],
+    };
     return treeItem;
   }
 
@@ -563,6 +570,7 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
     return (
       connection.engine === "mysql" ||
       connection.engine === "postgresql" ||
+      connection.engine === "mssql" ||
       connection.engine === "sqlite3"
     );
   }

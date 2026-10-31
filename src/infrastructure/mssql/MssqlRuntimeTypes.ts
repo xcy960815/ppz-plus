@@ -29,6 +29,14 @@ export interface MssqlRuntimeQueryResult {
  * 描述 mssql 请求对象的最小查询能力。
  */
 export interface MssqlRuntimeRequest {
+  /**
+   * 绑定命名参数值。
+   *
+   * @param {string} name 参数名（如 `p1`）。
+   * @param {unknown} value 参数值。
+   * @returns {MssqlRuntimeRequest} 当前请求对象，支持链式绑定。
+   */
+  input(name: string, value: unknown): MssqlRuntimeRequest;
   query(sql: string): Promise<MssqlRuntimeQueryResult>;
 }
 

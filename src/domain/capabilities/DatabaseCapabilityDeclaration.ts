@@ -89,19 +89,19 @@ export const SQLITE3_MVP_CAPABILITY_DECLARATION = {
 } satisfies DatabaseCapabilityDeclaration;
 
 /**
- * 声明 MSSQL 后续接入阶段的计划能力。
+ * 声明 MSSQL 当前已开放的能力（连接、Tree、表数据读取已经过真实数据库验证）。
  */
-export const MSSQL_PLANNED_CAPABILITY_DECLARATION = {
+export const MSSQL_MVP_CAPABILITY_DECLARATION = {
   engine: "mssql",
   capabilities: {
-    connectionManagement: "planned",
-    connectionTest: "planned",
-    treeExplorer: "planned",
-    schemaBrowse: "planned",
-    tableRead: "planned",
-    tablePagination: "planned",
-    tableSort: "planned",
-    tableFilter: "planned",
+    connectionManagement: "supported",
+    connectionTest: "supported",
+    treeExplorer: "supported",
+    schemaBrowse: "supported",
+    tableRead: "supported",
+    tablePagination: "supported",
+    tableSort: "supported",
+    tableFilter: "supported",
     sqlExecute: "planned",
     exportDdl: "planned",
     exportDml: "planned",

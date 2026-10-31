@@ -460,6 +460,31 @@
         },
         {
           "command": "ppz-plus.refreshConnectionsTree",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlConnection",
+          "group": "2_action@1"
+        },
+        {
+          "command": "ppz-plus.refreshConnectionsTree",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlDatabase",
+          "group": "2_action@1"
+        },
+        {
+          "command": "ppz-plus.refreshConnectionsTree",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlSchema",
+          "group": "2_action@1"
+        },
+        {
+          "command": "ppz-plus.refreshConnectionsTree",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlTable",
+          "group": "2_action@1"
+        },
+        {
+          "command": "ppz-plus.openTableData",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlTable",
+          "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.refreshConnectionsTree",
           "when": "view == ppzPlus.connections && viewItem == ppzPlus.mysqlSchema",
           "group": "2_action@1"
         },

@@ -6,6 +6,8 @@ import type { ListMySqlTableColumnsUseCase } from "../../application/useCases/my
 import type { ListMySqlTableRowPageUseCase } from "../../application/useCases/mysql/ListMySqlTableRowPageUseCase";
 import type { ListPostgreSqlTableColumnsUseCase } from "../../application/useCases/postgresql/ListPostgreSqlTableColumnsUseCase";
 import type { ListPostgreSqlTableRowPageUseCase } from "../../application/useCases/postgresql/ListPostgreSqlTableRowPageUseCase";
+import type { ListMssqlTableColumnsUseCase } from "../../application/useCases/mssql/ListMssqlTableColumnsUseCase";
+import type { ListMssqlTableRowPageUseCase } from "../../application/useCases/mssql/ListMssqlTableRowPageUseCase";
 import type { ListSqlite3TableColumnsUseCase } from "../../application/useCases/sqlite3/ListSqlite3TableColumnsUseCase";
 import type { ListSqlite3TableRowPageUseCase } from "../../application/useCases/sqlite3/ListSqlite3TableRowPageUseCase";
 import type { ExtensionActivationParticipant } from "../bootstrap/ExtensionActivationParticipant";
@@ -84,6 +86,8 @@ export class DatabaseTableDataPanel
     deleteMySqlTableRowUseCase: TableDataRowEditorDeps["deleteMySqlTableRowUseCase"],
     private readonly listPostgreSqlTableColumnsUseCase: ListPostgreSqlTableColumnsUseCase,
     private readonly listPostgreSqlTableRowPageUseCase: ListPostgreSqlTableRowPageUseCase,
+    private readonly listMssqlTableColumnsUseCase: ListMssqlTableColumnsUseCase,
+    private readonly listMssqlTableRowPageUseCase: ListMssqlTableRowPageUseCase,
     private readonly listSqlite3TableColumnsUseCase: ListSqlite3TableColumnsUseCase,
     private readonly listSqlite3TableRowPageUseCase: ListSqlite3TableRowPageUseCase,
     insertSqlite3TableRowUseCase: TableDataRowEditorDeps["insertSqlite3TableRowUseCase"],
@@ -443,6 +447,26 @@ export class DatabaseTableDataPanel
           state.tableNode.tableName,
         ),
         this.listPostgreSqlTableRowPageUseCase.execute(
+          state.tableNode.connection,
+          state.tableNode.databaseName,
+          state.tableNode.schemaName,
+          state.tableNode.tableName,
+          state.pageIndex,
+          state.pageSize,
+          createQueryOptions(state),
+        ),
+      ]);
+    }
+
+    if (state.tableNode.kind === "mssqlTable") {
+      return Promise.all([
+        this.listMssqlTableColumnsUseCase.execute(
+          state.tableNode.connection,
+          state.tableNode.databaseName,
+          state.tableNode.schemaName,
+          state.tableNode.tableName,
+        ),
+        this.listMssqlTableRowPageUseCase.execute(
           state.tableNode.connection,
           state.tableNode.databaseName,
           state.tableNode.schemaName,

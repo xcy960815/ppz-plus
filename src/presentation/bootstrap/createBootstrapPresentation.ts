@@ -58,6 +58,8 @@ export function createBootstrapPresentation(services: BootstrapServices): Bootst
     services.deleteMySqlTableRowUseCase,
     services.listPostgreSqlTableColumnsUseCase,
     services.listPostgreSqlTableRowPageUseCase,
+    services.listMssqlTableColumnsUseCase,
+    services.listMssqlTableRowPageUseCase,
     services.listSqlite3TableColumnsUseCase,
     services.listSqlite3TableRowPageUseCase,
     services.insertSqlite3TableRowUseCase,

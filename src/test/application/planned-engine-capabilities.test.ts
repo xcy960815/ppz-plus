@@ -3,7 +3,7 @@ import * as assert from "assert";
 import {
   COCKROACHDB_PLANNED_CAPABILITY_DECLARATION,
   MARIADB_PLANNED_CAPABILITY_DECLARATION,
-  MSSQL_PLANNED_CAPABILITY_DECLARATION,
+  MSSQL_MVP_CAPABILITY_DECLARATION,
 } from "../../domain/capabilities/DatabaseCapabilityDeclaration";
 import type { DatabaseEngine } from "../../domain/database/DatabaseEngine";
 import { InMemoryDatabaseCapabilityCatalog } from "../../infrastructure/capabilities/InMemoryDatabaseCapabilityCatalog";
@@ -15,7 +15,7 @@ suite("Application — 计划中引擎导出能力", () => {
    */
   function makeUseCase(): CheckSqlExportCapabilityUseCase {
     const catalog = new InMemoryDatabaseCapabilityCatalog([
-      MSSQL_PLANNED_CAPABILITY_DECLARATION,
+      MSSQL_MVP_CAPABILITY_DECLARATION,
       COCKROACHDB_PLANNED_CAPABILITY_DECLARATION,
       MARIADB_PLANNED_CAPABILITY_DECLARATION,
     ]);

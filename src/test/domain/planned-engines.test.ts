@@ -4,7 +4,6 @@ import {
   COCKROACHDB_PLANNED_CAPABILITY_DECLARATION,
   DATABASE_CAPABILITY_KEYS,
   MARIADB_PLANNED_CAPABILITY_DECLARATION,
-  MSSQL_PLANNED_CAPABILITY_DECLARATION,
 } from "../../domain/capabilities/DatabaseCapabilityDeclaration";
 import type { DatabaseCapabilityDeclaration } from "../../domain/capabilities/DatabaseCapabilityDeclaration";
 import type {
@@ -74,7 +73,6 @@ suite("Domain — 计划中能力声明", () => {
    * 收集本阶段需要保持 planned 的能力声明。
    */
   const plannedDeclarations: readonly DatabaseCapabilityDeclaration[] = [
-    MSSQL_PLANNED_CAPABILITY_DECLARATION,
     COCKROACHDB_PLANNED_CAPABILITY_DECLARATION,
     MARIADB_PLANNED_CAPABILITY_DECLARATION,
   ];
