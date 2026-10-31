@@ -73,6 +73,32 @@ function makeExecutor(result: MssqlRuntimeQueryResult, queryError?: Error): Mssq
 }
 
 /**
+ * 按本地时区把 Date 格式化为 `YYYY-MM-DD HH:MM:SS.mmm`，
+ * 与共享 formatDateCellValue 的展示规则一致，避免测试依赖构建机时区。
+ *
+ * @param {Date} value 原始 Date 值。
+ * @returns {string} 本地时间字符串。
+ */
+function formatLocalDateTime(value: Date): string {
+  const pad = (part: number, width: number): string => part.toString().padStart(width, "0");
+  return [
+    pad(value.getFullYear(), 4),
+    "-",
+    pad(value.getMonth() + 1, 2),
+    "-",
+    pad(value.getDate(), 2),
+    " ",
+    pad(value.getHours(), 2),
+    ":",
+    pad(value.getMinutes(), 2),
+    ":",
+    pad(value.getSeconds(), 2),
+    ".",
+    pad(value.getMilliseconds(), 3),
+  ].join("");
+}
+
+/**
  * 构建参数模式的 MSSQL 测试连接。
  *
  * @returns {MssqlConnectionConfig} 测试连接配置。
@@ -110,7 +136,11 @@ suite("Infrastructure — MssqlSqlExecutor", () => {
       ["id", "name", "created_at"],
     );
     assert.strictEqual(result.rows[0].id, 1);
-    assert.strictEqual(result.rows[0].created_at, "2026-01-02 11:04:05.678");
+    assert.strictEqual(
+      result.rows[0].created_at,
+      formatLocalDateTime(new Date("2026-01-02T03:04:05.678Z")),
+      "日期应按本地时间格式化为 YYYY-MM-DD HH:MM:SS.mmm",
+    );
     assert.strictEqual(result.affectedRows, null);
   });
 
