@@ -14,6 +14,7 @@ import type { ExtensionActivationParticipant } from "../bootstrap/ExtensionActiv
 import { showUserErrorMessage } from "../commands/UserErrorPresenter";
 import { OpenMySqlSqlTerminalCommand } from "../commands/OpenMySqlSqlTerminalCommand";
 import { OpenPostgreSqlSqlTerminalCommand } from "../commands/OpenPostgreSqlSqlTerminalCommand";
+import { OpenMssqlSqlTerminalCommand } from "../commands/OpenMssqlSqlTerminalCommand";
 import { OpenSqlite3SqlTerminalCommand } from "../commands/OpenSqlite3SqlTerminalCommand";
 import type { TableDataWebviewMessage } from "./TableDataWebviewMessage";
 import {
@@ -302,6 +303,14 @@ export class DatabaseTableDataPanel
         state.hiddenColumnNames = new Set(message.hiddenColumnNames);
         return;
       case "openSqlTerminal":
+        if (state.tableNode.kind === "mssqlTable") {
+          await vscode.commands.executeCommand(
+            OpenMssqlSqlTerminalCommand.id,
+            state.tableNode,
+            message.sql ?? state.currentSql,
+          );
+          return;
+        }
         if (isReadOnlyTableNode(state.tableNode)) {
           await vscode.commands.executeCommand(
             OpenPostgreSqlSqlTerminalCommand.id,

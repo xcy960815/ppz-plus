@@ -2,6 +2,7 @@ import { StoredConnectionPasswordPrompt } from "../commands/StoredConnectionPass
 import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 import { DatabaseConnectionsView } from "../explorer/DatabaseConnectionsView";
 import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3ConnectionsTreeDataProvider";
+import { MssqlSqlTerminalPanel } from "../sql/MssqlSqlTerminalPanel";
 import { MySqlSqlTerminalPanel } from "../sql/MySqlSqlTerminalPanel";
 import { PostgreSqlSqlTerminalPanel } from "../sql/PostgreSqlSqlTerminalPanel";
 import { Sqlite3SqlTerminalPanel } from "../sql/Sqlite3SqlTerminalPanel";
@@ -17,6 +18,7 @@ export interface BootstrapPresentation {
   readonly sqlite3ConnectionsTreeDataProvider: Sqlite3ConnectionsTreeDataProvider;
   readonly databaseConnectionsView: DatabaseConnectionsView;
   readonly databaseTableDataPanel: DatabaseTableDataPanel;
+  readonly mssqlSqlTerminalPanel: MssqlSqlTerminalPanel;
   readonly mySqlSqlTerminalPanel: MySqlSqlTerminalPanel;
   readonly postgreSqlSqlTerminalPanel: PostgreSqlSqlTerminalPanel;
   readonly sqlite3SqlTerminalPanel: Sqlite3SqlTerminalPanel;
@@ -66,6 +68,11 @@ export function createBootstrapPresentation(services: BootstrapServices): Bootst
     services.updateSqlite3TableRowUseCase,
     services.deleteSqlite3TableRowUseCase,
   );
+  const mssqlSqlTerminalPanel = new MssqlSqlTerminalPanel(
+    services.listStoredConnectionsUseCase,
+    services.executeMssqlSqlUseCase,
+    storedConnectionPasswordPrompt,
+  );
   const mySqlSqlTerminalPanel = new MySqlSqlTerminalPanel(
     services.listStoredConnectionsUseCase,
     services.executeMySqlSqlUseCase,
@@ -88,6 +95,7 @@ export function createBootstrapPresentation(services: BootstrapServices): Bootst
     sqlite3ConnectionsTreeDataProvider,
     databaseConnectionsView,
     databaseTableDataPanel,
+    mssqlSqlTerminalPanel,
     mySqlSqlTerminalPanel,
     postgreSqlSqlTerminalPanel,
     sqlite3SqlTerminalPanel,

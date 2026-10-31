@@ -102,7 +102,7 @@ export const MSSQL_MVP_CAPABILITY_DECLARATION = {
     tablePagination: "supported",
     tableSort: "supported",
     tableFilter: "supported",
-    sqlExecute: "planned",
+    sqlExecute: "supported",
     exportDdl: "planned",
     exportDml: "planned",
   },

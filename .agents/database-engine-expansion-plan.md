@@ -610,6 +610,15 @@ Presentation：
 - 每批必须 `pnpm exec tsc -p ./ --noEmit`，默认 `pnpm test` 全绿；真库集成测试另行声明是否执行。
 - 未做真库验证的能力不能写「已验证支持」，只能写「单测覆盖，需真实数据库验证」。
 
+## 真库验证环境
+
+MSSQL 批次使用本地 Docker 真库验证（2026-10-31，SQL Server 2022 RTM-CU27）：
+
+- 运行时：`brew install colima docker`，`colima start --cpu 2 --memory 4 --vz-rosetta`（Apple Silicon 用 VZ + Rosetta 跑 amd64 镜像；若 VM 内 DNS 失效，把 VM 的 `/etc/resolv.conf` 悬空符号链接替换为真实 nameserver 文件）。
+- 容器：`docker run -d --name ppz-mssql -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=<本地临时密码> -p 127.0.0.1:1433:1433 mcr.microsoft.com/mssql/server:2022-latest`。
+- 验证方式：`pnpm compile` 后用 Node 脚本直接驱动 `out/` 中的 infrastructure 层（adapter / metadata provider / table data provider / sql executor），不经过 VS Code；脚本不入库。
+- CockroachDB / MariaDB 接入时按同样方式补充各自的验证容器与脚本。
+
 ## 风险清单
 
 - 把兼容型数据库直接混进 MySQL/PostgreSQL provider，导致能力差异不可维护。

@@ -16,6 +16,7 @@ import { ManageConnectionsCommand } from "../commands/ManageConnectionsCommand";
 import { ManageSqlite3ConnectionsCommand } from "../commands/ManageSqlite3ConnectionsCommand";
 import { OpenMySqlSqlTerminalCommand } from "../commands/OpenMySqlSqlTerminalCommand";
 import { OpenTableDataCommand } from "../commands/OpenTableDataCommand";
+import { OpenMssqlSqlTerminalCommand } from "../commands/OpenMssqlSqlTerminalCommand";
 import { OpenPostgreSqlSqlTerminalCommand } from "../commands/OpenPostgreSqlSqlTerminalCommand";
 import { OpenSqlite3SqlTerminalCommand } from "../commands/OpenSqlite3SqlTerminalCommand";
 import { PullConnectionConfigSyncCommand } from "../commands/PullConnectionConfigSyncCommand";
@@ -84,6 +85,7 @@ export function createBootstrapCommands(
     ),
     new OpenTableDataCommand(presentation.databaseTableDataPanel),
     new OpenMySqlSqlTerminalCommand(presentation.mySqlSqlTerminalPanel),
+    new OpenMssqlSqlTerminalCommand(presentation.mssqlSqlTerminalPanel),
     new OpenPostgreSqlSqlTerminalCommand(presentation.postgreSqlSqlTerminalPanel),
     new OpenSqlite3SqlTerminalCommand(presentation.sqlite3SqlTerminalPanel),
     new ImportMySqlSqlFileCommand(

@@ -23,6 +23,14 @@ export interface MssqlDriverOptions {
  */
 export interface MssqlRuntimeQueryResult {
   readonly recordset?: ReadonlyArray<Record<string, unknown>>;
+  /**
+   * 多语句执行时的全部结果集；查询语句为行数组，非查询语句为空数组。
+   */
+  readonly recordsets?: ReadonlyArray<ReadonlyArray<Record<string, unknown>>>;
+  /**
+   * 每条语句的受影响行数。
+   */
+  readonly rowsAffected?: readonly number[];
 }
 
 /**

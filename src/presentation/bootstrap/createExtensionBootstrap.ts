@@ -14,14 +14,12 @@ import { createBootstrapServices } from "./createBootstrapServices";
 export function createExtensionBootstrap(context: vscode.ExtensionContext): ExtensionBootstrap {
   const services = createBootstrapServices(context);
   const presentation = createBootstrapPresentation(services);
-  return new ExtensionBootstrap(
-    createBootstrapCommands(services, presentation),
-    [
-      presentation.databaseConnectionsView,
-      presentation.databaseTableDataPanel,
-      presentation.mySqlSqlTerminalPanel,
-      presentation.postgreSqlSqlTerminalPanel,
-      presentation.sqlite3SqlTerminalPanel,
-    ],
-  );
+  return new ExtensionBootstrap(createBootstrapCommands(services, presentation), [
+    presentation.databaseConnectionsView,
+    presentation.databaseTableDataPanel,
+    presentation.mssqlSqlTerminalPanel,
+    presentation.mySqlSqlTerminalPanel,
+    presentation.postgreSqlSqlTerminalPanel,
+    presentation.sqlite3SqlTerminalPanel,
+  ]);
 }

@@ -39,6 +39,7 @@
   "activationEvents": [
     "onWebviewPanel:ppzPlus.mysqlSqlTerminal",
     "onWebviewPanel:ppzPlus.postgreSqlSqlTerminal",
+    "onWebviewPanel:ppzPlus.mssqlSqlTerminal",
     "onWebviewPanel:ppzPlus.sqlite3SqlTerminal",
     "onWebviewPanel:ppzPlus.tableData"
   ],
@@ -115,6 +116,11 @@
       {
         "command": "ppz-plus.openPostgreSqlSqlTerminal",
         "title": "打开 PostgreSQL SQL 终端",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "ppz-plus.openMssqlSqlTerminal",
+        "title": "打开 MSSQL SQL 终端",
         "icon": "$(terminal)"
       },
       {
@@ -464,14 +470,29 @@
           "group": "2_action@1"
         },
         {
+          "command": "ppz-plus.openMssqlSqlTerminal",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlConnection",
+          "group": "inline@1"
+        },
+        {
           "command": "ppz-plus.refreshConnectionsTree",
           "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlDatabase",
           "group": "2_action@1"
         },
         {
+          "command": "ppz-plus.openMssqlSqlTerminal",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlDatabase",
+          "group": "inline@1"
+        },
+        {
           "command": "ppz-plus.refreshConnectionsTree",
           "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlSchema",
           "group": "2_action@1"
+        },
+        {
+          "command": "ppz-plus.openMssqlSqlTerminal",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlSchema",
+          "group": "inline@1"
         },
         {
           "command": "ppz-plus.refreshConnectionsTree",
@@ -482,6 +503,11 @@
           "command": "ppz-plus.openTableData",
           "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlTable",
           "group": "inline@1"
+        },
+        {
+          "command": "ppz-plus.openMssqlSqlTerminal",
+          "when": "view == ppzPlus.connections && viewItem == ppzPlus.mssqlTable",
+          "group": "inline@2"
         },
         {
           "command": "ppz-plus.refreshConnectionsTree",

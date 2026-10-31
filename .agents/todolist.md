@@ -158,14 +158,14 @@ SQL 功能：
 
 - 扩展数据库连接模型支持 MSSQL / CockroachDB / MariaDB `✅`
 - 新增连接表单可保存 MSSQL / CockroachDB / MariaDB 配置 `✅`
-- MSSQL 连接支持
-- MSSQL database / schema 结构
-- MSSQL 表数据读取
-- MSSQL SQL 执行
+- MSSQL 连接支持 `✅`
+- MSSQL database / schema 结构 `✅`
+- MSSQL 表数据读取 `✅`
+- MSSQL SQL 执行 `✅`
 - MSSQL DML 导出
 - MSSQL DDL 导出补齐
 
-> MSSQL 代码侧进度（2026-10-31）：连接测试、连接适配器、database / schema / table 元数据 provider 及对应单测已落地（`src/infrastructure/mssql/`、`src/application/mssql/`），均未做真实数据库验证，按收尾规则暂不点亮上方条目。
+> MSSQL 进度（2026-10-31）：连接测试、Tree 浏览（database / schema / table）、表数据只读（分页 / 排序 / 过滤 / 主键识别 / identity 识别）、SQL 终端执行（查询 / 非查询 / 多结果集 / database 作用域）均已落地，并通过本地 Docker 的真实 SQL Server 2022 自动化验证；导出能力（DML / DDL）与 VS Code 界面手工验收仍待进行。
 
 第五优先级：
 
