@@ -7,16 +7,10 @@ import type {
   Sqlite3ConnectionConfig,
 } from "../../domain/connections/ConnectionConfig";
 import type { SqlExecutionResult } from "../../domain/query/SqlExecutionResult";
-import type { ExtensionActivationParticipant } from "../bootstrap/ExtensionActivationParticipant";
-import {
-  buildWebviewCspMeta,
-  createWebviewNonce,
-  escapeHtml,
-  escapeHtmlAttribute,
-  serializeScriptValue,
-} from "../shared/WebviewHtml";
-import { SqlExecutionResultRenderer } from "./SqlExecutionResultRenderer";
+import { buildWebviewCspMeta, createWebviewNonce } from "../shared/WebviewHtml";
 import type { MySqlSqlTerminalWebviewMessage } from "./MySqlSqlTerminalWebviewMessage";
+import type { SqlTerminalOpenRequest } from "./SqlTerminalPanelBase";
+import { SqlTerminalPanelBase } from "./SqlTerminalPanelBase";
 
 /**
  * 保存 SQLite3 SQL 终端面板的可变状态。
@@ -39,69 +33,30 @@ interface Sqlite3SqlTerminalSerializedState {
 /**
  * 管理 SQLite3 SQL 终端面板。
  */
-export class Sqlite3SqlTerminalPanel
-  implements ExtensionActivationParticipant, vscode.WebviewPanelSerializer
-{
-  /**
-   * 保存 SQL 终端 Webview 的 VS Code viewType。
-   */
-  private static readonly viewType = "ppzPlus.sqlite3SqlTerminal";
-
-  /**
-   * 渲染通用 SQL 执行结果区域。
-   */
-  private readonly resultRenderer = new SqlExecutionResultRenderer();
-
-  /**
-   * 保存当前已打开的 SQL 终端面板。
-   */
-  private panelState?: Sqlite3SqlTerminalPanelState;
-
+export class Sqlite3SqlTerminalPanel extends SqlTerminalPanelBase<
+  Sqlite3SqlTerminalPanelState,
+  Sqlite3SqlTerminalSerializedState,
+  MySqlSqlTerminalWebviewMessage
+> {
   /**
    * 创建 SQLite3 SQL 终端面板管理器。
    *
-   * @param listStoredConnectionsUseCase 用于列出已保存连接的用例。
-   * @param executeSqlite3SqlUseCase 用于执行 SQLite3 SQL 的用例。
+   * @param {ListStoredConnectionsUseCase} listStoredConnectionsUseCase 用于列出已保存连接的用例。
+   * @param {ExecuteSqlite3SqlUseCase} executeSqlite3SqlUseCase 用于执行 SQLite3 SQL 的用例。
    */
   public constructor(
-    private readonly listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
+    listStoredConnectionsUseCase: ListStoredConnectionsUseCase,
     private readonly executeSqlite3SqlUseCase: ExecuteSqlite3SqlUseCase,
-  ) {}
-
-  /**
-   * 注册 SQL 终端 Webview 恢复器。
-   *
-   * @param {vscode.ExtensionContext} context VS Code 扩展生命周期上下文。
-   */
-  public activate(context: vscode.ExtensionContext): void {
-    context.subscriptions.push(
-      vscode.window.registerWebviewPanelSerializer(Sqlite3SqlTerminalPanel.viewType, this),
+  ) {
+    super(
+      {
+        viewType: "ppzPlus.sqlite3SqlTerminal",
+        panelTitle: "SQLite3 SQL 终端",
+        connectionNotFoundMessage: "未找到已选择的 SQLite3 连接。",
+      },
+      listStoredConnectionsUseCase,
+      undefined,
     );
-  }
-
-  /**
-   * 从 VS Code 保存的 Webview 状态恢复 SQL 终端面板。
-   *
-   * @param {vscode.WebviewPanel} panel VS Code 恢复出来的 Webview 面板。
-   * @param {unknown} serializedState Webview 前端保存的轻量状态。
-   */
-  public async deserializeWebviewPanel(
-    panel: vscode.WebviewPanel,
-    serializedState: unknown,
-  ): Promise<void> {
-    panel.webview.options = {
-      enableScripts: true,
-    };
-    const restoredState = this.parseSerializedState(serializedState);
-    const state: Sqlite3SqlTerminalPanelState = {
-      panel,
-      selectedConnectionId: restoredState.selectedConnectionId,
-      sql: restoredState.sql,
-    };
-
-    this.panelState = state;
-    this.registerPanelHandlers(state);
-    await this.render(state);
   }
 
   /**
@@ -114,121 +69,126 @@ export class Sqlite3SqlTerminalPanel
     initialConnection?: Sqlite3ConnectionConfig,
     initialSql?: string,
   ): Promise<void> {
-    if (this.panelState) {
-      this.panelState.panel.reveal(vscode.ViewColumn.Active);
-      if (initialConnection) {
-        this.panelState.selectedConnectionId = initialConnection.id;
-      }
-      if (initialSql !== undefined) {
-        this.panelState.sql = initialSql;
-        this.panelState.result = undefined;
-      }
-      await this.render(this.panelState);
-      return;
+    await this.openPanel({
+      connectionId: initialConnection?.id,
+      sql: initialSql,
+    });
+  }
+
+  /**
+   * 从 VS Code 保存状态解析 SQL 终端状态。
+   *
+   * @param {unknown} value 原始状态。
+   * @returns {Sqlite3SqlTerminalSerializedState} 归一化后的恢复状态。
+   */
+  protected parseSerializedState(value: unknown): Sqlite3SqlTerminalSerializedState {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return { sql: "" };
     }
 
-    const panel = vscode.window.createWebviewPanel(
-      Sqlite3SqlTerminalPanel.viewType,
-      "SQLite3 SQL 终端",
-      vscode.ViewColumn.Active,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-      },
-    );
-    const state: Sqlite3SqlTerminalPanelState = {
-      panel,
-      selectedConnectionId: initialConnection?.id,
-      sql: initialSql ?? "",
+    const record = value as Record<string, unknown>;
+    return {
+      selectedConnectionId:
+        typeof record.selectedConnectionId === "string" ? record.selectedConnectionId : undefined,
+      sql: typeof record.sql === "string" ? record.sql : "",
     };
-
-    this.panelState = state;
-    this.registerPanelHandlers(state);
-    await this.render(state);
   }
 
   /**
-   * 为 SQL 终端面板注册生命周期和消息处理。
+   * 依据恢复状态创建面板状态。
    *
-   * @param {Sqlite3SqlTerminalPanelState} state 当前面板状态。
+   * @param {vscode.WebviewPanel} panel VS Code 恢复出来的 Webview 面板。
+   * @param {Sqlite3SqlTerminalSerializedState} restoredState 已解析的恢复状态。
+   * @returns {Sqlite3SqlTerminalPanelState} 面板可变状态。
    */
-  private registerPanelHandlers(state: Sqlite3SqlTerminalPanelState): void {
-    state.panel.onDidDispose(() => {
-      if (this.panelState?.panel === state.panel) {
-        this.panelState = undefined;
-      }
-    });
-    state.panel.webview.onDidReceiveMessage(async (message: MySqlSqlTerminalWebviewMessage) => {
-      await this.handleWebviewMessage(state, message);
-    });
+  protected createRestoredState(
+    panel: vscode.WebviewPanel,
+    restoredState: Sqlite3SqlTerminalSerializedState,
+  ): Sqlite3SqlTerminalPanelState {
+    return {
+      panel,
+      selectedConnectionId: restoredState.selectedConnectionId,
+      sql: restoredState.sql,
+    };
   }
 
   /**
-   * 处理 SQL 终端 Webview 动作。
+   * 依据打开请求创建全新的面板状态。
+   *
+   * @param {vscode.WebviewPanel} panel 新建的 Webview 面板。
+   * @param {SqlTerminalOpenRequest} request 打开请求参数。
+   * @returns {Sqlite3SqlTerminalPanelState} 面板可变状态。
+   */
+  protected createNewState(
+    panel: vscode.WebviewPanel,
+    request: SqlTerminalOpenRequest,
+  ): Sqlite3SqlTerminalPanelState {
+    return {
+      panel,
+      selectedConnectionId: request.connectionId,
+      sql: request.sql ?? "",
+    };
+  }
+
+  /**
+   * 将打开请求合并进已存在的面板状态。
    *
    * @param {Sqlite3SqlTerminalPanelState} state 当前面板状态。
-   * @param {MySqlSqlTerminalWebviewMessage} message Webview 发出的消息。
+   * @param {SqlTerminalOpenRequest} request 打开请求参数。
    */
-  private async handleWebviewMessage(
+  protected applyOpenRequest(
     state: Sqlite3SqlTerminalPanelState,
-    message: MySqlSqlTerminalWebviewMessage,
-  ): Promise<void> {
-    if (message.type !== "execute") {
-      return;
+    request: SqlTerminalOpenRequest,
+  ): void {
+    if (request.connectionId !== undefined) {
+      state.selectedConnectionId = request.connectionId;
     }
-
-    state.selectedConnectionId = message.connectionId;
-    state.sql = message.sql;
-    state.result = undefined;
-    state.panel.webview.html = await this.renderHtml(state, true);
-
-    const connections = await this.listSqlite3Connections();
-    const selectedConnection = connections.find(
-      (connection) => connection.id === message.connectionId,
-    );
-
-    if (!selectedConnection) {
-      state.result = {
-        sql: message.sql,
-        success: false,
-        isQuery: false,
-        fields: [],
-        rows: [],
-        affectedRows: null,
-        durationMs: 0,
-        resultSets: [],
-        errorMessage: "未找到已选择的 SQLite3 连接。",
-      };
-      await this.render(state);
-      return;
+    if (request.sql !== undefined) {
+      state.sql = request.sql;
+      state.result = undefined;
     }
-
-    state.result = await this.executeSqlite3SqlUseCase.execute(selectedConnection, message.sql);
-    await this.render(state);
   }
 
   /**
-   * 渲染当前 SQL 终端面板。
+   * 从存储中列出 SQLite3 连接。
+   *
+   * @returns {Promise<readonly Sqlite3ConnectionConfig[]>} SQLite3 连接列表。
+   */
+  protected async listEngineConnections(): Promise<readonly Sqlite3ConnectionConfig[]> {
+    const connections = await this.listStoredConnectionsUseCase.execute();
+    return connections.filter(
+      (connection): connection is Sqlite3ConnectionConfig => connection.engine === "sqlite3",
+    );
+  }
+
+  /**
+   * 调用 SQLite3 SQL 执行用例。
    *
    * @param {Sqlite3SqlTerminalPanelState} state 当前面板状态。
+   * @param {Sqlite3ConnectionConfig} connection 目标连接。
+   * @returns {Promise<SqlExecutionResult>} SQL 执行结果。
    */
-  private async render(state: Sqlite3SqlTerminalPanelState): Promise<void> {
-    state.panel.title = "SQLite3 SQL 终端";
-    state.panel.webview.html = await this.renderHtml(state, false);
+  protected async executeSql(
+    state: Sqlite3SqlTerminalPanelState,
+    connection: Sqlite3ConnectionConfig,
+  ): Promise<SqlExecutionResult> {
+    return this.executeSqlite3SqlUseCase.execute(connection, state.sql);
   }
 
   /**
    * 创建 SQL 终端 Webview HTML。
    *
+   * 说明：SQLite3 终端使用独立的工具栏布局，不复用页面布局模板。
+   *
    * @param {Sqlite3SqlTerminalPanelState} state 当前面板状态。
    * @param {boolean} isExecuting 是否正在执行 SQL。
    * @returns {Promise<string>} Webview HTML 文档。
    */
-  private async renderHtml(
+  protected async renderHtml(
     state: Sqlite3SqlTerminalPanelState,
     isExecuting: boolean,
   ): Promise<string> {
-    const connections = await this.listSqlite3Connections();
+    const connections = await this.listEngineConnections();
     const selectedConnectionId = state.selectedConnectionId ?? connections[0]?.id ?? "";
     const connectionOptions = connections
       .map((connection) => {
@@ -246,7 +206,6 @@ export class Sqlite3SqlTerminalPanel
       selectedConnectionId,
       sql: state.sql,
     } satisfies Sqlite3SqlTerminalSerializedState);
-
     const nonce = createWebviewNonce();
     const cspMeta = buildWebviewCspMeta(state.panel.webview.cspSource, nonce);
 
@@ -333,37 +292,6 @@ export class Sqlite3SqlTerminalPanel
   }
 
   /**
-   * 从存储中列出 SQLite3 连接。
-   *
-   * @returns {Promise<Sqlite3ConnectionConfig[]>} SQLite3 连接列表。
-   */
-  private async listSqlite3Connections(): Promise<Sqlite3ConnectionConfig[]> {
-    const connections = await this.listStoredConnectionsUseCase.execute();
-    return connections.filter(
-      (connection): connection is Sqlite3ConnectionConfig => connection.engine === "sqlite3",
-    );
-  }
-
-  /**
-   * 从 VS Code 保存状态解析 SQL 终端状态。
-   *
-   * @param {unknown} value 原始状态。
-   * @returns {Sqlite3SqlTerminalSerializedState} 归一化后的恢复状态。
-   */
-  private parseSerializedState(value: unknown): Sqlite3SqlTerminalSerializedState {
-    if (!value || typeof value !== "object" || Array.isArray(value)) {
-      return { sql: "" };
-    }
-
-    const record = value as Record<string, unknown>;
-    return {
-      selectedConnectionId:
-        typeof record.selectedConnectionId === "string" ? record.selectedConnectionId : undefined,
-      sql: typeof record.sql === "string" ? record.sql : "",
-    };
-  }
-
-  /**
    * 描述 SQLite3 连接选择项。
    *
    * @param {ConnectionConfig} connection SQLite3 连接配置。
@@ -371,35 +299,5 @@ export class Sqlite3SqlTerminalPanel
    */
   private describeConnection(connection: ConnectionConfig): string {
     return `${connection.name} (${connection.mode === "file" ? connection.dbPath : ""})`;
-  }
-
-  /**
-   * 将值序列化为安全的脚本字面量。
-   *
-   * @param {unknown} value 需要写入脚本的值。
-   * @returns {string} JSON 字符串。
-   */
-  private serializeScriptValue(value: unknown): string {
-    return serializeScriptValue(value);
-  }
-
-  /**
-   * 转义 HTML 文本。
-   *
-   * @param {string} value 原始文本。
-   * @returns {string} HTML 安全文本。
-   */
-  private escapeHtml(value: string): string {
-    return escapeHtml(value);
-  }
-
-  /**
-   * 转义 HTML 属性。
-   *
-   * @param {string} value 原始属性值。
-   * @returns {string} HTML 安全属性值。
-   */
-  private escapeHtmlAttribute(value: string): string {
-    return escapeHtmlAttribute(value);
   }
 }
