@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import type { ListMySqlSchemasUseCase } from "../../application/useCases/mysql/ListMySqlSchemasUseCase";
-import { OpenMySqlTableDataCommand } from "../commands/OpenMySqlTableDataCommand";
+import { OpenTableDataCommand } from "../commands/OpenTableDataCommand";
 import type { ListMySqlTablesUseCase } from "../../application/useCases/mysql/ListMySqlTablesUseCase";
 import type { ListPostgreSqlDatabasesUseCase } from "../../application/useCases/postgresql/ListPostgreSqlDatabasesUseCase";
 import type { ListPostgreSqlSchemasUseCase } from "../../application/useCases/postgresql/ListPostgreSqlSchemasUseCase";
@@ -36,7 +36,7 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
   /**
    * 保存数据库资源树使用的 VS Code 视图标识。
    */
-  public static readonly viewId = "ppzPlus.mysqlConnections";
+  public static readonly viewId = "ppzPlus.connections";
 
   /**
    * 保存 Tree 菜单使用的连接节点上下文值。
@@ -445,7 +445,7 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
     treeItem.description = element.schemaName;
     treeItem.iconPath = new vscode.ThemeIcon("table");
     treeItem.command = {
-      command: OpenMySqlTableDataCommand.id,
+      command: OpenTableDataCommand.id,
       title: "打开表数据",
       arguments: [element],
     };
@@ -516,7 +516,7 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
     treeItem.description = element.tableType === "view" ? "view" : undefined;
     treeItem.iconPath = new vscode.ThemeIcon(element.tableType === "view" ? "eye" : "table");
     treeItem.command = {
-      command: OpenMySqlTableDataCommand.id,
+      command: OpenTableDataCommand.id,
       title: "打开表数据",
       arguments: [element],
     };
@@ -536,7 +536,7 @@ export class DatabaseConnectionsTreeDataProvider implements vscode.TreeDataProvi
     treeItem.description = element.schemaName;
     treeItem.iconPath = new vscode.ThemeIcon("table");
     treeItem.command = {
-      command: OpenMySqlTableDataCommand.id,
+      command: OpenTableDataCommand.id,
       title: "打开表数据",
       arguments: [element],
     };

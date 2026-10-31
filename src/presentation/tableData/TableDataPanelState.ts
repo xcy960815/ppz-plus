@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 
 import type {
-  MySqlTableCellValue,
-  MySqlTableColumnMetadata,
-  MySqlTableFilterCondition,
-  MySqlTableQueryOptions,
-  MySqlTableSortDirection,
-} from "../../application/mysql/MySqlTableDataProvider";
+  TableCellValue,
+  TableColumnMetadata,
+  TableFilterCondition,
+  TableQueryOptions,
+  TableSortDirection,
+} from "../../application/shared/TableDataTypes";
 import type {
   MySqlTableTreeNode,
   PostgreSqlTableTreeNode,
@@ -37,13 +37,13 @@ export interface DatabaseTablePanelState {
   pageIndex: number;
   pageSize: number;
   filterKeyword: string;
-  filterConditions: readonly MySqlTableFilterCondition[];
+  filterConditions: readonly TableFilterCondition[];
   sortColumnName?: string;
-  sortDirection: MySqlTableSortDirection;
+  sortDirection: TableSortDirection;
   hiddenColumnNames: Set<string>;
   currentSql?: string;
-  latestColumns: readonly MySqlTableColumnMetadata[];
-  latestRows: readonly Record<string, MySqlTableCellValue>[];
+  latestColumns: readonly TableColumnMetadata[];
+  latestRows: readonly Record<string, TableCellValue>[];
 }
 
 /**
@@ -58,9 +58,9 @@ export interface DatabaseTablePanelSerializedState {
   readonly pageIndex: number;
   readonly pageSize: number;
   readonly filterKeyword: string;
-  readonly filterConditions: readonly MySqlTableFilterCondition[];
+  readonly filterConditions: readonly TableFilterCondition[];
   readonly sortColumnName?: string;
-  readonly sortDirection: MySqlTableSortDirection;
+  readonly sortDirection: TableSortDirection;
   readonly hiddenColumnNames: readonly string[];
 }
 
@@ -103,9 +103,9 @@ export function createPanelKey(tableNode: TableDataTreeNode): string {
  * 将当前面板状态转换为表数据查询选项。
  *
  * @param {DatabaseTablePanelState} state 当前面板状态。
- * @returns {MySqlTableQueryOptions} 排序和过滤查询选项。
+ * @returns {TableQueryOptions} 排序和过滤查询选项。
  */
-export function createQueryOptions(state: DatabaseTablePanelState): MySqlTableQueryOptions {
+export function createQueryOptions(state: DatabaseTablePanelState): TableQueryOptions {
   const filterKeyword = state.filterKeyword.trim();
   const hasFilterConditions = state.filterConditions.length > 0;
   return {
@@ -275,25 +275,25 @@ export function parseSerializedState(
  * 解析 Webview 状态中保存的字段过滤条件。
  *
  * @param {unknown} value 原始过滤条件值。
- * @returns {readonly MySqlTableFilterCondition[]} 可传给应用层的字段过滤条件列表。
+ * @returns {readonly TableFilterCondition[]} 可传给应用层的字段过滤条件列表。
  */
-function parseFilterConditions(value: unknown): readonly MySqlTableFilterCondition[] {
+function parseFilterConditions(value: unknown): readonly TableFilterCondition[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
   return value
     .map((item) => parseFilterCondition(item))
-    .filter((item): item is MySqlTableFilterCondition => item !== undefined);
+    .filter((item): item is TableFilterCondition => item !== undefined);
 }
 
 /**
  * 解析单条字段过滤条件。
  *
  * @param {unknown} value 原始字段过滤条件值。
- * @returns {MySqlTableFilterCondition | undefined} 可用字段过滤条件；无效时为空。
+ * @returns {TableFilterCondition | undefined} 可用字段过滤条件；无效时为空。
  */
-function parseFilterCondition(value: unknown): MySqlTableFilterCondition | undefined {
+function parseFilterCondition(value: unknown): TableFilterCondition | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
@@ -322,9 +322,9 @@ function parseFilterCondition(value: unknown): MySqlTableFilterCondition | undef
  * 判断过滤操作符是否为表数据页支持的旧 PPZ 操作符。
  *
  * @param {unknown} value 待检查的操作符。
- * @returns {value is MySqlTableFilterCondition['operator']} 是否为支持的过滤操作符。
+ * @returns {value is TableFilterCondition['operator']} 是否为支持的过滤操作符。
  */
-function isSupportedFilterOperator(value: unknown): value is MySqlTableFilterCondition["operator"] {
+function isSupportedFilterOperator(value: unknown): value is TableFilterCondition["operator"] {
   return (
     value === "=" ||
     value === "!=" ||

@@ -1,10 +1,7 @@
 import type { MysqlConnectionConfig } from "../../../domain/connections/ConnectionConfig";
-import type {
-  MySqlTableDataProvider,
-  MySqlTableRowIdentityValues,
-  MySqlTableUpdateResult,
-  MySqlTableUpdateValues,
-} from "../../mysql/MySqlTableDataProvider";
+import type { TableRowIdentityValues, TableUpdateValues } from "../../shared/TableDataTypes";
+import type { MySqlTableUpdateResult } from "../../mysql/MySqlTableDataProvider";
+import type { MySqlTableDataProvider } from "../../mysql/MySqlTableDataProvider";
 
 /**
  * 更新 MySQL 表单条记录的应用用例。
@@ -23,16 +20,16 @@ export class UpdateMySqlTableRowUseCase {
    * @param {MysqlConnectionConfig} connection MySQL 连接配置。
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要更新记录的表。
-   * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
-   * @param {MySqlTableUpdateValues} values 需要更新的新字段值。
+   * @param {TableRowIdentityValues} identityValues 用于定位原行的字段值。
+   * @param {TableUpdateValues} values 需要更新的新字段值。
    * @returns {Promise<MySqlTableUpdateResult>} 单行更新结果。
    */
   public async execute(
     connection: MysqlConnectionConfig,
     schemaName: string,
     tableName: string,
-    identityValues: MySqlTableRowIdentityValues,
-    values: MySqlTableUpdateValues,
+    identityValues: TableRowIdentityValues,
+    values: TableUpdateValues,
   ): Promise<MySqlTableUpdateResult> {
     if (schemaName.trim().length === 0) {
       throw new Error("更新 MySQL 记录需要提供 schema 名称。");

@@ -1,18 +1,20 @@
 import type { MysqlConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type {
-  MySqlTableCellValue,
-  MySqlTableColumnMetadata,
-  MySqlTableDataProvider,
+  TableCellValue,
+  TableColumnMetadata,
+  TableFilterCondition,
+  TableInsertValues,
+  TableQueryOptions,
+  TableRowPage,
+  TableRowIdentityValues,
+  TableUpdateValues,
+} from "../../application/shared/TableDataTypes";
+import type {
   MySqlTableDeleteResult,
-  MySqlTableFilterCondition,
   MySqlTableInsertResult,
-  MySqlTableInsertValues,
-  MySqlTableQueryOptions,
-  MySqlTableRowPage,
-  MySqlTableRowIdentityValues,
   MySqlTableUpdateResult,
-  MySqlTableUpdateValues,
 } from "../../application/mysql/MySqlTableDataProvider";
+import type { MySqlTableDataProvider } from "../../application/mysql/MySqlTableDataProvider";
 import { MySqlConnectionAdapter } from "./MySqlConnectionAdapter";
 import { MySqlRuntimeLoader } from "./MySqlRuntimeLoader";
 import type { MySqlRuntimeClient, MySqlQueryRows } from "./MySqlRuntimeTypes";
@@ -38,13 +40,13 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * @param {MysqlConnectionConfig} connection MySQL 连接配置。
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要加载字段的表。
-   * @returns {Promise<readonly MySqlTableColumnMetadata[]>} 归一化后的字段元数据。
+   * @returns {Promise<readonly TableColumnMetadata[]>} 归一化后的字段元数据。
    */
   public async listColumns(
     connection: MysqlConnectionConfig,
     schemaName: string,
     tableName: string,
-  ): Promise<readonly MySqlTableColumnMetadata[]> {
+  ): Promise<readonly TableColumnMetadata[]> {
     const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
     const runtimeConnection = await mysql.createConnection(
       this.mySqlConnectionAdapter.resolveDriverOptions(connection),
@@ -65,7 +67,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * @param {string} tableName 需要加载行数据的表。
    * @param {number} pageIndex 从 0 开始的页码。
    * @param {number} pageSize 每页请求的行数。
-   * @returns {Promise<MySqlTableRowPage>} 分页行数据。
+   * @returns {Promise<TableRowPage>} 分页行数据。
    */
   public async listRowPage(
     connection: MysqlConnectionConfig,
@@ -73,8 +75,8 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
     tableName: string,
     pageIndex: number,
     pageSize: number,
-    options?: MySqlTableQueryOptions,
-  ): Promise<MySqlTableRowPage> {
+    options?: TableQueryOptions,
+  ): Promise<TableRowPage> {
     const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
     const runtimeConnection = await mysql.createConnection(
       this.mySqlConnectionAdapter.resolveDriverOptions(connection),
@@ -122,14 +124,14 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * @param {MysqlConnectionConfig} connection MySQL 连接配置。
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要新增记录的表。
-   * @param {MySqlTableInsertValues} values 需要显式写入的字段值。
+   * @param {TableInsertValues} values 需要显式写入的字段值。
    * @returns {Promise<MySqlTableInsertResult>} 单行新增结果。
    */
   public async insertRow(
     connection: MysqlConnectionConfig,
     schemaName: string,
     tableName: string,
-    values: MySqlTableInsertValues,
+    values: TableInsertValues,
   ): Promise<MySqlTableInsertResult> {
     const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
     const runtimeConnection = await mysql.createConnection(
@@ -156,16 +158,16 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * @param {MysqlConnectionConfig} connection MySQL 连接配置。
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要更新记录的表。
-   * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
-   * @param {MySqlTableUpdateValues} values 需要更新的新字段值。
+   * @param {TableRowIdentityValues} identityValues 用于定位原行的字段值。
+   * @param {TableUpdateValues} values 需要更新的新字段值。
    * @returns {Promise<MySqlTableUpdateResult>} 单行更新结果。
    */
   public async updateRow(
     connection: MysqlConnectionConfig,
     schemaName: string,
     tableName: string,
-    identityValues: MySqlTableRowIdentityValues,
-    values: MySqlTableUpdateValues,
+    identityValues: TableRowIdentityValues,
+    values: TableUpdateValues,
   ): Promise<MySqlTableUpdateResult> {
     const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
     const runtimeConnection = await mysql.createConnection(
@@ -191,14 +193,14 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * @param {MysqlConnectionConfig} connection MySQL 连接配置。
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要删除记录的表。
-   * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
+   * @param {TableRowIdentityValues} identityValues 用于定位原行的字段值。
    * @returns {Promise<MySqlTableDeleteResult>} 单行删除结果。
    */
   public async deleteRow(
     connection: MysqlConnectionConfig,
     schemaName: string,
     tableName: string,
-    identityValues: MySqlTableRowIdentityValues,
+    identityValues: TableRowIdentityValues,
   ): Promise<MySqlTableDeleteResult> {
     const mysql = await this.mySqlRuntimeLoader.loadMySqlPromiseModule();
     const runtimeConnection = await mysql.createConnection(
@@ -224,13 +226,13 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * @param {MySqlRuntimeClient} runtimeConnection 当前可用的 mysql2 连接。
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要加载字段的表。
-   * @returns {Promise<readonly MySqlTableColumnMetadata[]>} 归一化后的字段元数据。
+   * @returns {Promise<readonly TableColumnMetadata[]>} 归一化后的字段元数据。
    */
   private async listColumnsWithConnection(
     runtimeConnection: MySqlRuntimeClient,
     schemaName: string,
     tableName: string,
-  ): Promise<readonly MySqlTableColumnMetadata[]> {
+  ): Promise<readonly TableColumnMetadata[]> {
     const [rows] = await runtimeConnection.query(
       [
         "SELECT",
@@ -254,9 +256,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * 将 information_schema 行归一化为字段元数据。
    *
    * @param {MySqlQueryRows} rows mysql2 返回的原始行值。
-   * @returns {readonly MySqlTableColumnMetadata[]} 归一化后的字段元数据。
+   * @returns {readonly TableColumnMetadata[]} 归一化后的字段元数据。
    */
-  private normalizeColumnRows(rows: MySqlQueryRows): readonly MySqlTableColumnMetadata[] {
+  private normalizeColumnRows(rows: MySqlQueryRows): readonly TableColumnMetadata[] {
     if (!Array.isArray(rows)) {
       return [];
     }
@@ -288,7 +290,7 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
           extra: typeof extra === "string" ? extra : "",
         };
       })
-      .filter((column): column is MySqlTableColumnMetadata => column !== undefined);
+      .filter((column): column is TableColumnMetadata => column !== undefined);
   }
 
   /**
@@ -314,20 +316,20 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * 将 mysql2 行数据归一化为可序列化的分页载荷。
    *
    * @param {MySqlQueryRows} rows mysql2 返回的原始行值。
-   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
    * @param {number} pageIndex 从 0 开始的页码。
    * @param {number} pageSize 请求的分页大小。
-   * @returns {MySqlTableRowPage} 归一化后的分页行数据。
+   * @returns {TableRowPage} 归一化后的分页行数据。
    */
   private normalizeRowPage(
     rows: MySqlQueryRows,
-    columns: readonly MySqlTableColumnMetadata[],
+    columns: readonly TableColumnMetadata[],
     pageIndex: number,
     pageSize: number,
     totalRowCount: number,
     sql: string,
     sqlWithoutPagination: string,
-  ): MySqlTableRowPage {
+  ): TableRowPage {
     if (!Array.isArray(rows)) {
       return {
         pageIndex,
@@ -364,15 +366,15 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    *
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要统计的表。
-   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
-   * @param {MySqlTableQueryOptions} options 过滤查询选项。
+   * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {TableQueryOptions} options 过滤查询选项。
    * @returns 可执行 SQL 和参数。
    */
   private createRowCountQuery(
     schemaName: string,
     tableName: string,
-    columns: readonly MySqlTableColumnMetadata[],
-    options?: MySqlTableQueryOptions,
+    columns: readonly TableColumnMetadata[],
+    options?: TableQueryOptions,
   ): {
     readonly sql: string;
     readonly values: readonly unknown[];
@@ -395,19 +397,19 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    *
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要加载行数据的表。
-   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
    * @param {number} pageIndex 从 0 开始的页码。
    * @param {number} pageSize 每页请求的行数。
-   * @param {MySqlTableQueryOptions} options 排序和过滤等查询选项。
+   * @param {TableQueryOptions} options 排序和过滤等查询选项。
    * @returns 可执行 SQL、参数和展示 SQL。
    */
   private createRowPageQuery(
     schemaName: string,
     tableName: string,
-    columns: readonly MySqlTableColumnMetadata[],
+    columns: readonly TableColumnMetadata[],
     pageIndex: number,
     pageSize: number,
-    options?: MySqlTableQueryOptions,
+    options?: TableQueryOptions,
   ): {
     readonly sql: string;
     readonly values: readonly unknown[];
@@ -449,13 +451,13 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    *
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要新增记录的表。
-   * @param {MySqlTableInsertValues} values 需要显式写入的字段值。
+   * @param {TableInsertValues} values 需要显式写入的字段值。
    * @returns 可执行 SQL、参数和展示 SQL。
    */
   private createInsertRowQuery(
     schemaName: string,
     tableName: string,
-    values: MySqlTableInsertValues,
+    values: TableInsertValues,
   ): {
     readonly sql: string;
     readonly values: readonly unknown[];
@@ -489,15 +491,15 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    *
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要更新记录的表。
-   * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
-   * @param {MySqlTableUpdateValues} values 需要更新的新字段值。
+   * @param {TableRowIdentityValues} identityValues 用于定位原行的字段值。
+   * @param {TableUpdateValues} values 需要更新的新字段值。
    * @returns 可执行 SQL、参数和展示 SQL。
    */
   private createUpdateRowQuery(
     schemaName: string,
     tableName: string,
-    identityValues: MySqlTableRowIdentityValues,
-    values: MySqlTableUpdateValues,
+    identityValues: TableRowIdentityValues,
+    values: TableUpdateValues,
   ): {
     readonly sql: string;
     readonly values: readonly unknown[];
@@ -540,13 +542,13 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    *
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要删除记录的表。
-   * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
+   * @param {TableRowIdentityValues} identityValues 用于定位原行的字段值。
    * @returns 可执行 SQL、参数和展示 SQL。
    */
   private createDeleteRowQuery(
     schemaName: string,
     tableName: string,
-    identityValues: MySqlTableRowIdentityValues,
+    identityValues: TableRowIdentityValues,
   ): {
     readonly sql: string;
     readonly values: readonly unknown[];
@@ -574,13 +576,13 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
   /**
    * 创建关键词过滤 SQL 片段。
    *
-   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
-   * @param {MySqlTableQueryOptions} options 查询选项。
+   * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {TableQueryOptions} options 查询选项。
    * @returns 过滤 SQL、展示 SQL 和参数。
    */
   private createFilterClause(
-    columns: readonly MySqlTableColumnMetadata[],
-    options?: MySqlTableQueryOptions,
+    columns: readonly TableColumnMetadata[],
+    options?: TableQueryOptions,
   ): {
     readonly sql: string;
     readonly displaySql: string;
@@ -639,13 +641,13 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
   /**
    * 创建单条字段过滤条件 SQL 片段。
    *
-   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
-   * @param {MySqlTableFilterCondition} condition Webview 提交的字段过滤条件。
+   * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {TableFilterCondition} condition Webview 提交的字段过滤条件。
    * @returns {{ sql: string; displaySql: string; values: readonly unknown[] } | undefined} 可拼接到 WHERE 中的条件片段；字段无效时为空。
    */
   private createFilterConditionClause(
-    columns: readonly MySqlTableColumnMetadata[],
-    condition: MySqlTableFilterCondition,
+    columns: readonly TableColumnMetadata[],
+    condition: TableFilterCondition,
   ):
     | {
         readonly sql: string;
@@ -699,19 +701,19 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    *
    * @param {string} columnSql 已转义的字段名。
    * @param {'} operator 字段过滤操作符。
-   * @param {MySqlTableFilterCondition['value']} value 字段过滤值。
+   * @param {TableFilterCondition['value']} value 字段过滤值。
    * @returns 可拼接到 WHERE 中的条件片段。
    */
   private createScalarFilterConditionClause(
     columnSql: string,
     operator: "=" | "!=" | ">" | ">=" | "<" | "<=" | "like",
-    value: MySqlTableFilterCondition["value"],
+    value: TableFilterCondition["value"],
   ): {
     readonly sql: string;
     readonly displaySql: string;
     readonly values: readonly unknown[];
   } {
-    const normalizedValue: MySqlTableCellValue = Array.isArray(value)
+    const normalizedValue: TableCellValue = Array.isArray(value)
       ? String(value[0] ?? "")
       : String(value ?? "");
     const sqlOperator = operator === "!=" ? "<>" : operator.toUpperCase();
@@ -728,13 +730,13 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    *
    * @param {string} columnSql 已转义的字段名。
    * @param {'in' | 'not in'} operator 集合过滤操作符。
-   * @param {MySqlTableFilterCondition['value']} value 字段过滤值。
+   * @param {TableFilterCondition['value']} value 字段过滤值。
    * @returns {{ sql: string; displaySql: string; values: readonly unknown[] } | undefined} 可拼接到 WHERE 中的条件片段；集合为空时为空。
    */
   private createSetFilterConditionClause(
     columnSql: string,
     operator: "in" | "not in",
-    value: MySqlTableFilterCondition["value"],
+    value: TableFilterCondition["value"],
   ):
     | {
         readonly sql: string;
@@ -762,13 +764,13 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
   /**
    * 创建排序 SQL 片段。
    *
-   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
-   * @param {MySqlTableQueryOptions} options 查询选项。
+   * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {TableQueryOptions} options 查询选项。
    * @returns {string} ORDER BY SQL 片段。
    */
   private createOrderByClause(
-    columns: readonly MySqlTableColumnMetadata[],
-    options?: MySqlTableQueryOptions,
+    columns: readonly TableColumnMetadata[],
+    options?: TableQueryOptions,
   ): string {
     const requestedSortColumn = options?.sort
       ? columns.find((column) => column.name === options.sort?.columnName)
@@ -793,12 +795,12 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * 将单条 mysql2 行归一化为可序列化的单元格值。
    *
    * @param {Record<string, unknown>} row mysql2 返回的原始行。
-   * @returns {Record<string, MySqlTableCellValue>} 归一化后的行对象。
+   * @returns {Record<string, TableCellValue>} 归一化后的行对象。
    */
   private normalizeRow(
     row: Record<string, unknown>,
-    columns: readonly MySqlTableColumnMetadata[],
-  ): Record<string, MySqlTableCellValue> {
+    columns: readonly TableColumnMetadata[],
+  ): Record<string, TableCellValue> {
     const columnsByName = new Map(columns.map((column) => [column.name, column]));
 
     return Object.fromEntries(
@@ -813,12 +815,9 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * 将单个单元格值归一化为可安全 JSON 渲染的值。
    *
    * @param {unknown} value 原始单元格值。
-   * @returns {MySqlTableCellValue} 归一化后的单元格值。
+   * @returns {TableCellValue} 归一化后的单元格值。
    */
-  private normalizeCellValue(
-    value: unknown,
-    column?: MySqlTableColumnMetadata,
-  ): MySqlTableCellValue {
+  private normalizeCellValue(value: unknown, column?: TableColumnMetadata): TableCellValue {
     if (
       value === null ||
       typeof value === "string" ||
@@ -859,10 +858,10 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
    * 按旧 PPZ 的 Date 展示规则格式化 MySQL 日期时间值。
    *
    * @param {Date} value mysql2 返回的 Date 值。
-   * @param {MySqlTableColumnMetadata} column 当前字段元数据。
+   * @param {TableColumnMetadata} column 当前字段元数据。
    * @returns {string} 面向表数据页展示的本地时间字符串。
    */
-  private formatDateCellValue(value: Date, column?: MySqlTableColumnMetadata): string {
+  private formatDateCellValue(value: Date, column?: TableColumnMetadata): string {
     const formattedValue = [
       this.padDatePart(value.getFullYear(), 4),
       "-",
@@ -924,10 +923,10 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
   /**
    * 将单个值格式化为展示 SQL 使用的字面量。
    *
-   * @param {MySqlTableCellValue} value 待格式化的字段值。
+   * @param {TableCellValue} value 待格式化的字段值。
    * @returns {string} 仅用于展示的 SQL 字面量。
    */
-  private formatSqlLiteral(value: MySqlTableCellValue): string {
+  private formatSqlLiteral(value: TableCellValue): string {
     if (value === null) {
       return "NULL";
     }
@@ -946,10 +945,10 @@ export class Mysql2TableDataProvider implements MySqlTableDataProvider {
   /**
    * 将过滤条件值归一化为非空字符串列表。
    *
-   * @param {MySqlTableFilterCondition['value']} value 原始过滤条件值。
+   * @param {TableFilterCondition['value']} value 原始过滤条件值。
    * @returns {string[]} 可用于 SQL 参数的字符串列表。
    */
-  private normalizeFilterValueList(value: MySqlTableFilterCondition["value"]): string[] {
+  private normalizeFilterValueList(value: TableFilterCondition["value"]): string[] {
     const rawValues = Array.isArray(value) ? value : String(value ?? "").split(",");
 
     return rawValues.map((item) => String(item).trim()).filter((item) => item.length > 0);

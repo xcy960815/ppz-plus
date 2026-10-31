@@ -1,9 +1,7 @@
 import type { MysqlConnectionConfig } from "../../../domain/connections/ConnectionConfig";
-import type {
-  MySqlTableDataProvider,
-  MySqlTableDeleteResult,
-  MySqlTableRowIdentityValues,
-} from "../../mysql/MySqlTableDataProvider";
+import type { TableRowIdentityValues } from "../../shared/TableDataTypes";
+import type { MySqlTableDeleteResult } from "../../mysql/MySqlTableDataProvider";
+import type { MySqlTableDataProvider } from "../../mysql/MySqlTableDataProvider";
 
 /**
  * 删除 MySQL 表单条记录的应用用例。
@@ -22,14 +20,14 @@ export class DeleteMySqlTableRowUseCase {
    * @param {MysqlConnectionConfig} connection MySQL 连接配置。
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要删除记录的表。
-   * @param {MySqlTableRowIdentityValues} identityValues 用于定位原行的字段值。
+   * @param {TableRowIdentityValues} identityValues 用于定位原行的字段值。
    * @returns {Promise<MySqlTableDeleteResult>} 单行删除结果。
    */
   public async execute(
     connection: MysqlConnectionConfig,
     schemaName: string,
     tableName: string,
-    identityValues: MySqlTableRowIdentityValues,
+    identityValues: TableRowIdentityValues,
   ): Promise<MySqlTableDeleteResult> {
     if (schemaName.trim().length === 0) {
       throw new Error("删除 MySQL 记录需要提供 schema 名称。");

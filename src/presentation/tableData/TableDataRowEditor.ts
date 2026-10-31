@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 
 import type {
-  MySqlTableCellValue,
-  MySqlTableColumnMetadata,
-  MySqlTableInsertValues,
-  MySqlTableRowIdentityValues,
-  MySqlTableUpdateValues,
-} from "../../application/mysql/MySqlTableDataProvider";
+  TableCellValue,
+  TableColumnMetadata,
+  TableInsertValues,
+  TableRowIdentityValues,
+  TableUpdateValues,
+} from "../../application/shared/TableDataTypes";
 import type { DeleteMySqlTableRowUseCase } from "../../application/useCases/mysql/DeleteMySqlTableRowUseCase";
 import type { InsertMySqlTableRowUseCase } from "../../application/useCases/mysql/InsertMySqlTableRowUseCase";
 import type { ListMySqlTableColumnsUseCase } from "../../application/useCases/mysql/ListMySqlTableColumnsUseCase";
@@ -88,7 +88,7 @@ export class TableDataRowEditor {
    */
   public async insertRow(
     state: DatabaseTablePanelState,
-    sourceRow?: Record<string, MySqlTableCellValue>,
+    sourceRow?: Record<string, TableCellValue>,
   ): Promise<void> {
     try {
       const tableNode = this.getMySqlTableNode(state);
@@ -165,14 +165,14 @@ export class TableDataRowEditor {
   /**
    * 通过 VS Code 输入框收集单条新增记录的字段值。
    *
-   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
-   * @param {Record<string, MySqlTableCellValue>} sourceRow 作为新增默认值的来源行。
-   * @returns {Promise<MySqlTableInsertValues | undefined>} 用户提交的字段值；取消时返回 undefined。
+   * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {Record<string, TableCellValue>} sourceRow 作为新增默认值的来源行。
+   * @returns {Promise<TableInsertValues | undefined>} 用户提交的字段值；取消时返回 undefined。
    */
   private async promptInsertValues(
-    columns: readonly MySqlTableColumnMetadata[],
-    sourceRow?: Record<string, MySqlTableCellValue>,
-  ): Promise<MySqlTableInsertValues | undefined> {
+    columns: readonly TableColumnMetadata[],
+    sourceRow?: Record<string, TableCellValue>,
+  ): Promise<TableInsertValues | undefined> {
     const values: Record<string, string | number | boolean | null> = {};
     const writableColumns = columns.filter(
       (column) => !column.extra.toLowerCase().includes("auto_increment"),
@@ -327,8 +327,8 @@ export class TableDataRowEditor {
           (
             edit,
           ): edit is {
-            readonly row: Record<string, MySqlTableCellValue>;
-            readonly values: MySqlTableUpdateValues;
+            readonly row: Record<string, TableCellValue>;
+            readonly values: TableUpdateValues;
           } => edit !== undefined,
         );
 
@@ -369,14 +369,14 @@ export class TableDataRowEditor {
   /**
    * 归一化 Webview 内联编辑提交的字段值。
    *
-   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
    * @param {Record<string, string | number | boolean | null>} values Webview 提交的原始字段值。
-   * @returns {MySqlTableUpdateValues} 可传入更新用例的字段值。
+   * @returns {TableUpdateValues} 可传入更新用例的字段值。
    */
   private normalizeInlineEditValues(
-    columns: readonly MySqlTableColumnMetadata[],
+    columns: readonly TableColumnMetadata[],
     values: Record<string, string | number | boolean | null>,
-  ): MySqlTableUpdateValues {
+  ): TableUpdateValues {
     const editableColumnNames = new Set(
       columns
         .filter(
@@ -385,7 +385,7 @@ export class TableDataRowEditor {
         )
         .map((column) => column.name),
     );
-    const normalizedValues: Record<string, MySqlTableCellValue> = {};
+    const normalizedValues: Record<string, TableCellValue> = {};
 
     for (const [columnName, value] of Object.entries(values)) {
       if (editableColumnNames.has(columnName)) {
@@ -399,14 +399,14 @@ export class TableDataRowEditor {
   /**
    * 根据主键字段从当前行创建原行定位值。
    *
-   * @param {readonly MySqlTableColumnMetadata[]} primaryKeyColumns 主键字段列表。
-   * @param {Record<string, MySqlTableCellValue>} row 当前页中的原始行。
-   * @returns {MySqlTableRowIdentityValues} 原行定位值。
+   * @param {readonly TableColumnMetadata[]} primaryKeyColumns 主键字段列表。
+   * @param {Record<string, TableCellValue>} row 当前页中的原始行。
+   * @returns {TableRowIdentityValues} 原行定位值。
    */
   private createIdentityValues(
-    primaryKeyColumns: readonly MySqlTableColumnMetadata[],
-    row: Record<string, MySqlTableCellValue>,
-  ): MySqlTableRowIdentityValues {
+    primaryKeyColumns: readonly TableColumnMetadata[],
+    row: Record<string, TableCellValue>,
+  ): TableRowIdentityValues {
     return Object.fromEntries(
       primaryKeyColumns.map((column) => [column.name, row[column.name] ?? null]),
     );
@@ -482,13 +482,13 @@ export class TableDataRowEditor {
   /**
    * 创建对齐旧 PPZ 的删除确认明细。
    *
-   * @param {readonly MySqlTableColumnMetadata[]} primaryKeyColumns 当前表主键字段列表。
-   * @param {Record<string, MySqlTableCellValue>} row 当前准备删除的记录。
+   * @param {readonly TableColumnMetadata[]} primaryKeyColumns 当前表主键字段列表。
+   * @param {Record<string, TableCellValue>} row 当前准备删除的记录。
    * @returns {string} 展示给用户确认的删除风险说明。
    */
   private createDeleteWarningMessage(
-    primaryKeyColumns: readonly MySqlTableColumnMetadata[],
-    row: Record<string, MySqlTableCellValue>,
+    primaryKeyColumns: readonly TableColumnMetadata[],
+    row: Record<string, TableCellValue>,
   ): string {
     const warning = primaryKeyColumns
       .map(
@@ -502,10 +502,10 @@ export class TableDataRowEditor {
   /**
    * 将单元格值转换为确认弹窗中的短文本。
    *
-   * @param {MySqlTableCellValue} value 单元格原始展示值。
+   * @param {TableCellValue} value 单元格原始展示值。
    * @returns {string} 可放入 VS Code 消息框的文本。
    */
-  private formatCellValueForMessage(value: MySqlTableCellValue): string {
+  private formatCellValueForMessage(value: TableCellValue): string {
     if (value === null) {
       return "NULL";
     }
@@ -516,15 +516,15 @@ export class TableDataRowEditor {
   /**
    * 通过 VS Code 输入框收集单条记录更新值。
    *
-   * @param {readonly MySqlTableColumnMetadata[]} columns 当前表字段元数据。
-   * @param {Record<string, MySqlTableCellValue>} row 当前页中的原始行。
-   * @returns {Promise<MySqlTableUpdateValues | undefined>} 用户提交的更新值；取消时返回 undefined。
+   * @param {readonly TableColumnMetadata[]} columns 当前表字段元数据。
+   * @param {Record<string, TableCellValue>} row 当前页中的原始行。
+   * @returns {Promise<TableUpdateValues | undefined>} 用户提交的更新值；取消时返回 undefined。
    */
   private async promptUpdateValues(
-    columns: readonly MySqlTableColumnMetadata[],
-    row: Record<string, MySqlTableCellValue>,
-  ): Promise<MySqlTableUpdateValues | undefined> {
-    const values: Record<string, MySqlTableCellValue> = {};
+    columns: readonly TableColumnMetadata[],
+    row: Record<string, TableCellValue>,
+  ): Promise<TableUpdateValues | undefined> {
+    const values: Record<string, TableCellValue> = {};
     const editableColumns = columns.filter(
       (column) => !column.isPrimaryKey && !column.extra.toLowerCase().includes("auto_increment"),
     );

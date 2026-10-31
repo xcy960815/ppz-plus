@@ -3,7 +3,7 @@ import * as assert from "assert";
 import { CsvDocumentParser } from "../../application/import/CsvDocumentParser";
 import { JsonDocumentParser } from "../../application/import/JsonDocumentParser";
 import { ImportColumnMapper } from "../../application/import/ImportColumnMapper";
-import type { MySqlTableInsertValue } from "../../application/mysql/MySqlTableDataProvider";
+import type { TableCellValue } from "../../application/shared/TableDataTypes";
 
 // ---------------------------------------------------------------------------
 // CsvDocumentParser
@@ -296,7 +296,7 @@ suite("ImportColumnMapper", () => {
           { sourceName: "col_a", targetName: "field_x" },
           { sourceName: "col_b", targetName: "field_y" },
         ],
-        (row, sourceName) => (row as Record<string, MySqlTableInsertValue>)[sourceName],
+        (row, sourceName) => (row as Record<string, TableCellValue>)[sourceName],
       );
 
       assert.strictEqual(mappedRows.length, 2);
@@ -311,7 +311,7 @@ suite("ImportColumnMapper", () => {
         ["name"],
         ["name"],
         undefined,
-        (row, sourceName) => (row as Record<string, MySqlTableInsertValue>)[sourceName],
+        (row, sourceName) => (row as Record<string, TableCellValue>)[sourceName],
       );
 
       assert.strictEqual(mappedRows[0].name, "Alice");

@@ -16,16 +16,16 @@ type TableDataTreeNode = MySqlTableTreeNode | PostgreSqlTableTreeNode | Sqlite3T
 /**
  * 为选中的表节点打开数据页。
  */
-export class OpenMySqlTableDataCommand implements ExtensionCommand {
+export class OpenTableDataCommand implements ExtensionCommand {
   /**
    * 保存 VS Code 命令标识。
    */
-  public static readonly id = "ppz-plus.openMySqlTableData";
+  public static readonly id = "ppz-plus.openTableData";
 
   /**
    * 通过命令契约暴露命令标识。
    */
-  public readonly id = OpenMySqlTableDataCommand.id;
+  public readonly id = OpenTableDataCommand.id;
 
   /**
    * 创建打开表数据命令。

@@ -1,4 +1,4 @@
-import type { MySqlTableFilterCondition } from "../../application/mysql/MySqlTableDataProvider";
+import type { TableFilterCondition } from "../../application/shared/TableDataTypes";
 
 /**
  * 请求当前表面板的上一页数据。
@@ -36,7 +36,7 @@ export interface MySqlTableDataRefreshMessage {
 export interface MySqlTableDataApplyQueryOptionsMessage {
   readonly type: "applyQueryOptions";
   readonly filterKeyword: string;
-  readonly filterConditions?: readonly MySqlTableFilterCondition[];
+  readonly filterConditions?: readonly TableFilterCondition[];
   readonly sortColumnName: string;
   readonly sortDirection: "asc" | "desc";
 }
@@ -125,7 +125,7 @@ export interface MySqlTableDataSaveEditedRowsMessage {
 /**
  * 描述 MySQL 表数据 Webview 可接收的消息。
  */
-export type MySqlTableDataWebviewMessage =
+export type TableDataWebviewMessage =
   | MySqlTableDataPreviousPageMessage
   | MySqlTableDataNextPageMessage
   | MySqlTableDataGoToPageMessage

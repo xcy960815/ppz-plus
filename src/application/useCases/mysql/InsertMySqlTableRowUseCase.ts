@@ -1,9 +1,7 @@
 import type { MysqlConnectionConfig } from "../../../domain/connections/ConnectionConfig";
-import type {
-  MySqlTableDataProvider,
-  MySqlTableInsertResult,
-  MySqlTableInsertValues,
-} from "../../mysql/MySqlTableDataProvider";
+import type { TableInsertValues } from "../../shared/TableDataTypes";
+import type { MySqlTableInsertResult } from "../../mysql/MySqlTableDataProvider";
+import type { MySqlTableDataProvider } from "../../mysql/MySqlTableDataProvider";
 
 /**
  * 向 MySQL 表新增单条记录的应用用例。
@@ -22,14 +20,14 @@ export class InsertMySqlTableRowUseCase {
    * @param {MysqlConnectionConfig} connection MySQL 连接配置。
    * @param {string} schemaName 表所属的 schema。
    * @param {string} tableName 需要新增记录的表。
-   * @param {MySqlTableInsertValues} values 需要显式写入的字段值。
+   * @param {TableInsertValues} values 需要显式写入的字段值。
    * @returns {Promise<MySqlTableInsertResult>} 单行新增结果。
    */
   public async execute(
     connection: MysqlConnectionConfig,
     schemaName: string,
     tableName: string,
-    values: MySqlTableInsertValues,
+    values: TableInsertValues,
   ): Promise<MySqlTableInsertResult> {
     if (schemaName.trim().length === 0) {
       throw new Error("新增 MySQL 记录需要提供 schema 名称。");

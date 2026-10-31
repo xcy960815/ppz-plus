@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import type { ExtensionCommand } from "./ExtensionCommand";
-import { TestStoredMySqlConnectionCommand } from "./TestStoredMySqlConnectionCommand";
+import { TestStoredConnectionCommand } from "./TestStoredConnectionCommand";
 import type { DatabaseConnectionTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 
 /**
@@ -24,8 +24,11 @@ export class TestStoredSqlite3ConnectionCommand implements ExtensionCommand {
    * @returns {vscode.Disposable} 命令注册的可释放句柄。
    */
   public register(): vscode.Disposable {
-    return vscode.commands.registerCommand(this.id, async (treeNode?: DatabaseConnectionTreeNode) => {
-      await vscode.commands.executeCommand(TestStoredMySqlConnectionCommand.id, treeNode);
-    });
+    return vscode.commands.registerCommand(
+      this.id,
+      async (treeNode?: DatabaseConnectionTreeNode) => {
+        await vscode.commands.executeCommand(TestStoredConnectionCommand.id, treeNode);
+      },
+    );
   }
 }

@@ -7,7 +7,7 @@ import type { ExtensionCommand } from "./ExtensionCommand";
 import {
   describeConnectionEngine,
   withConnectionTestProgress,
-} from "./MySqlConnectionProgressPresenter";
+} from "./ConnectionProgressPresenter";
 import { describeConnectionTarget as formatConnectionTarget } from "./ConnectionDisplayFormatter";
 import type { StoredConnectionPasswordPrompt } from "./StoredConnectionPasswordPrompt";
 import { showUserErrorMessage } from "./UserErrorPresenter";
@@ -16,16 +16,16 @@ import type { DatabaseConnectionTreeNode } from "../explorer/DatabaseConnections
 /**
  * 测试从资源树或选择器中选中的数据库连接。
  */
-export class TestStoredMySqlConnectionCommand implements ExtensionCommand {
+export class TestStoredConnectionCommand implements ExtensionCommand {
   /**
    * 保存 VS Code 命令标识。
    */
-  public static readonly id = "ppz-plus.testStoredMySqlConnection";
+  public static readonly id = "ppz-plus.testStoredConnection";
 
   /**
    * 通过命令契约暴露命令标识。
    */
-  public readonly id = TestStoredMySqlConnectionCommand.id;
+  public readonly id = TestStoredConnectionCommand.id;
 
   /**
    * 创建已保存连接测试命令。

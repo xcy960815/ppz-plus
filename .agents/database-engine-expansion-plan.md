@@ -583,7 +583,7 @@ Presentation：
 - `ManageMySqlConnectionsCommand.ts`：`canTestConnection` / `canEditConnection` 放开对应引擎，编辑路径接入新增连接表单的 collect 方法或补专用 collect。
 - 新增 `OpenMssqlSqlTerminalCommand` / `OpenCockroachDbSqlTerminalCommand` / `OpenMariaDbSqlTerminalCommand`。
 - `package.json`：commands / activationEvents / view 菜单 when 子句同步加 contextValue，只给 `supported` 能力开放菜单。
-- `OpenMySqlTableDataCommand` 目前是多引擎表数据入口，短期复用；命名收敛另起任务，不与三库接入绑进同一 PR。
+- `OpenTableDataCommand` 是多引擎表数据入口（已完成「去 MySql 化」重命名）；后续新引擎直接复用，不再新增引擎专属表数据命令。
 
 ### 能力点亮批次（每库依序）
 

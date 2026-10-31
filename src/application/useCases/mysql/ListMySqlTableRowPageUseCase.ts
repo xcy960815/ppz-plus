@@ -1,9 +1,6 @@
 import type { MysqlConnectionConfig } from "../../../domain/connections/ConnectionConfig";
-import type {
-  MySqlTableDataProvider,
-  MySqlTableQueryOptions,
-  MySqlTableRowPage,
-} from "../../mysql/MySqlTableDataProvider";
+import type { TableQueryOptions, TableRowPage } from "../../shared/TableDataTypes";
+import type { MySqlTableDataProvider } from "../../mysql/MySqlTableDataProvider";
 
 /**
  * 列出 MySQL 表的一页行数据。
@@ -24,8 +21,8 @@ export class ListMySqlTableRowPageUseCase {
    * @param {string} tableName 需要加载行数据的表。
    * @param {number} pageIndex 从 0 开始的页码。
    * @param {number} pageSize 每页请求的行数。
-   * @param {MySqlTableQueryOptions} options 排序和过滤等查询选项。
-   * @returns {Promise<MySqlTableRowPage>} 分页行数据。
+   * @param {TableQueryOptions} options 排序和过滤等查询选项。
+   * @returns {Promise<TableRowPage>} 分页行数据。
    */
   public async execute(
     connection: MysqlConnectionConfig,
@@ -33,8 +30,8 @@ export class ListMySqlTableRowPageUseCase {
     tableName: string,
     pageIndex: number,
     pageSize: number,
-    options?: MySqlTableQueryOptions,
-  ): Promise<MySqlTableRowPage> {
+    options?: TableQueryOptions,
+  ): Promise<TableRowPage> {
     return this.mySqlTableDataProvider.listRowPage(
       connection,
       schemaName,

@@ -1,4 +1,4 @@
-import type { MySqlTableInsertValue } from "./MySqlTableDataProvider";
+import type { TableCellValue } from "../shared/TableDataTypes";
 import type { TableImportResult, TableImportTarget } from "../../domain/import/TableImportResult";
 import type { MysqlConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type { ImportTaskProgressReporter } from "../../domain/import/ImportTaskProgress";
@@ -7,7 +7,7 @@ import type { CancellationSignal } from "../../domain/tasks/CancellationSignal";
 /**
  * 表示准备写入 MySQL 的结构化导入行。
  */
-export type MySqlTableImportRow = Readonly<Record<string, MySqlTableInsertValue>>;
+export type MySqlTableImportRow = Readonly<Record<string, TableCellValue>>;
 
 /**
  * 向应用层提供 MySQL 表级结构化数据导入能力。

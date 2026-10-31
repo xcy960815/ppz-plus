@@ -6,16 +6,16 @@ import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnect
 /**
  * 刷新 MySQL 连接资源树。
  */
-export class RefreshMySqlConnectionsTreeCommand implements ExtensionCommand {
+export class RefreshConnectionsTreeCommand implements ExtensionCommand {
   /**
    * 保存 VS Code 命令标识。
    */
-  public static readonly id = "ppz-plus.refreshMySqlConnectionsTree";
+  public static readonly id = "ppz-plus.refreshConnectionsTree";
 
   /**
    * 通过命令契约暴露命令标识。
    */
-  public readonly id = RefreshMySqlConnectionsTreeCommand.id;
+  public readonly id = RefreshConnectionsTreeCommand.id;
 
   /**
    * 创建刷新资源树命令。

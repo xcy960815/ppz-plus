@@ -1,5 +1,5 @@
 import type { ImportColumnMapping } from "../../domain/import/ImportColumnMapping";
-import type { MySqlTableInsertValue } from "../mysql/MySqlTableDataProvider";
+import type { TableCellValue } from "../shared/TableDataTypes";
 import type { MySqlTableImportRow } from "../mysql/MySqlTableImportProvider";
 
 /**
@@ -100,7 +100,7 @@ export class ImportColumnMapper {
     sourceFields: readonly string[],
     targetFields: readonly string[],
     mappings: readonly ImportColumnMapping[] | undefined,
-    readValue: (row: TSourceRow, sourceName: string) => MySqlTableInsertValue,
+    readValue: (row: TSourceRow, sourceName: string) => TableCellValue,
   ): readonly MySqlTableImportRow[] {
     const normalizedMappings = this.normalizeMappings(sourceFields, targetFields, mappings);
 

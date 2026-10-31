@@ -9,15 +9,17 @@ import type { ImportErrorReportInput } from "../../domain/import/ImportErrorRepo
 import type { CancellationSignal } from "../../domain/tasks/CancellationSignal";
 import { OperationCanceledError } from "../../domain/tasks/CancellationSignal";
 import type {
-  MySqlTableDataProvider,
-  MySqlTableColumnMetadata,
-  MySqlTableInsertValues,
+  TableColumnMetadata,
+  TableInsertValues,
+  TableRowIdentityValues,
+  TableUpdateValues,
+} from "../../application/shared/TableDataTypes";
+import type {
   MySqlTableInsertResult,
-  MySqlTableRowIdentityValues,
-  MySqlTableUpdateValues,
   MySqlTableUpdateResult,
   MySqlTableDeleteResult,
 } from "../../application/mysql/MySqlTableDataProvider";
+import type { MySqlTableDataProvider } from "../../application/mysql/MySqlTableDataProvider";
 import type {
   MySqlTableImportProvider,
   MySqlTableImportRow,
@@ -129,7 +131,7 @@ suite("Application — InsertMySqlTableRowUseCase", () => {
   });
 
   test("有效参数透传到 provider", async () => {
-    let lastValues: MySqlTableInsertValues | undefined;
+    let lastValues: TableInsertValues | undefined;
     const provider: MySqlTableDataProvider = {
       ...mockTableDataProvider(),
       async insertRow(_conn, _schemaName, _tableName, values) {
@@ -193,7 +195,7 @@ suite("Application — UpdateMySqlTableRowUseCase", () => {
   });
 
   test("有效参数透传到 provider", async () => {
-    let lastIdentity: MySqlTableRowIdentityValues | undefined;
+    let lastIdentity: TableRowIdentityValues | undefined;
     const provider: MySqlTableDataProvider = {
       ...mockTableDataProvider(),
       async updateRow(_conn, _schemaName, _tableName, identityValues, values) {

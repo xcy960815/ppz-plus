@@ -24,7 +24,7 @@ import type { ExtensionCommand } from "./ExtensionCommand";
 import {
   describeConnectionEngine,
   withConnectionTestProgress,
-} from "./MySqlConnectionProgressPresenter";
+} from "./ConnectionProgressPresenter";
 import { extractUserErrorMessage, showUserErrorMessage } from "./UserErrorPresenter";
 import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 import {
@@ -90,16 +90,16 @@ interface MySqlConnectionFormContext {
 /**
  * 通过 VS Code Webview 表单创建新的 MySQL 连接配置。
  */
-export class AddMySqlConnectionCommand implements ExtensionCommand {
+export class AddConnectionCommand implements ExtensionCommand {
   /**
    * 保存 VS Code 命令标识。
    */
-  public static readonly id = "ppz-plus.addMySqlConnection";
+  public static readonly id = "ppz-plus.addConnection";
 
   /**
    * 通过命令契约暴露命令标识。
    */
-  public readonly id = AddMySqlConnectionCommand.id;
+  public readonly id = AddConnectionCommand.id;
 
   /**
    * 创建新增 MySQL 连接命令。
@@ -392,7 +392,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       };
     }
 
-    const port = AddMySqlConnectionCommand.parsePort(payload.port);
+    const port = AddConnectionCommand.parsePort(payload.port);
     if (port === undefined) {
       return {
         success: false,
@@ -559,9 +559,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       prompt: "输入 MySQL 服务端口",
       value: existingConfig?.mode === "parameters" ? String(existingConfig.port) : "3306",
       validateInput: (value) =>
-        AddMySqlConnectionCommand.parsePort(value) === undefined
-          ? "port 必须是正整数。"
-          : undefined,
+        AddConnectionCommand.parsePort(value) === undefined ? "port 必须是正整数。" : undefined,
     });
     if (!portInput) {
       return undefined;
@@ -602,7 +600,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       mode: "parameters",
       name: name.trim(),
       host: host.trim(),
-      port: AddMySqlConnectionCommand.parsePort(portInput) ?? 3306,
+      port: AddConnectionCommand.parsePort(portInput) ?? 3306,
       username: username.trim(),
       password: password || undefined,
       database: database.trim() || undefined,
@@ -670,9 +668,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       prompt: "输入 PostgreSQL 服务端口",
       value: existingConfig?.mode === "parameters" ? String(existingConfig.port) : "5432",
       validateInput: (value) =>
-        AddMySqlConnectionCommand.parsePort(value) === undefined
-          ? "port 必须是正整数。"
-          : undefined,
+        AddConnectionCommand.parsePort(value) === undefined ? "port 必须是正整数。" : undefined,
     });
     if (!portInput) {
       return undefined;
@@ -716,7 +712,7 @@ export class AddMySqlConnectionCommand implements ExtensionCommand {
       mode: "parameters",
       name: name.trim(),
       host: host.trim(),
-      port: AddMySqlConnectionCommand.parsePort(portInput) ?? 5432,
+      port: AddConnectionCommand.parsePort(portInput) ?? 5432,
       username: username.trim(),
       password: password || undefined,
       database: database.trim() || undefined,

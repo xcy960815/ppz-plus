@@ -1,4 +1,4 @@
-import { AddMySqlConnectionCommand } from "../commands/AddMySqlConnectionCommand";
+import { AddConnectionCommand } from "../commands/AddConnectionCommand";
 import { AddSqlite3ConnectionCommand } from "../commands/AddSqlite3ConnectionCommand";
 import { ClearPpzStateCommand } from "../commands/ClearPpzStateCommand";
 import { ExportMySqlSchemaSqlCommand } from "../commands/ExportMySqlSchemaSqlCommand";
@@ -12,18 +12,18 @@ import type { ExtensionCommand } from "../commands/ExtensionCommand";
 import { ImportMySqlCsvFileCommand } from "../commands/ImportMySqlCsvFileCommand";
 import { ImportMySqlJsonFileCommand } from "../commands/ImportMySqlJsonFileCommand";
 import { ImportMySqlSqlFileCommand } from "../commands/ImportMySqlSqlFileCommand";
-import { ManageMySqlConnectionsCommand } from "../commands/ManageMySqlConnectionsCommand";
+import { ManageConnectionsCommand } from "../commands/ManageConnectionsCommand";
 import { ManageSqlite3ConnectionsCommand } from "../commands/ManageSqlite3ConnectionsCommand";
 import { OpenMySqlSqlTerminalCommand } from "../commands/OpenMySqlSqlTerminalCommand";
-import { OpenMySqlTableDataCommand } from "../commands/OpenMySqlTableDataCommand";
+import { OpenTableDataCommand } from "../commands/OpenTableDataCommand";
 import { OpenPostgreSqlSqlTerminalCommand } from "../commands/OpenPostgreSqlSqlTerminalCommand";
 import { OpenSqlite3SqlTerminalCommand } from "../commands/OpenSqlite3SqlTerminalCommand";
 import { PullConnectionConfigSyncCommand } from "../commands/PullConnectionConfigSyncCommand";
-import { RefreshMySqlConnectionsTreeCommand } from "../commands/RefreshMySqlConnectionsTreeCommand";
+import { RefreshConnectionsTreeCommand } from "../commands/RefreshConnectionsTreeCommand";
 import { RefreshSqlite3ConnectionsTreeCommand } from "../commands/RefreshSqlite3ConnectionsTreeCommand";
 import { ShowProjectStatusCommand } from "../commands/ShowProjectStatusCommand";
 import { ShowSqlExportTaskLogsCommand } from "../commands/ShowSqlExportTaskLogsCommand";
-import { TestStoredMySqlConnectionCommand } from "../commands/TestStoredMySqlConnectionCommand";
+import { TestStoredConnectionCommand } from "../commands/TestStoredConnectionCommand";
 import { TestStoredSqlite3ConnectionCommand } from "../commands/TestStoredSqlite3ConnectionCommand";
 import { UploadConnectionConfigSyncCommand } from "../commands/UploadConnectionConfigSyncCommand";
 import type { BootstrapPresentation } from "./createBootstrapPresentation";
@@ -41,7 +41,7 @@ export function createBootstrapCommands(
   presentation: BootstrapPresentation,
 ): readonly ExtensionCommand[] {
   return [
-    new AddMySqlConnectionCommand(
+    new AddConnectionCommand(
       services.saveConnectionConfigUseCase,
       services.testConnectionUseCase,
       presentation.databaseConnectionsTreeDataProvider,
@@ -53,19 +53,19 @@ export function createBootstrapCommands(
       presentation.databaseConnectionsTreeDataProvider,
       presentation.sqlite3ConnectionsTreeDataProvider,
     ),
-    new ManageMySqlConnectionsCommand(
+    new ManageConnectionsCommand(
       services.listStoredConnectionsUseCase,
       services.deleteStoredConnectionUseCase,
       presentation.databaseConnectionsTreeDataProvider,
       presentation.sqlite3ConnectionsTreeDataProvider,
     ),
     new ManageSqlite3ConnectionsCommand(),
-    new RefreshMySqlConnectionsTreeCommand(presentation.databaseConnectionsTreeDataProvider),
+    new RefreshConnectionsTreeCommand(presentation.databaseConnectionsTreeDataProvider),
     new RefreshSqlite3ConnectionsTreeCommand(
       presentation.databaseConnectionsTreeDataProvider,
       presentation.sqlite3ConnectionsTreeDataProvider,
     ),
-    new TestStoredMySqlConnectionCommand(
+    new TestStoredConnectionCommand(
       services.listStoredConnectionsUseCase,
       services.testConnectionUseCase,
       presentation.storedConnectionPasswordPrompt,
@@ -82,7 +82,7 @@ export function createBootstrapCommands(
       presentation.databaseConnectionsTreeDataProvider,
       presentation.sqlite3ConnectionsTreeDataProvider,
     ),
-    new OpenMySqlTableDataCommand(presentation.databaseTableDataPanel),
+    new OpenTableDataCommand(presentation.databaseTableDataPanel),
     new OpenMySqlSqlTerminalCommand(presentation.mySqlSqlTerminalPanel),
     new OpenPostgreSqlSqlTerminalCommand(presentation.postgreSqlSqlTerminalPanel),
     new OpenSqlite3SqlTerminalCommand(presentation.sqlite3SqlTerminalPanel),

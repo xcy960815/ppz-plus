@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import type { ListSqlite3TablesUseCase } from "../../application/useCases/sqlite3/ListSqlite3TablesUseCase";
 import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
 import type { Sqlite3ConnectionConfig } from "../../domain/connections/ConnectionConfig";
-import { OpenMySqlTableDataCommand } from "../commands/OpenMySqlTableDataCommand";
+import { OpenTableDataCommand } from "../commands/OpenTableDataCommand";
 import { showUserErrorMessage } from "../commands/UserErrorPresenter";
 import type {
   DatabaseConnectionTreeNode,
@@ -88,7 +88,7 @@ export class Sqlite3ConnectionsTreeDataProvider implements vscode.TreeDataProvid
     treeItem.description = element.tableType === "view" ? "view" : undefined;
     treeItem.iconPath = new vscode.ThemeIcon(element.tableType === "view" ? "eye" : "table");
     treeItem.command = {
-      command: OpenMySqlTableDataCommand.id,
+      command: OpenTableDataCommand.id,
       title: "打开表数据",
       arguments: [element],
     };

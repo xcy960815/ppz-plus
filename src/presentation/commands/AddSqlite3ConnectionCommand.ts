@@ -10,7 +10,7 @@ import type { ExtensionCommand } from "./ExtensionCommand";
 import {
   describeConnectionEngine,
   withConnectionTestProgress,
-} from "./MySqlConnectionProgressPresenter";
+} from "./ConnectionProgressPresenter";
 import { extractUserErrorMessage, showUserErrorMessage } from "./UserErrorPresenter";
 import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3ConnectionsTreeDataProvider";

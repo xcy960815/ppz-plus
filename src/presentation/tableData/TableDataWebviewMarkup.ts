@@ -1,7 +1,4 @@
-import type {
-  MySqlTableColumnMetadata,
-  MySqlTableRowPage,
-} from "../../application/mysql/MySqlTableDataProvider";
+import type { TableColumnMetadata, TableRowPage } from "../../application/shared/TableDataTypes";
 import {
   buildWebviewCspMeta,
   createWebviewNonce,
@@ -135,15 +132,15 @@ export function renderRestoreErrorHtml(message: string, cspSource: string): stri
  * 渲染完整的表数据 HTML 文档。
  *
  * @param {DatabaseTablePanelState} state 当前面板状态。
- * @param {readonly MySqlTableColumnMetadata[]} columns 当前选中表的字段元数据。
- * @param {MySqlTableRowPage} rowPage 当前选中表的分页行数据。
+ * @param {readonly TableColumnMetadata[]} columns 当前选中表的字段元数据。
+ * @param {TableRowPage} rowPage 当前选中表的分页行数据。
  * @param {string} cspSource Webview 资源来源，用于构建 CSP。
  * @returns {string} 渲染到 Webview 内的 HTML 文档。
  */
 export function renderTableHtml(
   state: DatabaseTablePanelState,
-  columns: readonly MySqlTableColumnMetadata[],
-  rowPage: MySqlTableRowPage,
+  columns: readonly TableColumnMetadata[],
+  rowPage: TableRowPage,
   cspSource: string,
 ): string {
   const tableNode = state.tableNode;
@@ -1351,7 +1348,7 @@ export function renderTableHtml(
  * 按旧 PPZ 表格结构渲染单个表格单元格。
  *
  * @param {number} rowIndex 当前页行索引。
- * @param {MySqlTableColumnMetadata} column 当前单元格所属字段元数据。
+ * @param {TableColumnMetadata} column 当前单元格所属字段元数据。
  * @param {string | number | boolean | null} value 待渲染的单元格值。
  * @param {boolean} canEditRow 当前表是否允许通过主键编辑行。
  * @param {boolean} hidden 当前字段是否初始隐藏。
@@ -1359,7 +1356,7 @@ export function renderTableHtml(
  */
 function renderCell(
   rowIndex: number,
-  column: MySqlTableColumnMetadata,
+  column: TableColumnMetadata,
   value: string | number | boolean | null,
   canEditRow: boolean,
   hidden: boolean,

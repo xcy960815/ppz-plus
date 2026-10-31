@@ -1,9 +1,6 @@
 import * as vscode from "vscode";
 
-import type {
-  MySqlTableColumnMetadata,
-  MySqlTableRowPage,
-} from "../../application/mysql/MySqlTableDataProvider";
+import type { TableColumnMetadata, TableRowPage } from "../../application/shared/TableDataTypes";
 import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
 import type { ListMySqlTableColumnsUseCase } from "../../application/useCases/mysql/ListMySqlTableColumnsUseCase";
 import type { ListMySqlTableRowPageUseCase } from "../../application/useCases/mysql/ListMySqlTableRowPageUseCase";
@@ -16,7 +13,7 @@ import { showUserErrorMessage } from "../commands/UserErrorPresenter";
 import { OpenMySqlSqlTerminalCommand } from "../commands/OpenMySqlSqlTerminalCommand";
 import { OpenPostgreSqlSqlTerminalCommand } from "../commands/OpenPostgreSqlSqlTerminalCommand";
 import { OpenSqlite3SqlTerminalCommand } from "../commands/OpenSqlite3SqlTerminalCommand";
-import type { MySqlTableDataWebviewMessage } from "./MySqlTableDataWebviewMessage";
+import type { TableDataWebviewMessage } from "./TableDataWebviewMessage";
 import {
   createPanelKey,
   createQueryOptions,
@@ -49,7 +46,7 @@ export class DatabaseTableDataPanel
   /**
    * 保存表数据页 Webview 的 VS Code viewType。
    */
-  private static readonly viewType = "ppzPlus.mysqlTableData";
+  private static readonly viewType = "ppzPlus.tableData";
 
   /**
    * 按完整表键保存已打开的表数据面板。
@@ -227,7 +224,7 @@ export class DatabaseTableDataPanel
     state.panel.onDidDispose(() => {
       this.panelStatesByKey.delete(createPanelKey(state.tableNode));
     });
-    state.panel.webview.onDidReceiveMessage(async (message: MySqlTableDataWebviewMessage) => {
+    state.panel.webview.onDidReceiveMessage(async (message: TableDataWebviewMessage) => {
       await this.handleWebviewMessage(state, message);
     });
   }
@@ -257,11 +254,11 @@ export class DatabaseTableDataPanel
    * 处理分页和刷新的 Webview 动作。
    *
    * @param {DatabaseTablePanelState} state 正在更新的面板状态。
-   * @param {MySqlTableDataWebviewMessage} message Webview 发出的消息。
+   * @param {TableDataWebviewMessage} message Webview 发出的消息。
    */
   private async handleWebviewMessage(
     state: DatabaseTablePanelState,
-    message: MySqlTableDataWebviewMessage,
+    message: TableDataWebviewMessage,
   ): Promise<void> {
     switch (message.type) {
       case "previousPage":
@@ -436,7 +433,7 @@ export class DatabaseTableDataPanel
    */
   private async loadTableData(
     state: DatabaseTablePanelState,
-  ): Promise<readonly [readonly MySqlTableColumnMetadata[], MySqlTableRowPage]> {
+  ): Promise<readonly [readonly TableColumnMetadata[], TableRowPage]> {
     if (state.tableNode.kind === "postgresqlTable") {
       return Promise.all([
         this.listPostgreSqlTableColumnsUseCase.execute(

@@ -2,10 +2,10 @@ import * as vscode from "vscode";
 
 import type { DeleteStoredConnectionUseCase } from "../../application/useCases/connections/DeleteStoredConnectionUseCase";
 import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
-import { describeConnectionEngine } from "./MySqlConnectionProgressPresenter";
+import { describeConnectionEngine } from "./ConnectionProgressPresenter";
 import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type { ExtensionCommand } from "./ExtensionCommand";
-import { AddMySqlConnectionCommand } from "./AddMySqlConnectionCommand";
+import { AddConnectionCommand } from "./AddConnectionCommand";
 import { describeConnectionTarget as formatConnectionTarget } from "./ConnectionDisplayFormatter";
 import type { DatabaseConnectionTreeNode } from "../explorer/DatabaseConnectionsTreeNode";
 import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
@@ -14,16 +14,16 @@ import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3Connectio
 /**
  * 通过操作选择器管理已保存的数据库连接。
  */
-export class ManageMySqlConnectionsCommand implements ExtensionCommand {
+export class ManageConnectionsCommand implements ExtensionCommand {
   /**
    * 保存 VS Code 命令标识。
    */
-  public static readonly id = "ppz-plus.manageMySqlConnections";
+  public static readonly id = "ppz-plus.manageConnections";
 
   /**
    * 通过命令契约暴露命令标识。
    */
-  public readonly id = ManageMySqlConnectionsCommand.id;
+  public readonly id = ManageConnectionsCommand.id;
 
   /**
    * 创建连接管理命令。
@@ -130,7 +130,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
    * @param {ConnectionConfig} connection 当前选中的连接。
    */
   private async showConnectionDetails(connection: ConnectionConfig): Promise<void> {
-    await vscode.commands.executeCommand(AddMySqlConnectionCommand.id, connection, "details");
+    await vscode.commands.executeCommand(AddConnectionCommand.id, connection, "details");
   }
 
   /**
@@ -139,7 +139,7 @@ export class ManageMySqlConnectionsCommand implements ExtensionCommand {
    * @param {ConnectionConfig} connection 当前选中的连接。
    */
   private async editConnection(connection: ConnectionConfig): Promise<void> {
-    await vscode.commands.executeCommand(AddMySqlConnectionCommand.id, connection, "edit");
+    await vscode.commands.executeCommand(AddConnectionCommand.id, connection, "edit");
   }
 
   /**

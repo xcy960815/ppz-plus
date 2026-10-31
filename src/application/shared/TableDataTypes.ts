@@ -68,6 +68,21 @@ export interface TableQueryOptions {
 }
 
 /**
+ * 描述表数据页新增单行记录时提交的字段值集合。
+ */
+export type TableInsertValues = Readonly<Record<string, TableCellValue>>;
+
+/**
+ * 描述表数据页更新单行记录时定位原行的字段值集合。
+ */
+export type TableRowIdentityValues = Readonly<Record<string, TableCellValue>>;
+
+/**
+ * 描述表数据页更新单行记录时提交的新字段值集合。
+ */
+export type TableUpdateValues = Readonly<Record<string, TableCellValue>>;
+
+/**
  * 描述数据流程返回的一页表行。
  */
 export interface TableRowPage {
