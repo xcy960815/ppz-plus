@@ -183,13 +183,13 @@ SQL 功能：
 - 表数据页 Webview `lang="en"` 更正为 `zh-CN` `✅`
 - 文件对话框过滤器键 `SQLite` 统一为 `SQLite3` `✅`
 
-Webview 复用与安全（非破坏性，待办）：
+Webview 复用与安全（非破坏性，已完成）：
 
-- 抽取 SQL 终端面板基类与共享样式常量，消除三个终端面板的重复
+- 抽取 SQL 终端面板基类与共享样式常量，消除三个终端面板的重复 `✅`
 - 抽取公共 `escapeHtml` 工具，收敛 5 处重复实现 `✅`
 - 统一三个 SQL 终端面板的内联脚本转义强度到最严版本 `✅`
 - 为所有 Webview 面板补充 Content-Security-Policy 与 nonce，移除内联 `onclick` `✅`
-- 动态生成的搜索条件控件补充 label / aria-label
+- 动态生成的搜索条件控件补充 label / aria-label `✅`
 
 命名与结构收敛（破坏性，需专门评估后再动）：
 
