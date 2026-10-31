@@ -2062,7 +2062,7 @@ export class DatabaseTableDataPanel
 			<div class="dialog-title">搜索数据</div>
 			<div class="dialog-body">
 				<div id="filterConditions" class="search-condition-list"></div>
-				<button type="button" class="add-condition-button" data-action="addFilterCondition">+</button>
+				<button type="button" class="add-condition-button" data-action="addFilterCondition" aria-label="新增搜索条件">+</button>
 				<div class="search-keyword">
 					<label>
 						<span>关键字</span>
@@ -2269,7 +2269,7 @@ export class DatabaseTableDataPanel
 				return '<div class="condition-value filler"></div>';
 			}
 			if (!isArrayFilterOperator(condition.operator)) {
-				return '<input class="condition-value" value="' +
+				return '<input class="condition-value" aria-label="条件值" value="' +
 					escapeClientHtml(getConditionInputValue(condition)) + '" />';
 			}
 			const values = Array.isArray(condition.value) && condition.value.length > 0
@@ -2277,7 +2277,7 @@ export class DatabaseTableDataPanel
 				: [''];
 			const items = values.map((value) => [
 				'<div class="input-array-item">',
-				'<input class="condition-array-value" value="' + escapeClientHtml(value) + '" />',
+				'<input class="condition-array-value" aria-label="条件值" value="' + escapeClientHtml(value) + '" />',
 				'<button type="button" class="condition-array-remove" title="删除">×</button>',
 				'</div>'
 			].join('')).join('');
@@ -2313,8 +2313,8 @@ export class DatabaseTableDataPanel
 				const isNullOperator = isNullFilterOperator(normalizedCondition.operator);
 				return [
 					'<div class="search-condition-row" data-null-operator="' + String(isNullOperator) + '">',
-					'<select class="condition-column">' + columnOptions + '</select>',
-					'<select class="condition-operator">' + operatorOptions + '</select>',
+					'<select class="condition-column" aria-label="条件字段">' + columnOptions + '</select>',
+					'<select class="condition-operator" aria-label="条件运算符">' + operatorOptions + '</select>',
 					renderConditionValueControl(normalizedCondition),
 					'<button type="button" class="condition-remove" title="删除">×</button>',
 					'</div>'
