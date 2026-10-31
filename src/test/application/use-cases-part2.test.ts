@@ -34,23 +34,23 @@ import { CsvDocumentParser } from "../../application/import/CsvDocumentParser";
 import { JsonDocumentParser } from "../../application/import/JsonDocumentParser";
 import { ImportColumnMapper } from "../../application/import/ImportColumnMapper";
 
-import { InsertMySqlTableRowUseCase } from "../../application/useCases/InsertMySqlTableRowUseCase";
-import { UpdateMySqlTableRowUseCase } from "../../application/useCases/UpdateMySqlTableRowUseCase";
-import { DeleteMySqlTableRowUseCase } from "../../application/useCases/DeleteMySqlTableRowUseCase";
-import { ExportMySqlTablesBatchUseCase } from "../../application/useCases/ExportMySqlTablesBatchUseCase";
-import { ExportMySqlTableUseCase } from "../../application/useCases/ExportMySqlTableUseCase";
-import { SaveSqlExportDocumentUseCase } from "../../application/useCases/SaveSqlExportDocumentUseCase";
+import { InsertMySqlTableRowUseCase } from "../../application/useCases/mysql/InsertMySqlTableRowUseCase";
+import { UpdateMySqlTableRowUseCase } from "../../application/useCases/mysql/UpdateMySqlTableRowUseCase";
+import { DeleteMySqlTableRowUseCase } from "../../application/useCases/mysql/DeleteMySqlTableRowUseCase";
+import { ExportMySqlTablesBatchUseCase } from "../../application/useCases/mysql/ExportMySqlTablesBatchUseCase";
+import { ExportMySqlTableUseCase } from "../../application/useCases/mysql/ExportMySqlTableUseCase";
+import { SaveSqlExportDocumentUseCase } from "../../application/useCases/export/SaveSqlExportDocumentUseCase";
 import type { MySqlExportProvider } from "../../application/mysql/MySqlExportProvider";
 import type { SqlExportFileWriter } from "../../application/export/SqlExportFileWriter";
-import { PreviewMySqlCsvFileImportUseCase } from "../../application/useCases/PreviewMySqlCsvFileImportUseCase";
-import { PreviewMySqlJsonFileImportUseCase } from "../../application/useCases/PreviewMySqlJsonFileImportUseCase";
-import { PreviewMySqlSqlFileImportUseCase } from "../../application/useCases/PreviewMySqlSqlFileImportUseCase";
-import { ImportMySqlCsvFileUseCase } from "../../application/useCases/ImportMySqlCsvFileUseCase";
-import { ImportMySqlJsonFileUseCase } from "../../application/useCases/ImportMySqlJsonFileUseCase";
-import { ImportMySqlSqlFileUseCase } from "../../application/useCases/ImportMySqlSqlFileUseCase";
-import { PrepareMySqlCsvImportMappingUseCase } from "../../application/useCases/PrepareMySqlCsvImportMappingUseCase";
-import { PrepareMySqlJsonImportMappingUseCase } from "../../application/useCases/PrepareMySqlJsonImportMappingUseCase";
-import { CreateImportErrorReportUseCase } from "../../application/useCases/CreateImportErrorReportUseCase";
+import { PreviewMySqlCsvFileImportUseCase } from "../../application/useCases/mysql/PreviewMySqlCsvFileImportUseCase";
+import { PreviewMySqlJsonFileImportUseCase } from "../../application/useCases/mysql/PreviewMySqlJsonFileImportUseCase";
+import { PreviewMySqlSqlFileImportUseCase } from "../../application/useCases/mysql/PreviewMySqlSqlFileImportUseCase";
+import { ImportMySqlCsvFileUseCase } from "../../application/useCases/mysql/ImportMySqlCsvFileUseCase";
+import { ImportMySqlJsonFileUseCase } from "../../application/useCases/mysql/ImportMySqlJsonFileUseCase";
+import { ImportMySqlSqlFileUseCase } from "../../application/useCases/mysql/ImportMySqlSqlFileUseCase";
+import { PrepareMySqlCsvImportMappingUseCase } from "../../application/useCases/mysql/PrepareMySqlCsvImportMappingUseCase";
+import { PrepareMySqlJsonImportMappingUseCase } from "../../application/useCases/mysql/PrepareMySqlJsonImportMappingUseCase";
+import { CreateImportErrorReportUseCase } from "../../application/useCases/import/CreateImportErrorReportUseCase";
 
 // ---------------------------------------------------------------------------
 // 共享 fixture

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { ClearPpzStateUseCase } from "../../application/useCases/ClearPpzStateUseCase";
+import type { ClearPpzStateUseCase } from "../../application/useCases/system/ClearPpzStateUseCase";
 import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3ConnectionsTreeDataProvider";
 import type { ExtensionCommand } from "./ExtensionCommand";

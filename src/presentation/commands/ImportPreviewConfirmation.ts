@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { CreateImportErrorReportUseCase } from "../../application/useCases/CreateImportErrorReportUseCase";
+import type { CreateImportErrorReportUseCase } from "../../application/useCases/import/CreateImportErrorReportUseCase";
 import type { ImportColumnMapping } from "../../domain/import/ImportColumnMapping";
 import type {
   ImportPreviewCellValue,

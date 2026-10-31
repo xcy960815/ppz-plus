@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { UploadConnectionConfigSyncUseCase } from "../../application/useCases/UploadConnectionConfigSyncUseCase";
+import type { UploadConnectionConfigSyncUseCase } from "../../application/useCases/sync/UploadConnectionConfigSyncUseCase";
 import type { ExtensionCommand } from "./ExtensionCommand";
 import { showUserErrorMessage } from "./UserErrorPresenter";
 

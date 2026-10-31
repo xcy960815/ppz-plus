@@ -2,10 +2,10 @@ import * as path from "path";
 
 import * as vscode from "vscode";
 
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
-import type { CreateImportErrorReportUseCase } from "../../application/useCases/CreateImportErrorReportUseCase";
-import type { ImportMySqlSqlFileUseCase } from "../../application/useCases/ImportMySqlSqlFileUseCase";
-import type { PreviewMySqlSqlFileImportUseCase } from "../../application/useCases/PreviewMySqlSqlFileImportUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
+import type { CreateImportErrorReportUseCase } from "../../application/useCases/import/CreateImportErrorReportUseCase";
+import type { ImportMySqlSqlFileUseCase } from "../../application/useCases/mysql/ImportMySqlSqlFileUseCase";
+import type { PreviewMySqlSqlFileImportUseCase } from "../../application/useCases/mysql/PreviewMySqlSqlFileImportUseCase";
 import type { MysqlConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import { isOperationCanceledError } from "../../domain/tasks/CancellationSignal";
 import type { ExtensionCommand } from "./ExtensionCommand";

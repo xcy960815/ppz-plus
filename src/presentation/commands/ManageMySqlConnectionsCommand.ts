@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
-import type { DeleteStoredConnectionUseCase } from "../../application/useCases/DeleteStoredConnectionUseCase";
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
+import type { DeleteStoredConnectionUseCase } from "../../application/useCases/connections/DeleteStoredConnectionUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
 import { describeConnectionEngine } from "./MySqlConnectionProgressPresenter";
 import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type { ExtensionCommand } from "./ExtensionCommand";

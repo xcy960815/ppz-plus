@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { PullConnectionConfigSyncUseCase } from "../../application/useCases/PullConnectionConfigSyncUseCase";
+import type { PullConnectionConfigSyncUseCase } from "../../application/useCases/sync/PullConnectionConfigSyncUseCase";
 import { DatabaseConnectionsTreeDataProvider } from "../explorer/DatabaseConnectionsTreeDataProvider";
 import { Sqlite3ConnectionsTreeDataProvider } from "../explorer/Sqlite3ConnectionsTreeDataProvider";
 import type { ExtensionCommand } from "./ExtensionCommand";

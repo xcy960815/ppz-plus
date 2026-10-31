@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
 import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type { SqlExecutionResult } from "../../domain/query/SqlExecutionResult";
 import type { ExtensionActivationParticipant } from "../bootstrap/ExtensionActivationParticipant";

@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 
-import type { CheckSqlExportCapabilityUseCase } from "../../application/useCases/CheckSqlExportCapabilityUseCase";
-import type { ExportMySqlTablesBatchUseCase } from "../../application/useCases/ExportMySqlTablesBatchUseCase";
-import type { ListMySqlTablesUseCase } from "../../application/useCases/ListMySqlTablesUseCase";
-import type { RecordSqlExportTaskLogUseCase } from "../../application/useCases/RecordSqlExportTaskLogUseCase";
+import type { CheckSqlExportCapabilityUseCase } from "../../application/useCases/export/CheckSqlExportCapabilityUseCase";
+import type { ExportMySqlTablesBatchUseCase } from "../../application/useCases/mysql/ExportMySqlTablesBatchUseCase";
+import type { ListMySqlTablesUseCase } from "../../application/useCases/mysql/ListMySqlTablesUseCase";
+import type { RecordSqlExportTaskLogUseCase } from "../../application/useCases/export/RecordSqlExportTaskLogUseCase";
 import type {
   SqlExportBatchFailureItem,
   SqlExportBatchResult,

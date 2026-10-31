@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { ListSqlExportTaskLogsUseCase } from "../../application/useCases/ListSqlExportTaskLogsUseCase";
+import type { ListSqlExportTaskLogsUseCase } from "../../application/useCases/export/ListSqlExportTaskLogsUseCase";
 import type { SqlExportTaskLogEntry } from "../../domain/export/SqlExportTaskLog";
 import type { ExtensionCommand } from "./ExtensionCommand";
 

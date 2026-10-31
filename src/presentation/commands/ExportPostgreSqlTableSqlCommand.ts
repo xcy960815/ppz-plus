@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 
-import type { CheckSqlExportCapabilityUseCase } from "../../application/useCases/CheckSqlExportCapabilityUseCase";
-import type { ExportPostgreSqlTableUseCase } from "../../application/useCases/ExportPostgreSqlTableUseCase";
-import type { RecordSqlExportTaskLogUseCase } from "../../application/useCases/RecordSqlExportTaskLogUseCase";
-import type { SaveSqlExportDocumentUseCase } from "../../application/useCases/SaveSqlExportDocumentUseCase";
+import type { CheckSqlExportCapabilityUseCase } from "../../application/useCases/export/CheckSqlExportCapabilityUseCase";
+import type { ExportPostgreSqlTableUseCase } from "../../application/useCases/postgresql/ExportPostgreSqlTableUseCase";
+import type { RecordSqlExportTaskLogUseCase } from "../../application/useCases/export/RecordSqlExportTaskLogUseCase";
+import type { SaveSqlExportDocumentUseCase } from "../../application/useCases/export/SaveSqlExportDocumentUseCase";
 import type { SqlExportDocument, SqlExportKind } from "../../domain/export/SqlExportDocument";
 import type { SqlExportFileSaveResult } from "../../domain/export/SqlExportFileSaveResult";
 import type { ExtensionCommand } from "./ExtensionCommand";

@@ -13,32 +13,32 @@ import type {
   MysqlConnectionConfig,
   PostgreSqlConnectionConfig,
 } from "../../domain/connections/ConnectionConfig";
-import { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
-import { DeleteStoredConnectionUseCase } from "../../application/useCases/DeleteStoredConnectionUseCase";
-import { SaveConnectionConfigUseCase } from "../../application/useCases/SaveConnectionConfigUseCase";
-import { TestConnectionUseCase } from "../../application/useCases/TestConnectionUseCase";
-import { ClearPpzStateUseCase } from "../../application/useCases/ClearPpzStateUseCase";
-import { GetBootstrapStatusUseCase } from "../../application/useCases/GetBootstrapStatusUseCase";
-import { CheckSqlExportCapabilityUseCase } from "../../application/useCases/CheckSqlExportCapabilityUseCase";
-import { ExecuteMySqlSqlUseCase } from "../../application/useCases/ExecuteMySqlSqlUseCase";
+import { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
+import { DeleteStoredConnectionUseCase } from "../../application/useCases/connections/DeleteStoredConnectionUseCase";
+import { SaveConnectionConfigUseCase } from "../../application/useCases/connections/SaveConnectionConfigUseCase";
+import { TestConnectionUseCase } from "../../application/useCases/connections/TestConnectionUseCase";
+import { ClearPpzStateUseCase } from "../../application/useCases/system/ClearPpzStateUseCase";
+import { GetBootstrapStatusUseCase } from "../../application/useCases/system/GetBootstrapStatusUseCase";
+import { CheckSqlExportCapabilityUseCase } from "../../application/useCases/export/CheckSqlExportCapabilityUseCase";
+import { ExecuteMySqlSqlUseCase } from "../../application/useCases/mysql/ExecuteMySqlSqlUseCase";
 import type { MySqlSqlExecutor } from "../../application/mysql/MySqlSqlExecutor";
-import { ExecutePostgreSqlSqlUseCase } from "../../application/useCases/ExecutePostgreSqlSqlUseCase";
-import { ExportPostgreSqlDatabaseUseCase } from "../../application/useCases/ExportPostgreSqlDatabaseUseCase";
-import { ExportPostgreSqlSchemaUseCase } from "../../application/useCases/ExportPostgreSqlSchemaUseCase";
-import { ExportPostgreSqlTableUseCase } from "../../application/useCases/ExportPostgreSqlTableUseCase";
+import { ExecutePostgreSqlSqlUseCase } from "../../application/useCases/postgresql/ExecutePostgreSqlSqlUseCase";
+import { ExportPostgreSqlDatabaseUseCase } from "../../application/useCases/postgresql/ExportPostgreSqlDatabaseUseCase";
+import { ExportPostgreSqlSchemaUseCase } from "../../application/useCases/postgresql/ExportPostgreSqlSchemaUseCase";
+import { ExportPostgreSqlTableUseCase } from "../../application/useCases/postgresql/ExportPostgreSqlTableUseCase";
 import type { PostgreSqlExportProvider } from "../../application/postgresql/PostgreSqlExportProvider";
 import type { PostgreSqlSqlExecutor } from "../../application/postgresql/PostgreSqlSqlExecutor";
-import { ExportMySqlTableUseCase } from "../../application/useCases/ExportMySqlTableUseCase";
-import { ExportMySqlSchemaUseCase } from "../../application/useCases/ExportMySqlSchemaUseCase";
+import { ExportMySqlTableUseCase } from "../../application/useCases/mysql/ExportMySqlTableUseCase";
+import { ExportMySqlSchemaUseCase } from "../../application/useCases/mysql/ExportMySqlSchemaUseCase";
 import type { MySqlExportProvider } from "../../application/mysql/MySqlExportProvider";
-import { SaveSqlExportDocumentUseCase } from "../../application/useCases/SaveSqlExportDocumentUseCase";
+import { SaveSqlExportDocumentUseCase } from "../../application/useCases/export/SaveSqlExportDocumentUseCase";
 import type { SqlExportFileWriter } from "../../application/export/SqlExportFileWriter";
 import type {
   SqlExportDocument,
   SqlExportTableTarget,
 } from "../../domain/export/SqlExportDocument";
-import { RecordSqlExportTaskLogUseCase } from "../../application/useCases/RecordSqlExportTaskLogUseCase";
-import { ListSqlExportTaskLogsUseCase } from "../../application/useCases/ListSqlExportTaskLogsUseCase";
+import { RecordSqlExportTaskLogUseCase } from "../../application/useCases/export/RecordSqlExportTaskLogUseCase";
+import { ListSqlExportTaskLogsUseCase } from "../../application/useCases/export/ListSqlExportTaskLogsUseCase";
 import type { SqlExportTaskLogRepository } from "../../application/export/SqlExportTaskLogRepository";
 import type {
   SqlExportTaskLogEntry,

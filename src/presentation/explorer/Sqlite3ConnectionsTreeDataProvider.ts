@@ -1,11 +1,14 @@
 import * as vscode from "vscode";
 
-import type { ListSqlite3TablesUseCase } from "../../application/useCases/ListSqlite3TablesUseCase";
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
+import type { ListSqlite3TablesUseCase } from "../../application/useCases/sqlite3/ListSqlite3TablesUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
 import type { Sqlite3ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import { OpenMySqlTableDataCommand } from "../commands/OpenMySqlTableDataCommand";
 import { showUserErrorMessage } from "../commands/UserErrorPresenter";
-import type { DatabaseConnectionTreeNode, Sqlite3TableTreeNode } from "./DatabaseConnectionsTreeNode";
+import type {
+  DatabaseConnectionTreeNode,
+  Sqlite3TableTreeNode,
+} from "./DatabaseConnectionsTreeNode";
 
 /**
  * 表示 SQLite3 资源视图中渲染的节点类型。

@@ -2,13 +2,13 @@ import * as path from "path";
 
 import * as vscode from "vscode";
 
-import type { ListMySqlSchemasUseCase } from "../../application/useCases/ListMySqlSchemasUseCase";
-import type { ListMySqlTablesUseCase } from "../../application/useCases/ListMySqlTablesUseCase";
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
-import type { CreateImportErrorReportUseCase } from "../../application/useCases/CreateImportErrorReportUseCase";
-import type { ImportMySqlJsonFileUseCase } from "../../application/useCases/ImportMySqlJsonFileUseCase";
-import type { PrepareMySqlJsonImportMappingUseCase } from "../../application/useCases/PrepareMySqlJsonImportMappingUseCase";
-import type { PreviewMySqlJsonFileImportUseCase } from "../../application/useCases/PreviewMySqlJsonFileImportUseCase";
+import type { ListMySqlSchemasUseCase } from "../../application/useCases/mysql/ListMySqlSchemasUseCase";
+import type { ListMySqlTablesUseCase } from "../../application/useCases/mysql/ListMySqlTablesUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
+import type { CreateImportErrorReportUseCase } from "../../application/useCases/import/CreateImportErrorReportUseCase";
+import type { ImportMySqlJsonFileUseCase } from "../../application/useCases/mysql/ImportMySqlJsonFileUseCase";
+import type { PrepareMySqlJsonImportMappingUseCase } from "../../application/useCases/mysql/PrepareMySqlJsonImportMappingUseCase";
+import type { PreviewMySqlJsonFileImportUseCase } from "../../application/useCases/mysql/PreviewMySqlJsonFileImportUseCase";
 import type { MysqlConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type {
   JsonFileImportResult,

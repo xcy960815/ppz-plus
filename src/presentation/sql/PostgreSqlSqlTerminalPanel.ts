@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
-import type { ExecutePostgreSqlSqlUseCase } from "../../application/useCases/ExecutePostgreSqlSqlUseCase";
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
+import type { ExecutePostgreSqlSqlUseCase } from "../../application/useCases/postgresql/ExecutePostgreSqlSqlUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
 import type {
   ConnectionConfig,
   PostgreSqlConnectionConfig,

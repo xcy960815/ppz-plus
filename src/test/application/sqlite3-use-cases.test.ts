@@ -20,14 +20,14 @@ import type {
   SqlExportDocument,
   SqlExportTableTarget,
 } from "../../domain/export/SqlExportDocument";
-import { ListSqlite3TablesUseCase } from "../../application/useCases/ListSqlite3TablesUseCase";
-import { ListSqlite3TableColumnsUseCase } from "../../application/useCases/ListSqlite3TableColumnsUseCase";
-import { ListSqlite3TableRowPageUseCase } from "../../application/useCases/ListSqlite3TableRowPageUseCase";
-import { ExecuteSqlite3SqlUseCase } from "../../application/useCases/ExecuteSqlite3SqlUseCase";
-import { ExportSqlite3TableUseCase } from "../../application/useCases/ExportSqlite3TableUseCase";
-import { InsertSqlite3TableRowUseCase } from "../../application/useCases/InsertSqlite3TableRowUseCase";
-import { UpdateSqlite3TableRowUseCase } from "../../application/useCases/UpdateSqlite3TableRowUseCase";
-import { DeleteSqlite3TableRowUseCase } from "../../application/useCases/DeleteSqlite3TableRowUseCase";
+import { ListSqlite3TablesUseCase } from "../../application/useCases/sqlite3/ListSqlite3TablesUseCase";
+import { ListSqlite3TableColumnsUseCase } from "../../application/useCases/sqlite3/ListSqlite3TableColumnsUseCase";
+import { ListSqlite3TableRowPageUseCase } from "../../application/useCases/sqlite3/ListSqlite3TableRowPageUseCase";
+import { ExecuteSqlite3SqlUseCase } from "../../application/useCases/sqlite3/ExecuteSqlite3SqlUseCase";
+import { ExportSqlite3TableUseCase } from "../../application/useCases/sqlite3/ExportSqlite3TableUseCase";
+import { InsertSqlite3TableRowUseCase } from "../../application/useCases/sqlite3/InsertSqlite3TableRowUseCase";
+import { UpdateSqlite3TableRowUseCase } from "../../application/useCases/sqlite3/UpdateSqlite3TableRowUseCase";
+import { DeleteSqlite3TableRowUseCase } from "../../application/useCases/sqlite3/DeleteSqlite3TableRowUseCase";
 
 // ---------------------------------------------------------------------------
 // Fixture

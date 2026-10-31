@@ -1,16 +1,16 @@
 import * as vscode from "vscode";
 
-import type { ListMySqlSchemasUseCase } from "../../application/useCases/ListMySqlSchemasUseCase";
+import type { ListMySqlSchemasUseCase } from "../../application/useCases/mysql/ListMySqlSchemasUseCase";
 import { OpenMySqlTableDataCommand } from "../commands/OpenMySqlTableDataCommand";
-import type { ListMySqlTablesUseCase } from "../../application/useCases/ListMySqlTablesUseCase";
-import type { ListPostgreSqlDatabasesUseCase } from "../../application/useCases/ListPostgreSqlDatabasesUseCase";
-import type { ListPostgreSqlSchemasUseCase } from "../../application/useCases/ListPostgreSqlSchemasUseCase";
-import type { ListPostgreSqlTablesUseCase } from "../../application/useCases/ListPostgreSqlTablesUseCase";
-import type { ListMssqlDatabasesUseCase } from "../../application/useCases/ListMssqlDatabasesUseCase";
-import type { ListMssqlSchemasUseCase } from "../../application/useCases/ListMssqlSchemasUseCase";
-import type { ListMssqlTablesUseCase } from "../../application/useCases/ListMssqlTablesUseCase";
-import type { ListSqlite3TablesUseCase } from "../../application/useCases/ListSqlite3TablesUseCase";
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
+import type { ListMySqlTablesUseCase } from "../../application/useCases/mysql/ListMySqlTablesUseCase";
+import type { ListPostgreSqlDatabasesUseCase } from "../../application/useCases/postgresql/ListPostgreSqlDatabasesUseCase";
+import type { ListPostgreSqlSchemasUseCase } from "../../application/useCases/postgresql/ListPostgreSqlSchemasUseCase";
+import type { ListPostgreSqlTablesUseCase } from "../../application/useCases/postgresql/ListPostgreSqlTablesUseCase";
+import type { ListMssqlDatabasesUseCase } from "../../application/useCases/mssql/ListMssqlDatabasesUseCase";
+import type { ListMssqlSchemasUseCase } from "../../application/useCases/mssql/ListMssqlSchemasUseCase";
+import type { ListMssqlTablesUseCase } from "../../application/useCases/mssql/ListMssqlTablesUseCase";
+import type { ListSqlite3TablesUseCase } from "../../application/useCases/sqlite3/ListSqlite3TablesUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
 import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type {
   DatabaseConnectionTreeNode,

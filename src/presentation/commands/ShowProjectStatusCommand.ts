@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import type { GetBootstrapStatusUseCase } from "../../application/useCases/GetBootstrapStatusUseCase";
+import type { GetBootstrapStatusUseCase } from "../../application/useCases/system/GetBootstrapStatusUseCase";
 import type { ExtensionCommand } from "./ExtensionCommand";
 
 /**

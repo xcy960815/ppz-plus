@@ -3,8 +3,8 @@ import * as path from "node:path";
 
 import * as vscode from "vscode";
 
-import type { SaveConnectionConfigUseCase } from "../../application/useCases/SaveConnectionConfigUseCase";
-import type { TestConnectionUseCase } from "../../application/useCases/TestConnectionUseCase";
+import type { SaveConnectionConfigUseCase } from "../../application/useCases/connections/SaveConnectionConfigUseCase";
+import type { TestConnectionUseCase } from "../../application/useCases/connections/TestConnectionUseCase";
 import type {
   ConnectionInputMode,
   ConnectionConfig,

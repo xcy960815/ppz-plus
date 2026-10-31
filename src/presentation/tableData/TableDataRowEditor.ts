@@ -7,14 +7,14 @@ import type {
   MySqlTableRowIdentityValues,
   MySqlTableUpdateValues,
 } from "../../application/mysql/MySqlTableDataProvider";
-import type { DeleteMySqlTableRowUseCase } from "../../application/useCases/DeleteMySqlTableRowUseCase";
-import type { InsertMySqlTableRowUseCase } from "../../application/useCases/InsertMySqlTableRowUseCase";
-import type { ListMySqlTableColumnsUseCase } from "../../application/useCases/ListMySqlTableColumnsUseCase";
-import type { UpdateMySqlTableRowUseCase } from "../../application/useCases/UpdateMySqlTableRowUseCase";
-import type { DeleteSqlite3TableRowUseCase } from "../../application/useCases/DeleteSqlite3TableRowUseCase";
-import type { InsertSqlite3TableRowUseCase } from "../../application/useCases/InsertSqlite3TableRowUseCase";
-import type { ListSqlite3TableColumnsUseCase } from "../../application/useCases/ListSqlite3TableColumnsUseCase";
-import type { UpdateSqlite3TableRowUseCase } from "../../application/useCases/UpdateSqlite3TableRowUseCase";
+import type { DeleteMySqlTableRowUseCase } from "../../application/useCases/mysql/DeleteMySqlTableRowUseCase";
+import type { InsertMySqlTableRowUseCase } from "../../application/useCases/mysql/InsertMySqlTableRowUseCase";
+import type { ListMySqlTableColumnsUseCase } from "../../application/useCases/mysql/ListMySqlTableColumnsUseCase";
+import type { UpdateMySqlTableRowUseCase } from "../../application/useCases/mysql/UpdateMySqlTableRowUseCase";
+import type { DeleteSqlite3TableRowUseCase } from "../../application/useCases/sqlite3/DeleteSqlite3TableRowUseCase";
+import type { InsertSqlite3TableRowUseCase } from "../../application/useCases/sqlite3/InsertSqlite3TableRowUseCase";
+import type { ListSqlite3TableColumnsUseCase } from "../../application/useCases/sqlite3/ListSqlite3TableColumnsUseCase";
+import type { UpdateSqlite3TableRowUseCase } from "../../application/useCases/sqlite3/UpdateSqlite3TableRowUseCase";
 import { showUserErrorMessage } from "../commands/UserErrorPresenter";
 import type {
   MySqlTableTreeNode,

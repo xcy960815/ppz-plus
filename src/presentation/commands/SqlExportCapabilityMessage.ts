@@ -1,7 +1,7 @@
 import type {
   SqlExportCapabilityCheck,
   SqlExportCapabilityRequirement,
-} from "../../application/useCases/CheckSqlExportCapabilityUseCase";
+} from "../../application/useCases/export/CheckSqlExportCapabilityUseCase";
 import type { DatabaseCapabilityKey } from "../../domain/capabilities/DatabaseCapabilityDeclaration";
 import type { DatabaseEngine } from "../../domain/database/DatabaseEngine";
 import type { SqlExportKind } from "../../domain/export/SqlExportDocument";

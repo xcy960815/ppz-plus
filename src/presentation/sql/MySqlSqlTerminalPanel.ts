@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
-import type { ExecuteMySqlSqlUseCase } from "../../application/useCases/ExecuteMySqlSqlUseCase";
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
+import type { ExecuteMySqlSqlUseCase } from "../../application/useCases/mysql/ExecuteMySqlSqlUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
 import type {
   ConnectionConfig,
   MysqlConnectionConfig,

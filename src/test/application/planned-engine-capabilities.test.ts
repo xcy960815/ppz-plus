@@ -7,7 +7,7 @@ import {
 } from "../../domain/capabilities/DatabaseCapabilityDeclaration";
 import type { DatabaseEngine } from "../../domain/database/DatabaseEngine";
 import { InMemoryDatabaseCapabilityCatalog } from "../../infrastructure/capabilities/InMemoryDatabaseCapabilityCatalog";
-import { CheckSqlExportCapabilityUseCase } from "../../application/useCases/CheckSqlExportCapabilityUseCase";
+import { CheckSqlExportCapabilityUseCase } from "../../application/useCases/export/CheckSqlExportCapabilityUseCase";
 
 suite("Application — 计划中引擎导出能力", () => {
   /**

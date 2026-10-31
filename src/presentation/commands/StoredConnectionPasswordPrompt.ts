@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
-import type { SaveConnectionConfigUseCase } from "../../application/useCases/SaveConnectionConfigUseCase";
+import type { SaveConnectionConfigUseCase } from "../../application/useCases/connections/SaveConnectionConfigUseCase";
 import { maskConnectionUrl } from "./ConnectionDisplayFormatter";
 
 /**

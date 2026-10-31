@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
-import type { TestConnectionUseCase } from "../../application/useCases/TestConnectionUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
+import type { TestConnectionUseCase } from "../../application/useCases/connections/TestConnectionUseCase";
 import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type { ExtensionCommand } from "./ExtensionCommand";
 import {

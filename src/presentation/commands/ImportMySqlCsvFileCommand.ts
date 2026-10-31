@@ -2,13 +2,13 @@ import * as path from "path";
 
 import * as vscode from "vscode";
 
-import type { ListMySqlSchemasUseCase } from "../../application/useCases/ListMySqlSchemasUseCase";
-import type { ListMySqlTablesUseCase } from "../../application/useCases/ListMySqlTablesUseCase";
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
-import type { CreateImportErrorReportUseCase } from "../../application/useCases/CreateImportErrorReportUseCase";
-import type { ImportMySqlCsvFileUseCase } from "../../application/useCases/ImportMySqlCsvFileUseCase";
-import type { PrepareMySqlCsvImportMappingUseCase } from "../../application/useCases/PrepareMySqlCsvImportMappingUseCase";
-import type { PreviewMySqlCsvFileImportUseCase } from "../../application/useCases/PreviewMySqlCsvFileImportUseCase";
+import type { ListMySqlSchemasUseCase } from "../../application/useCases/mysql/ListMySqlSchemasUseCase";
+import type { ListMySqlTablesUseCase } from "../../application/useCases/mysql/ListMySqlTablesUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
+import type { CreateImportErrorReportUseCase } from "../../application/useCases/import/CreateImportErrorReportUseCase";
+import type { ImportMySqlCsvFileUseCase } from "../../application/useCases/mysql/ImportMySqlCsvFileUseCase";
+import type { PrepareMySqlCsvImportMappingUseCase } from "../../application/useCases/mysql/PrepareMySqlCsvImportMappingUseCase";
+import type { PreviewMySqlCsvFileImportUseCase } from "../../application/useCases/mysql/PreviewMySqlCsvFileImportUseCase";
 import type { MysqlConnectionConfig } from "../../domain/connections/ConnectionConfig";
 import type {
   CsvFileImportResult,

@@ -4,13 +4,13 @@ import type {
   MySqlTableColumnMetadata,
   MySqlTableRowPage,
 } from "../../application/mysql/MySqlTableDataProvider";
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
-import type { ListMySqlTableColumnsUseCase } from "../../application/useCases/ListMySqlTableColumnsUseCase";
-import type { ListMySqlTableRowPageUseCase } from "../../application/useCases/ListMySqlTableRowPageUseCase";
-import type { ListPostgreSqlTableColumnsUseCase } from "../../application/useCases/ListPostgreSqlTableColumnsUseCase";
-import type { ListPostgreSqlTableRowPageUseCase } from "../../application/useCases/ListPostgreSqlTableRowPageUseCase";
-import type { ListSqlite3TableColumnsUseCase } from "../../application/useCases/ListSqlite3TableColumnsUseCase";
-import type { ListSqlite3TableRowPageUseCase } from "../../application/useCases/ListSqlite3TableRowPageUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
+import type { ListMySqlTableColumnsUseCase } from "../../application/useCases/mysql/ListMySqlTableColumnsUseCase";
+import type { ListMySqlTableRowPageUseCase } from "../../application/useCases/mysql/ListMySqlTableRowPageUseCase";
+import type { ListPostgreSqlTableColumnsUseCase } from "../../application/useCases/postgresql/ListPostgreSqlTableColumnsUseCase";
+import type { ListPostgreSqlTableRowPageUseCase } from "../../application/useCases/postgresql/ListPostgreSqlTableRowPageUseCase";
+import type { ListSqlite3TableColumnsUseCase } from "../../application/useCases/sqlite3/ListSqlite3TableColumnsUseCase";
+import type { ListSqlite3TableRowPageUseCase } from "../../application/useCases/sqlite3/ListSqlite3TableRowPageUseCase";
 import type { ExtensionActivationParticipant } from "../bootstrap/ExtensionActivationParticipant";
 import { showUserErrorMessage } from "../commands/UserErrorPresenter";
 import { OpenMySqlSqlTerminalCommand } from "../commands/OpenMySqlSqlTerminalCommand";

@@ -5,8 +5,8 @@ import type { ConnectionSecretCipher } from "../../application/connections/Conne
 import type { ConnectionSyncPayload } from "../../application/connections/ConnectionSyncPayload";
 import { CONNECTION_SYNC_PAYLOAD_VERSION } from "../../application/connections/ConnectionSyncPayload";
 import type { ConnectionSyncStore } from "../../application/connections/ConnectionSyncStore";
-import { PullConnectionConfigSyncUseCase } from "../../application/useCases/PullConnectionConfigSyncUseCase";
-import { UploadConnectionConfigSyncUseCase } from "../../application/useCases/UploadConnectionConfigSyncUseCase";
+import { PullConnectionConfigSyncUseCase } from "../../application/useCases/sync/PullConnectionConfigSyncUseCase";
+import { UploadConnectionConfigSyncUseCase } from "../../application/useCases/sync/UploadConnectionConfigSyncUseCase";
 import type { ConnectionConfig } from "../../domain/connections/ConnectionConfig";
 
 /**

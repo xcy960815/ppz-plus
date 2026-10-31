@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
-import type { ExecuteSqlite3SqlUseCase } from "../../application/useCases/ExecuteSqlite3SqlUseCase";
-import type { ListStoredConnectionsUseCase } from "../../application/useCases/ListStoredConnectionsUseCase";
+import type { ExecuteSqlite3SqlUseCase } from "../../application/useCases/sqlite3/ExecuteSqlite3SqlUseCase";
+import type { ListStoredConnectionsUseCase } from "../../application/useCases/connections/ListStoredConnectionsUseCase";
 import type {
   ConnectionConfig,
   Sqlite3ConnectionConfig,
