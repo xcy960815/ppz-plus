@@ -50,18 +50,11 @@ jobs:
         run: |
           node -e '
             const fs = require("fs");
-            const log = fs.readFileSync("/tmp/test-output.log", "utf8");
-            const start = log.indexOf("{");
-            const end = log.lastIndexOf("}");
-            if (start < 0 || end <= start) {
-              console.error("::error::测试输出中没有 JSON 报告");
-              process.exit(0);
-            }
             let data;
             try {
-              data = JSON.parse(log.slice(start, end + 1));
+              data = JSON.parse(fs.readFileSync("/tmp/mocha-report.json", "utf8"));
             } catch (error) {
-              console.error("::error::JSON 报告解析失败: " + error.message);
+              console.error("::error::mocha 结果文件读取/解析失败: " + error.message);
               process.exit(0);
             }
             const stats = data.stats || {};

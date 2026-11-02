@@ -70,29 +70,38 @@ suite("Domain — 计划中数据库引擎", () => {
 
 suite("Domain — 计划中能力声明", () => {
   /**
-   * 收集本阶段需要保持 planned 的能力声明。
+   * 断言一个能力声明中的所有能力均为 planned，未误开放为 supported。
+   * @param declaration 计划中的能力声明
    */
-  const plannedDeclarations: readonly DatabaseCapabilityDeclaration[] = [
-    COCKROACHDB_PLANNED_CAPABILITY_DECLARATION,
-    MARIADB_PLANNED_CAPABILITY_DECLARATION,
-  ];
-
-  for (const declaration of plannedDeclarations) {
-    test(`${declaration.engine} 所有能力均为 planned，不得误开放为 supported`, () => {
-      for (const key of DATABASE_CAPABILITY_KEYS) {
-        assert.strictEqual(
-          declaration.capabilities[key],
-          "planned",
-          `${declaration.engine}.${key} 期望为 planned，实际为 ${declaration.capabilities[key]}`,
-        );
-      }
-    });
-
-    test(`${declaration.engine} 能力矩阵键完整`, () => {
+  function assertAllCapabilitiesPlanned(declaration: DatabaseCapabilityDeclaration): void {
+    for (const key of DATABASE_CAPABILITY_KEYS) {
       assert.strictEqual(
-        Object.keys(declaration.capabilities).length,
-        DATABASE_CAPABILITY_KEYS.length,
+        declaration.capabilities[key],
+        "planned",
+        `${declaration.engine}.${key} 期望为 planned，实际为 ${declaration.capabilities[key]}`,
       );
-    });
+    }
   }
+
+  test("cockroachdb 所有能力均为 planned，不得误开放为 supported", () => {
+    assertAllCapabilitiesPlanned(COCKROACHDB_PLANNED_CAPABILITY_DECLARATION);
+  });
+
+  test("mariadb 所有能力均为 planned，不得误开放为 supported", () => {
+    assertAllCapabilitiesPlanned(MARIADB_PLANNED_CAPABILITY_DECLARATION);
+  });
+
+  test("cockroachdb 能力矩阵键完整", () => {
+    assert.strictEqual(
+      Object.keys(COCKROACHDB_PLANNED_CAPABILITY_DECLARATION.capabilities).length,
+      DATABASE_CAPABILITY_KEYS.length,
+    );
+  });
+
+  test("mariadb 能力矩阵键完整", () => {
+    assert.strictEqual(
+      Object.keys(MARIADB_PLANNED_CAPABILITY_DECLARATION.capabilities).length,
+      DATABASE_CAPABILITY_KEYS.length,
+    );
+  });
 });

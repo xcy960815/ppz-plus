@@ -20,21 +20,29 @@ suite("Application — 计划中引擎导出能力", () => {
     return new CheckSqlExportCapabilityUseCase(catalog);
   }
 
-  const plannedEngines: readonly DatabaseEngine[] = ["cockroachdb", "mariadb"];
+  /**
+   * 断言一个计划中引擎的 DDL / DML / both 导出均判定为不支持。
+   * @param engine 计划中接入的数据库引擎
+   */
+  function assertSqlExportUnsupported(engine: DatabaseEngine): void {
+    const useCase = makeUseCase();
 
-  for (const engine of plannedEngines) {
-    test(`${engine} 的 DDL / DML / both 导出均判定为不支持`, () => {
-      const useCase = makeUseCase();
-
-      for (const kind of ["ddl", "dml", "both"] as const) {
-        const result = useCase.execute(engine, kind);
-        assert.strictEqual(result.declarationFound, true, `${engine} 应存在能力声明`);
-        assert.strictEqual(result.supported, false, `${engine} 的 ${kind} 导出不得被判定为支持`);
-        assert.ok(
-          result.requirements.every((requirement) => requirement.support === "planned"),
-          `${engine} 的 ${kind} 导出要求项应全部为 planned`,
-        );
-      }
-    });
+    for (const kind of ["ddl", "dml", "both"] as const) {
+      const result = useCase.execute(engine, kind);
+      assert.strictEqual(result.declarationFound, true, `${engine} 应存在能力声明`);
+      assert.strictEqual(result.supported, false, `${engine} 的 ${kind} 导出不得被判定为支持`);
+      assert.ok(
+        result.requirements.every((requirement) => requirement.support === "planned"),
+        `${engine} 的 ${kind} 导出要求项应全部为 planned`,
+      );
+    }
   }
+
+  test("cockroachdb 的 DDL / DML / both 导出均判定为不支持", () => {
+    assertSqlExportUnsupported("cockroachdb");
+  });
+
+  test("mariadb 的 DDL / DML / both 导出均判定为不支持", () => {
+    assertSqlExportUnsupported("mariadb");
+  });
 });
