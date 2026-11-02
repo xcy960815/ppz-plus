@@ -7,8 +7,20 @@ on:
 
 jobs:
   verify:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    container:
+      image: node:24-bookworm
     steps:
+      # node:24-bookworm 容器内没有 git，checkout 之前先安装
+      - name: 安装 git 与 Electron 运行库
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git xvfb libgtk-3-0 libnss3 libasound2 libgbm1 \
+            libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
+            libxrandr2 libpango-1.0-0 libcairo2
+
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
@@ -16,7 +28,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
 
       - name: 安装依赖
         run: pnpm install --frozen-lockfile
@@ -26,15 +37,6 @@ jobs:
 
       - name: 代码规范检查
         run: pnpm lint
-
-      - name: 安装 Electron 运行库
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            xvfb libgtk-3-0 libnss3 libasound2 libgbm1 \
-            libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
-            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
-            libxrandr2 libpango-1.0-0 libcairo2
 
       - name: 单元测试
         run: xvfb-run -a pnpm test
