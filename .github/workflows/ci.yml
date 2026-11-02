@@ -48,9 +48,27 @@ jobs:
       - name: 失败时输出失败用例详情
         if: failure()
         run: |
-          grep -E "^\s+[0-9]+\) " -A 10 /tmp/test-output.log | head -80 > /tmp/failures.txt || true
-          grep -E "passing|failing" /tmp/test-output.log >> /tmp/failures.txt || true
-          wc -l /tmp/failures.txt
-          while IFS= read -r line; do
-            echo "::error::${line:0:400}"
-          done < /tmp/failures.txt
+          node -e '
+            const fs = require("fs");
+            const log = fs.readFileSync("/tmp/test-output.log", "utf8");
+            const start = log.indexOf("{");
+            const end = log.lastIndexOf("}");
+            if (start < 0 || end <= start) {
+              console.error("::error::测试输出中没有 JSON 报告");
+              process.exit(0);
+            }
+            let data;
+            try {
+              data = JSON.parse(log.slice(start, end + 1));
+            } catch (error) {
+              console.error("::error::JSON 报告解析失败: " + error.message);
+              process.exit(0);
+            }
+            const stats = data.stats || {};
+            console.error(`::error::通过 ${stats.passes ?? "?"} / 失败 ${stats.failures ?? "?"}`);
+            for (const failure of (data.failures || []).slice(0, 10)) {
+              const title = failure.fullTitle || failure.title || "未知用例";
+              const message = (failure.err && failure.err.message) || "";
+              console.error(`::error::${title.slice(0, 200)} :: ${message.slice(0, 300).replace(/\n/g, " ")}`);
+            }
+          '
