@@ -45,9 +45,21 @@ jobs:
           xvfb-run -a pnpm test 2>&1 | tee /tmp/test-output.log
           exit "${PIPESTATUS[0]}"
 
+      - name: 上传测试诊断文件
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-diagnostics
+          path: |
+            /tmp/mocha-report.json
+            /tmp/test-output.log
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: 失败时输出失败用例详情
         if: failure()
         run: |
+          echo "::error::ANNOTATION-CHANNEL-CHECK"
           node -e '
             const fs = require("fs");
             let data;
