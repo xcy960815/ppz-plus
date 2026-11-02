@@ -39,4 +39,19 @@ jobs:
         run: pnpm lint
 
       - name: 单元测试
-        run: xvfb-run -a pnpm test
+        shell: bash
+        run: |
+          set -o pipefail
+          xvfb-run -a pnpm test 2>&1 | tee /tmp/test-output.log
+          exit "${PIPESTATUS[0]}"
+
+      - name: 失败时输出失败用例详情
+        if: failure()
+        run: |
+          {
+            echo "## 测试失败详情"
+            echo '```'
+            grep -E "^\s+[0-9]+\) " -A 14 /tmp/test-output.log | head -200 || true
+            grep -E "passing|failing" /tmp/test-output.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
