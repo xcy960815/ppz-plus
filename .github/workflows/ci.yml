@@ -48,10 +48,9 @@ jobs:
       - name: 失败时输出失败用例详情
         if: failure()
         run: |
-          {
-            echo "## 测试失败详情"
-            echo '```'
-            grep -E "^\s+[0-9]+\) " -A 14 /tmp/test-output.log | head -200 || true
-            grep -E "passing|failing" /tmp/test-output.log || true
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          grep -E "^\s+[0-9]+\) " -A 10 /tmp/test-output.log | head -80 > /tmp/failures.txt || true
+          grep -E "passing|failing" /tmp/test-output.log >> /tmp/failures.txt || true
+          wc -l /tmp/failures.txt
+          while IFS= read -r line; do
+            echo "::error::${line:0:400}"
+          done < /tmp/failures.txt
