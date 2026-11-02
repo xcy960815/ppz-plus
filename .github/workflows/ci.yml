@@ -56,24 +56,24 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: 失败时输出失败用例详情
+      - name: 失败时输出诊断内容
         if: failure()
         run: |
-          echo "::error::ANNOTATION-CHANNEL-CHECK"
-          node -e '
-            const fs = require("fs");
-            let data;
-            try {
-              data = JSON.parse(fs.readFileSync("/tmp/mocha-report.json", "utf8"));
-            } catch (error) {
-              console.error("::error::mocha 结果文件读取/解析失败: " + error.message);
-              process.exit(0);
-            }
-            const stats = data.stats || {};
-            console.error(`::error::通过 ${stats.passes ?? "?"} / 失败 ${stats.failures ?? "?"}`);
-            for (const failure of (data.failures || []).slice(0, 10)) {
-              const title = failure.fullTitle || failure.title || "未知用例";
-              const message = (failure.err && failure.err.message) || "";
-              console.error(`::error::${title.slice(0, 200)} :: ${message.slice(0, 300).replace(/\n/g, " ")}`);
-            }
-          '
+          echo "::error::TZ=${TZ:-unset} ARCH=$(uname -m) NODE=$(node -v) PWD=$(pwd)"
+          ls -la /tmp | head -4 | while IFS= read -r line; do echo "::error::TMP ${line:0:200}"; done
+          if [ -f /tmp/mocha-report.json ]; then
+            node -e '
+              const fs = require("fs");
+              const data = JSON.parse(fs.readFileSync("/tmp/mocha-report.json", "utf8"));
+              const stats = data.stats || {};
+              console.error(`::error::通过 ${stats.passes} / 失败 ${stats.failures}`);
+              for (const failure of (data.failures || []).slice(0, 6)) {
+                const title = failure.fullTitle || failure.title || "未知用例";
+                const message = (failure.err && failure.err.message) || "";
+                console.error(`::error::${title.slice(0, 180)} :: ${message.slice(0, 250).replace(/\n/g, " ")}`);
+              }
+            '
+          fi
+          if [ -f /tmp/test-output.log ]; then
+            head -8 /tmp/test-output.log | while IFS= read -r line; do echo "::error::LOG ${line:0:300}"; done
+          fi
