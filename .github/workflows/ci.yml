@@ -11,12 +11,14 @@ jobs:
     container:
       image: node:24-bookworm
     steps:
-      # node:24-bookworm 容器内没有 git，checkout 之前先安装
+      # node:24-bookworm 容器内没有 git，checkout 之前先安装。
+      # xauth 是 xvfb-run 的必需依赖，但只是 xvfb 的推荐依赖，
+      # --no-install-recommends 不会自动带入，缺失时 xvfb-run 以退出码 3 终止。
       - name: 安装 git 与 Electron 运行库
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            git xvfb libgtk-3-0 libnss3 libasound2 libgbm1 \
+            git xvfb xauth libgtk-3-0 libnss3 libasound2 libgbm1 \
             libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
             libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
             libxrandr2 libpango-1.0-0 libcairo2
@@ -56,8 +58,11 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      # container job 中 run 步骤默认使用 sh(dash)，不支持 ${var:0:n}
+      # 子串展开（Bad substitution），必须显式指定 bash。
       - name: 失败时输出诊断内容
         if: failure()
+        shell: bash
         run: |
           echo "::error::TZ=${TZ:-unset} ARCH=$(uname -m) NODE=$(node -v) PWD=$(pwd)"
           ls -la /tmp | head -4 | while IFS= read -r line; do echo "::error::TMP ${line:0:200}"; done
