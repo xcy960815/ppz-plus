@@ -37,10 +37,10 @@ jobs:
       - name: Build docs
         run: pnpm run docs:build
 
+      # 默认 GITHUB_TOKEN 无权自动开启 Pages（API 会返回 403），
+      # Pages 需要在仓库 Settings → Pages 中一次性手动开启，Source 选择 "GitHub Actions"。
       - name: Setup Pages
         uses: actions/configure-pages@v6
-        with:
-          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
